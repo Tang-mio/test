@@ -6,8 +6,12 @@
 <title>排七計錢</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
+/* 字體：獅尾肉丸（SIL OFL 1.1，github.com/max32002/swei-meatball），只收錄頁面用字與 Big5 常用字，見 tools/build-fonts.js */
+@font-face { font-family: "Swei Meatball"; src: url("fonts/swei-meatball-regular.woff") format("woff"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Swei Meatball"; src: url("fonts/swei-meatball-bold.woff") format("woff"); font-weight: 700; font-display: swap; }
+
 /* 版面：手機優先的單欄。上方四家分頁看點數與輸贏，中間是正在輸入的那家，底部固定牌面鍵盤和本局結算 */
 :root {
   --bg: #ECEFF4;
@@ -31,8 +35,8 @@
   --dock-shadow: 0 -8px 24px rgba(22, 30, 48, 0.10);
   --scrim: rgba(14, 18, 26, 0.45);
 
-  --font-display: "LXGW WenKai TC", "Kaiti TC", "BiauKai", "DFKai-SB", serif;
-  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-display: "Swei Meatball", "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+  --font-body: "Swei Meatball", "Noto Serif TC", "Songti TC", "PMingLiU", serif;
   --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
   --step--2: 0.6875rem;

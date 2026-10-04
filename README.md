@@ -86,3 +86,18 @@ A = 1，2～10 照牌面，J = 11，Q = 12，K = 13。蓋牌點數加總，越�
 - `index.html`：計算機頁面
 - `paiqi.js`：計分邏輯（比牌、倍數、誰付誰多少），瀏覽器和 Node 都能載入
 - `test/paiqi.test.js`：計分規則的測試，用 `npm test` 執行（Node 18 以上）
+- `fonts/`：獅尾肉丸子集字型（一般、粗體）與授權 `OFL.txt`
+- `tools/subset-font.js`：TrueType 子集化工具，只留指定的字，輸出 WOFF
+- `tools/build-fonts.js`：重新產生 `fonts/` 裡的字型
+- `tools/build-artifact.js`：把頁面、計分程式和字型打包成單一 HTML 檔
+
+## 字體
+
+整頁使用[獅尾肉丸](https://github.com/max32002/swei-meatball)（Max 以思源宋體改造，SIL Open Font License 1.1），金額數字用 IBM Plex Mono。
+完整字型每套將近 19 MB，所以只收錄頁面上用到的字加上 Big5 常用字（5401 字），每套約 1.3 MB；常用字以外的罕用字會改用系統的宋體顯示。
+
+改了頁面文字之後，要重新產生字型（先從獅尾肉丸的 GitHub 下載 `CJK TC/SweiMeatballCJKtc-Regular.ttf` 和 `-Bold.ttf`）：
+
+```sh
+node tools/build-fonts.js <TTF 所在資料夾>
+```
