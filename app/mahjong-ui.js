@@ -6,6 +6,9 @@
   var $ = T.$, $$ = T.$$, esc = T.esc;
   var PATH = 'table/mahjong';
   var GROUP_ORDER = ['basic', 'honor', 'big', 'custom'];
+  // 輸入這把時的分組：三元牌和風牌刻子是一張張的牌
+  var HAND_GROUPS = [['basic', '常見'], ['dragon', '三元牌刻子'], ['wind', '風牌刻子'], ['honor', '花牌'], ['big', '大牌'], ['custom', '自訂']];
+  var TILE_CLASS = { zhong: ' t-zhong', fa: ' t-fa', bai: ' t-bai' };
   var BUILTIN = {};
   MJ.PATTERNS.forEach(function (p) { BUILTIN[p.id] = p; });
 
@@ -23,7 +26,15 @@
   function isDraw() { return hand().winner === -1; }
   function settings() { return mj().settings; }
 
-  function tai() { return MJ.countTai(hand().picks, hand().method, hand().extra, settings()); }
+  function tai() { return MJ.countTai(hand().picks, hand().method, hand().extra, settings(), windCtx()); }
+
+  // 圈風和胡的人的門風（門風預設跟著莊家：莊家算東；設定成照座位時，坐東就是東風）
+  function windCtx() {
+    var m = mj();
+    var w = hand().winner;
+    var seat = w == null || w < 0 ? null : settings().menFengBySeat ? w : (w - m.dealer + 4) % 4;
+    return { roundWind: m.wind, seatWind: seat };
+  }
 
   function settleNow() {
     var h = hand();
@@ -55,6 +66,7 @@
     $('#mjCapDealer').checked = s.capIncludesDealer;
     $('#mjFlowers').checked = s.flowers;
     $('#mjDealerNeedsStreak').checked = s.dealerNeedsStreak;
+    $('#mjMenFengBySeat').checked = s.menFengBySeat;
     syncProgress();
     var preset = MJ.matchPreset(s);
     $$('#mjPresets [data-preset]').forEach(function (b) {
@@ -73,6 +85,7 @@
     next.capIncludesDealer = $('#mjCapDealer').checked;
     next.flowers = $('#mjFlowers').checked;
     next.dealerNeedsStreak = $('#mjDealerNeedsStreak').checked;
+    next.menFengBySeat = $('#mjMenFengBySeat').checked;
     mj().settings = MJ.normalizeSettings(next);
   }
 
@@ -374,14 +387,38 @@
       : state === 'dealer' ? '換莊家：點牌桌上的人' : '誰胡？點牌桌上的人';
   }
 
-  function buildChips(pats) {
-    var key = pats.map(function (p) { return p.id + ':' + p.tai + ':' + p.name; }).join('|');
+  // 風牌刻子的標題：說明現在哪張算台
+  function windTitle(ctx) {
+    var s = settings();
+    var on = function (id) { return MJ.isOn(MJ.PATTERNS.filter(function (p) { return p.id === id; })[0], s); };
+    if (on('jianFeng')) return '風牌刻子（見字有台）';
+    var parts = [];
+    if (on('quanFeng')) parts.push('圈風 ' + T.SEAT_CHARS[ctx.roundWind]);
+    if (on('menFeng')) parts.push('門風 ' + (ctx.seatWind == null ? '看誰胡' : T.SEAT_CHARS[ctx.seatWind]));
+    return '風牌刻子' + (parts.length ? '（' + parts.join('・') + '）' : '');
+  }
+
+  function tileChip(p) {
+    var why = p.tile === 'wind' ? p.why.map(function (x) { return x.charAt(0); }).join('・') : '';
+    var label = p.name + '刻子，' + (p.tai ? p.tai + ' 台' + (p.why && p.why.length ? '（' + p.why.join('、') + '）' : '') : '不算台');
+    return '<button type="button" class="tai-chip tile-chip' + (TILE_CLASS[p.id] || '') + '" data-pat="' + p.id + '" aria-pressed="false" aria-label="' + esc(label) + '">' +
+      '<span class="face">' + p.name + '</span>' + (p.tile === 'wind' ? '<span class="why">' + why + '</span>' : '') +
+      '<b>' + (p.tai ? p.tai + ' 台' : '不算') + '</b></button>';
+  }
+
+  function buildChips(pats, ctx) {
+    var wt = windTitle(ctx);
+    var key = wt + '|' + pats.map(function (p) { return p.id + ':' + p.tai + ':' + p.name + ':' + (p.why || ''); }).join('|');
     if (key === chipsKey) return;
     chipsKey = key;
-    $('#mjTai').innerHTML = GROUP_ORDER.map(function (g) {
-      var list = pats.filter(function (p) { return p.group === g; });
+    $('#mjTai').innerHTML = HAND_GROUPS.map(function (g) {
+      var list = pats.filter(function (p) { return p.group === g[0]; });
       if (!list.length) return '';
-      return '<div class="tai-group"><h4>' + MJ.GROUP_NAMES[g] + '</h4><div class="tai-chips">' +
+      if (g[0] === 'dragon' || g[0] === 'wind') {
+        return '<div class="tai-group"><h4>' + esc(g[0] === 'wind' ? wt : g[1]) + '</h4><div class="tile-row">' +
+          list.map(tileChip).join('') + '</div></div>';
+      }
+      return '<div class="tai-group"><h4>' + g[1] + '</h4><div class="tai-chips">' +
         list.map(function (p) {
           return '<button type="button" class="tai-chip" data-pat="' + p.id + '" aria-pressed="false"' + (p.note ? ' title="' + esc(p.note) + '"' : '') + '>' +
             '<span class="nm">' + esc(p.name) + '</span><b>' + p.tai + '</b></button>';
@@ -395,7 +432,8 @@
     var h = hand();
     var editable = T.canEdit();
     var dTai = MJ.dealerTai(m.streak, s);
-    var pats = MJ.patternsFor(s);
+    var ctx = windCtx();
+    var pats = MJ.handPatterns(s, ctx);
     var byId = {};
     pats.forEach(function (p) { byId[p.id] = p; });
 
@@ -447,14 +485,16 @@
     $('#mjTaiSum').textContent = ready3 ? t.tai : 0;
     $('#mjCapNote').hidden = !(ready3 && s.cap && t.tai > s.cap);
     $('#mjCapNote').textContent = '限 ' + s.cap + ' 台';
-    buildChips(pats);
+    buildChips(pats, ctx);
     $$('#mjTai [data-pat]').forEach(function (b) {
       var p = byId[b.getAttribute('data-pat')];
       if (!p) return;
       var n = clean[p.id] || 0;
       b.setAttribute('aria-pressed', String(n > 0));
-      b.disabled = !editable || !ready3 || (p.only && h.method && p.only !== h.method);
-      $('.nm', b).textContent = p.name + (n > 1 ? ' ×' + n : '');
+      // 不算台的風牌（不是圈風也不是門風）點了也沒用，除非已經點了要取消
+      b.disabled = !editable || !ready3 || (p.only && h.method && p.only !== h.method) || (p.tile === 'wind' && !p.tai && !n);
+      var nm = $('.nm', b);
+      if (nm) nm.textContent = p.name + (n > 1 ? ' ×' + n : '');
     });
     $('#mjExtra').textContent = h.extra > 0 ? '+' + h.extra : h.extra;
     $('#mjExtraDown').disabled = !editable || !ready3;

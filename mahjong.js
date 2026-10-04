@@ -21,6 +21,7 @@
    * only：'ziMo' 只有自摸才有、'fangQiang' 只有放槍（別人打出）才有。
    * flower：花牌的台型，設定成不玩花牌時不出現。
    * defaultOff：預設不用的台型，要在設定裡打開（例如南部的風牌刻子）。
+   * tiles：設定裡是一項，輸入時拆成一張張牌點：'dragon' 拆成中、發、白；'wind' 拆成東、南、西、北。
    */
   var PATTERNS = [
     { id: 'menQing', name: '門清', tai: 1, group: 'basic', note: '沒有吃、碰、明槓；又自摸時改算門清自摸' },
@@ -33,11 +34,11 @@
     { id: 'heDi', name: '河底撈魚', tai: 1, group: 'basic', only: 'fangQiang', note: '胡最後一張打出的牌' },
     { id: 'qiangGang', name: '搶槓', tai: 1, group: 'basic', only: 'fangQiang' },
 
-    { id: 'sanYuan', name: '三元牌', tai: 1, group: 'honor', max: 3, note: '中、發、白的刻子，每組都算' },
-    { id: 'quanFeng', name: '圈風', tai: 1, group: 'honor', note: '這一圈的風牌刻子' },
-    { id: 'menFeng', name: '門風', tai: 1, group: 'honor', note: '自己座位的風牌刻子' },
-    { id: 'jianFeng', name: '風牌刻子', tai: 1, group: 'honor', max: 4, defaultOff: true, clears: ['quanFeng', 'menFeng'],
-      note: '不分圈風、門風，有風牌刻子就算（南部的見字有台）' },
+    { id: 'sanYuan', name: '三元牌', tai: 1, group: 'honor', tiles: 'dragon', note: '中、發、白的刻子，每組都算' },
+    { id: 'quanFeng', name: '圈風', tai: 1, group: 'honor', tiles: 'wind', note: '這一圈的風牌刻子' },
+    { id: 'menFeng', name: '門風', tai: 1, group: 'honor', tiles: 'wind', note: '自己門風的風牌刻子' },
+    { id: 'jianFeng', name: '見字', tai: 1, group: 'honor', tiles: 'wind', defaultOff: true,
+      note: '不分圈風、門風，有風牌刻子就算（南部打法）' },
     { id: 'hua', name: '正花', tai: 1, group: 'honor', max: 2, flower: true, note: '和座位對應的花，每張都算' },
     { id: 'huaGang', name: '花槓', tai: 2, group: 'honor', max: 2, flower: true, note: '春夏秋冬或梅蘭竹菊一整組' },
 
@@ -48,10 +49,10 @@
     { id: 'hunYiSe', name: '混一色', tai: 4, group: 'big', ex: 'yiSe' },
     { id: 'qingYiSe', name: '清一色', tai: 8, group: 'big', ex: 'yiSe' },
     { id: 'ziYiSe', name: '字一色', tai: 16, group: 'big', ex: 'yiSe' },
-    { id: 'xiaoSanYuan', name: '小三元', tai: 4, group: 'big', ex: 'sanYuanDa', clears: ['sanYuan'] },
-    { id: 'daSanYuan', name: '大三元', tai: 8, group: 'big', ex: 'sanYuanDa', clears: ['sanYuan'] },
-    { id: 'xiaoSiXi', name: '小四喜', tai: 8, group: 'big', ex: 'siXi', clears: ['quanFeng', 'menFeng', 'jianFeng'] },
-    { id: 'daSiXi', name: '大四喜', tai: 16, group: 'big', ex: 'siXi', clears: ['quanFeng', 'menFeng', 'jianFeng'] },
+    { id: 'xiaoSanYuan', name: '小三元', tai: 4, group: 'big', ex: 'sanYuanDa', clears: ['zhong', 'fa', 'bai'] },
+    { id: 'daSanYuan', name: '大三元', tai: 8, group: 'big', ex: 'sanYuanDa', clears: ['zhong', 'fa', 'bai'] },
+    { id: 'xiaoSiXi', name: '小四喜', tai: 8, group: 'big', ex: 'siXi', clears: ['fengE', 'fengS', 'fengW', 'fengN'] },
+    { id: 'daSiXi', name: '大四喜', tai: 16, group: 'big', ex: 'siXi', clears: ['fengE', 'fengS', 'fengW', 'fengN'] },
     { id: 'baXian', name: '八仙過海', tai: 8, group: 'big', ex: 'huaAll', flower: true, clears: ['hua', 'huaGang'] },
     { id: 'qiQiangYi', name: '七搶一', tai: 8, group: 'big', ex: 'huaAll', flower: true, clears: ['hua', 'huaGang'] },
     { id: 'tianHu', name: '天胡', tai: 16, group: 'big', ex: 'tian', only: 'ziMo' },
@@ -62,6 +63,9 @@
   PATTERNS.forEach(function (p) { BY_ID[p.id] = p; });
 
   var GROUP_NAMES = { basic: '常見', honor: '字牌與花', big: '大牌', custom: '自訂' };
+  // 輸入時的牌：三元牌和風牌刻子一張張點
+  var DRAGONS = [{ id: 'zhong', name: '中' }, { id: 'fa', name: '發' }, { id: 'bai', name: '白' }];
+  var WIND_IDS = ['fengE', 'fengS', 'fengW', 'fengN'];
   var MAX_CUSTOM = 20;
 
   var DEFAULT_SETTINGS = {
@@ -75,6 +79,7 @@
     streakTai: 2,           // 每連莊一次加幾台（連 N 拉 N 是 2）
     ziMoTai: 1,             // 自摸
     menQingZiMoTai: 3,      // 門清加自摸合計
+    menFengBySeat: false,   // 門風照座位（坐東就是東風）；預設跟著莊家（莊家算東）
     tai: {},                // 改過的台數 { 台型 id: 台數 }
     off: {},                // 不用的台型 { 台型 id: true }
     on: {},                 // 打開的預設不用台型 { 台型 id: true }
@@ -126,6 +131,7 @@
       streakTai: int(s.streakTai, d.streakTai, 0, 99),
       ziMoTai: int(s.ziMoTai, d.ziMoTai, 0, 99),
       menQingZiMoTai: int(s.menQingZiMoTai, d.menQingZiMoTai, 0, 99),
+      menFengBySeat: !!s.menFengBySeat,
       tai: tai,
       off: off,
       on: on,
@@ -153,6 +159,40 @@
     return list;
   }
 
+  /*
+   * 輸入這把時能點的台型：三元牌拆成中、發、白，圈風／門風／見字合成東、南、西、北四張。
+   * ctx = { roundWind 圈風, seatWind 胡的人的門風 }（0–3，不知道就省略）。
+   * 風牌的台數照 ctx 算：是圈風加圈風台、是門風加門風台、開了見字就每張都算；都不是就 0 台。
+   */
+  function handPatterns(settings, ctx) {
+    var s = normalizeSettings(settings);
+    ctx = ctx || {};
+    var all = patternsFor(s);
+    var windParts = all.filter(function (p) { return p.tiles === 'wind'; });
+    var list = [];
+    all.forEach(function (p) {
+      if (p.tiles === 'dragon') {
+        DRAGONS.forEach(function (d) { list.push({ id: d.id, name: d.name, tai: p.tai, group: 'dragon', tile: 'dragon' }); });
+      } else if (p !== windParts[0]) {
+        if (p.tiles !== 'wind') list.push(p);
+      } else {
+        // 在第一個風牌台型的位置放東南西北
+        WIND_NAMES.forEach(function (c, w) {
+          var tai = 0;
+          var why = [];
+          windParts.forEach(function (q) {
+            var hit = q.id === 'jianFeng' || (q.id === 'quanFeng' && ctx.roundWind === w) || (q.id === 'menFeng' && ctx.seatWind === w);
+            if (!hit) return;
+            tai += q.tai;
+            if (q.id !== 'jianFeng') why.push(q.name);
+          });
+          list.push({ id: WIND_IDS[w], name: c, tai: tai, group: 'wind', tile: 'wind', why: why });
+        });
+      }
+    });
+    return list;
+  }
+
   function byId(list) {
     var m = {};
     list.forEach(function (p) { m[p.id] = p; });
@@ -163,7 +203,7 @@
 
   // 只留合法的選擇：存在且沒關掉的台型、次數在範圍內、符合胡法
   function cleanPicks(picks, method, settings) {
-    var pats = byId(patternsFor(settings));
+    var pats = byId(handPatterns(settings));
     var out = {};
     Object.keys(picks || {}).forEach(function (id) {
       var p = pats[id];
@@ -177,7 +217,7 @@
 
   // 點一下台型：一般台型切換有無，可多次的台型循環 0 → 1 → … → max → 0
   function togglePick(picks, id, method, settings) {
-    var list = patternsFor(settings);
+    var list = handPatterns(settings);
     var p = byId(list)[id];
     var out = cleanPicks(picks, method, settings);
     if (!p || (p.only && method && p.only !== method)) return out;
@@ -197,18 +237,19 @@
     return out;
   }
 
-  // 胡牌者的台數（不含莊家台、還沒套用限台）
-  function countTai(picks, method, extra, settings) {
+  // 胡牌者的台數（不含莊家台、還沒套用限台）；ctx 見 handPatterns
+  function countTai(picks, method, extra, settings, ctx) {
     var s = normalizeSettings(settings);
-    var list = patternsFor(s);
+    var list = handPatterns(s, ctx);
     var clean = cleanPicks(picks, method, s);
     var items = [];
     var tai = 0;
     list.forEach(function (p) {
       var n = clean[p.id];
-      if (!n) return;
+      if (!n || !p.tai) return;
       tai += p.tai * n;
-      items.push({ id: p.id, name: p.name + (n > 1 ? ' ×' + n : ''), tai: p.tai * n });
+      var name = p.tile === 'wind' && p.why.length ? p.name + '（' + p.why.join('、') + '）' : p.name;
+      items.push({ id: p.id, name: name + (n > 1 ? ' ×' + n : ''), tai: p.tai * n });
     });
     if (method === 'ziMo') {
       if (clean.menQing) {
@@ -362,6 +403,7 @@
     DEFAULT_SETTINGS: DEFAULT_SETTINGS,
     normalizeSettings: normalizeSettings,
     patternsFor: patternsFor,
+    handPatterns: handPatterns,
     isOn: isOn,
     PRESETS: PRESETS,
     applyPreset: applyPreset,

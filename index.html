@@ -416,6 +416,20 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .tai-chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
 .tai-chip[aria-pressed="true"] b { color: var(--accent); }
 .tai-chip:disabled { opacity: .35; cursor: not-allowed; }
+/* 中發白、東南西北：做成一張張牌的樣子 */
+.tile-row { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 4px; }
+.tai-chip.tile-chip {
+  width: 50px; padding: 5px 0 4px; border-radius: 8px; display: grid; justify-items: center; gap: 1px; line-height: 1.15;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: 0 3px 0 var(--line);
+  transition: transform .08s, box-shadow .08s;
+}
+.tile-chip .face { font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.1; color: var(--ink); }
+.tile-chip.t-zhong .face { color: var(--pay); }
+.tile-chip.t-fa .face { color: var(--gain); }
+.tile-chip.t-bai .face { color: var(--accent); font-size: 15px; padding: 1px 4px; margin: 2px 0 1px; border: 2px solid currentColor; border-radius: 4px; }
+.tile-chip .why { font-size: 10px; font-weight: 700; color: var(--accent); min-height: 12px; line-height: 12px; }
+.tile-chip b { font-size: 10px; }
+.tai-chip.tile-chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); box-shadow: 0 1px 0 var(--accent); transform: translateY(2px); }
 .extra-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: var(--step--1); }
 /* 牌桌：自己坐在下面，右邊下家、對面對家、左邊上家 */
 .me-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
@@ -981,6 +995,16 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
           </ul>
         </section>
         <section>
+          <h2>字牌刻子：中發白、東南西北</h2>
+          <ul>
+            <li>算台時直接點胡的人手上有刻子（或槓）的牌：中、發、白每組 1 台。</li>
+            <li>東、南、西、北要對到才有台：是這圈的<b>圈風</b>多 1 台，是胡的人的<b>門風</b>多 1 台，兩個都對到就 2 台；牌上會標「圈」「門」，對不到的會顯示「不算」。</li>
+            <li>門風預設跟著莊家：莊家是東，莊家的下家南、對家西、上家北。有些人照座位算（坐東就是東風），在「名字・規則」打開「門風照座位算」。</li>
+            <li>南部打法的「見字有台」：東南西北不用對位，每組都算。</li>
+            <li>小三元、大三元已經含中發白，小四喜、大四喜已經含東南西北，點了大牌會自動取消重複的牌。</li>
+          </ul>
+        </section>
+        <section>
           <h2>北部打法與南部打法</h2>
           <p>台灣十六張常分成北部、南部兩種打法。在「名字・規則」可以一鍵套用，套用後每一項都還能再改。</p>
           <div class="table-wrap">
@@ -1194,6 +1218,10 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         <div class="rule-row">
           <label class="name" for="mjDealerNeedsStreak"><input type="checkbox" class="switch" id="mjDealerNeedsStreak">沒連莊時莊家不算台</label>
           <span class="hint">南部打法：連莊才有台，連 N 拉 N 共 2N+1 台</span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="mjMenFengBySeat"><input type="checkbox" class="switch" id="mjMenFengBySeat">門風照座位算</label>
+          <span class="hint">打開：坐東就是東風。關掉（預設）：門風跟著莊家，莊家算東、下家南、對家西、上家北</span>
         </div>
         <div class="rule-row">
           <label class="name" for="mjStreakTai">每連莊加</label>
