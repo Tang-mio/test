@@ -426,37 +426,41 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .me-seats button[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
 .me-seats button[aria-checked="true"] .w { background: var(--accent); color: var(--surface); }
 .mj-table {
-  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr); gap: 6px;
-  padding: 10px; border-radius: 14px; background: var(--felt);
-  box-shadow: inset 0 0 0 1px var(--felt-line), inset 0 0 0 5px var(--felt), inset 0 0 0 6px var(--felt-line);
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr); gap: 5px;
+  padding: 8px; border-radius: 12px; background: var(--felt);
+  box-shadow: inset 0 0 0 1px var(--felt-line), inset 0 0 0 4px var(--felt), inset 0 0 0 5px var(--felt-line);
+  width: 100%; max-width: 400px; margin-inline: auto;
 }
 .mj-table .p-top { grid-column: 2; grid-row: 1; }
 .mj-table .p-left { grid-column: 1; grid-row: 2; }
 .mj-table .p-right { grid-column: 3; grid-row: 2; }
 .mj-table .p-bottom { grid-column: 2; grid-row: 3; }
 .table-center {
-  grid-column: 2; grid-row: 2; display: grid; place-content: center; text-align: center; gap: 2px;
-  color: var(--felt-ink); padding: 6px 4px; min-height: 76px; border-radius: 10px; border: 1px dashed var(--felt-line);
+  grid-column: 2; grid-row: 2; display: grid; place-content: center; text-align: center; gap: 1px;
+  color: var(--felt-ink); padding: 3px; border-radius: 8px; border: 1px dashed var(--felt-line);
 }
-.table-center .tc-main { font-weight: 700; font-size: var(--step--1); line-height: 1.35; }
-.table-center .tc-sub { font-size: 11px; opacity: .85; }
+.table-center .tc-main { font-weight: 700; font-size: 13px; line-height: 1.3; }
+.table-center .tc-sub { font-size: 10.5px; line-height: 1.3; opacity: .85; }
+/* 每個座位三行：相對位置／風和名字／莊、胡和金額 */
 .tseat {
-  display: grid; justify-items: center; gap: 0; min-width: 0; padding: 6px 4px; line-height: 1.25;
-  border-radius: 10px; border: 1px solid transparent; background: var(--surface); color: var(--ink);
+  display: grid; justify-items: center; align-content: center; gap: 1px; min-width: 0; padding: 4px 3px; line-height: 1.2;
+  border-radius: 8px; border: 1px solid transparent; background: var(--surface); color: var(--ink);
   transition: transform .08s, box-shadow .15s;
 }
 .tseat:active { transform: translateY(1px); }
 .mj-table.expect .tseat { box-shadow: 0 0 0 2px var(--felt), 0 0 0 4px var(--warn); }
-.tseat .rel { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .08em; }
+.tseat .rel { font-size: 10px; line-height: 14px; font-weight: 700; color: var(--muted); letter-spacing: .08em; }
 .tseat .rel.me { color: var(--surface); background: var(--accent); padding: 0 6px; border-radius: 999px; }
-.tseat .wind { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; color: var(--accent); line-height: 1.2; }
-.tseat .nm { font-weight: 700; font-size: var(--step--1); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tseat .tags { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; min-height: 16px; }
-.tseat .tg { font-size: 10px; font-weight: 700; padding: 0 5px; border-radius: 999px; line-height: 16px; }
+.tseat .who { display: flex; align-items: baseline; justify-content: center; gap: 3px; min-width: 0; max-width: 100%; }
+.tseat .wind { flex: none; font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--accent); }
+.tseat .nm { min-width: 0; font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tseat .foot { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 3px; min-height: 15px; }
+.tseat .tg { font-size: 10px; font-weight: 700; padding: 0 4px; border-radius: 999px; line-height: 15px; }
 .tseat .tg.dealer { background: var(--ink); color: var(--surface); }
 .tseat .tg.win { background: var(--gain-soft); color: var(--gain); }
 .tseat .tg.pay { background: var(--pay-soft); color: var(--pay); }
-.tseat .amt { font-family: var(--font-num); font-weight: 600; font-size: 12px; min-height: 15px; font-variant-numeric: tabular-nums; }
+.tseat .amt { font-family: var(--font-num); font-weight: 600; font-size: 11.5px; line-height: 15px; font-variant-numeric: tabular-nums; }
+.tseat .amt:empty { display: none; }
 .tseat.is-winner { border-color: var(--gain); box-shadow: 0 0 0 1px var(--gain); background: var(--gain-soft); }
 .tseat.is-payer { border-color: var(--pay); background: var(--pay-soft); }
 .tseat:disabled { cursor: not-allowed; }
@@ -471,8 +475,7 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .seat-choices .me-seats button { padding: 4px 12px; }
 .seat-choices .me-seats .where { font-size: 11px; color: var(--muted); font-weight: 500; }
 #play-mahjong.seating .hand-only { display: none !important; }
-.tseat.is-picking { box-shadow: 0 0 0 2px var(--felt), 0 0 0 5px var(--warn); }
-.tseat .empty { font-size: 12px; color: var(--muted); }
+.tseat.is-picking { box-shadow: 0 0 0 2px var(--felt), 0 0 0 4px var(--warn); }
 .seat-done { height: 44px; font-size: var(--step-0); }
 #mjPickDealer[aria-pressed="true"] { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); font-weight: 700; }
 .preset-box { display: grid; gap: 6px; }

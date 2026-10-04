@@ -312,10 +312,9 @@
         (sit ? ' aria-pressed="' + (w === seatSlot) + '"' : '') +
         ' aria-label="' + esc(T.SEAT_CHARS[w] + '家 ' + seatName(w) + (rel ? '，' + rel : '')) + '">' +
         (rel ? '<span class="rel' + (w === mw ? ' me' : '') + '">' + rel + '</span>' : '') +
-        '<span class="wind">' + T.SEAT_CHARS[w] + '</span>' +
-        '<span class="nm">' + esc(seatName(w)) + '</span>' +
-        '<span class="tags">' + tags.join('') + '</span>' +
-        '<span class="amt ' + T.signClass(net) + '">' + (ready && net ? T.signedMoney(net) : '') + '</span>' +
+        '<span class="who"><span class="wind">' + T.SEAT_CHARS[w] + '</span><span class="nm">' + esc(seatName(w)) + '</span></span>' +
+        '<span class="foot">' + tags.join('') +
+          '<span class="amt ' + T.signClass(net) + '">' + (ready && net ? T.signedMoney(net) : '') + '</span></span>' +
       '</button>';
     }
     var main;
