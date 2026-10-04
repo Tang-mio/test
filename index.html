@@ -1056,6 +1056,10 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       <p class="hint">常見的打法寫成「底 / 台」，例如 50 / 20、100 / 20、30 / 10。</p>
       <div class="rule-list">
         <div class="rule-row">
+          <label class="name" for="mjFlowers"><input type="checkbox" class="switch" id="mjFlowers">玩花牌</label>
+          <span class="hint">關掉時，正花、花槓、八仙過海、七搶一不會出現，也不算台</span>
+        </div>
+        <div class="rule-row">
           <label class="name" for="mjCap">限台</label>
           <span class="hint">一把最多算幾台，填 0 是不限</span>
           <span class="ctrl"><span class="field small"><input id="mjCap" type="number" min="0" step="1" inputmode="numeric"><span>台</span></span></span>

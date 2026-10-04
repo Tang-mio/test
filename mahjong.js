@@ -18,6 +18,7 @@
    * 常見台型。max > 1 的可以算好幾次（例如兩組三元牌刻子）。
    * ex：同一組只能選一個；clears：選了它就清掉被包含的台型。
    * only：'ziMo' 只有自摸才有、'fangQiang' 只有放槍（別人打出）才有。
+   * flower：花牌的台型，設定成不玩花牌時不出現。
    */
   var PATTERNS = [
     { id: 'menQing', name: '門清', tai: 1, group: 'basic', note: '沒有吃、碰、明槓；又自摸時改算門清自摸' },
@@ -33,8 +34,8 @@
     { id: 'sanYuan', name: '三元牌', tai: 1, group: 'honor', max: 3, note: '中、發、白的刻子，每組都算' },
     { id: 'quanFeng', name: '圈風', tai: 1, group: 'honor', note: '這一圈的風牌刻子' },
     { id: 'menFeng', name: '門風', tai: 1, group: 'honor', note: '自己座位的風牌刻子' },
-    { id: 'hua', name: '正花', tai: 1, group: 'honor', max: 2, note: '和座位對應的花，每張都算' },
-    { id: 'huaGang', name: '花槓', tai: 2, group: 'honor', max: 2, note: '春夏秋冬或梅蘭竹菊一整組' },
+    { id: 'hua', name: '正花', tai: 1, group: 'honor', max: 2, flower: true, note: '和座位對應的花，每張都算' },
+    { id: 'huaGang', name: '花槓', tai: 2, group: 'honor', max: 2, flower: true, note: '春夏秋冬或梅蘭竹菊一整組' },
 
     { id: 'pengPeng', name: '碰碰胡', tai: 4, group: 'big' },
     { id: 'sanAn', name: '三暗刻', tai: 2, group: 'big', ex: 'anKe' },
@@ -47,8 +48,8 @@
     { id: 'daSanYuan', name: '大三元', tai: 8, group: 'big', ex: 'sanYuanDa', clears: ['sanYuan'] },
     { id: 'xiaoSiXi', name: '小四喜', tai: 8, group: 'big', ex: 'siXi', clears: ['quanFeng', 'menFeng'] },
     { id: 'daSiXi', name: '大四喜', tai: 16, group: 'big', ex: 'siXi', clears: ['quanFeng', 'menFeng'] },
-    { id: 'baXian', name: '八仙過海', tai: 8, group: 'big', ex: 'huaAll', clears: ['hua', 'huaGang'] },
-    { id: 'qiQiangYi', name: '七搶一', tai: 8, group: 'big', ex: 'huaAll', clears: ['hua', 'huaGang'] },
+    { id: 'baXian', name: '八仙過海', tai: 8, group: 'big', ex: 'huaAll', flower: true, clears: ['hua', 'huaGang'] },
+    { id: 'qiQiangYi', name: '七搶一', tai: 8, group: 'big', ex: 'huaAll', flower: true, clears: ['hua', 'huaGang'] },
     { id: 'tianHu', name: '天胡', tai: 16, group: 'big', ex: 'tian', only: 'ziMo' },
     { id: 'diHu', name: '地胡', tai: 16, group: 'big', ex: 'tian', only: 'ziMo' },
     { id: 'renHu', name: '人胡', tai: 8, group: 'big', ex: 'tian', only: 'fangQiang' }
@@ -62,6 +63,7 @@
   var DEFAULT_SETTINGS = {
     base: 50,               // 底
     perTai: 20,             // 每台
+    flowers: true,          // 有沒有玩花牌
     cap: 0,                 // 限台：一把最多幾台，0 是不限
     capIncludesDealer: false, // 莊家台是否也算在限台裡
     dealerTai: 1,           // 莊家台
@@ -108,6 +110,7 @@
     return {
       base: num(s.base, d.base, 0),
       perTai: num(s.perTai, d.perTai, 0),
+      flowers: s.flowers === undefined ? d.flowers : !!s.flowers,
       cap: int(s.cap, d.cap, 0, 999),
       capIncludesDealer: !!s.capIncludesDealer,
       dealerTai: int(s.dealerTai, d.dealerTai, 0, 99),
@@ -120,12 +123,12 @@
     };
   }
 
-  // 依設定算出實際可用的台型（改過的台數、關掉的不算、加上自訂的）
+  // 依設定算出實際可用的台型（改過的台數、關掉的不算、沒玩花牌時拿掉花牌台型、加上自訂的）
   function patternsFor(settings) {
     var s = normalizeSettings(settings);
     var list = [];
     PATTERNS.forEach(function (p) {
-      if (s.off[p.id]) return;
+      if (s.off[p.id] || (p.flower && !s.flowers)) return;
       var q = {};
       Object.keys(p).forEach(function (k) { q[k] = p[k]; });
       q.tai = s.tai[p.id] != null ? s.tai[p.id] : p.tai;

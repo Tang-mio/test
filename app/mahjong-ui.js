@@ -47,6 +47,7 @@
     var a = document.activeElement;
     FIELDS.forEach(function (f) { if ($(f[0]) !== a) $(f[0]).value = s[f[1]]; });
     $('#mjCapDealer').checked = s.capIncludesDealer;
+    $('#mjFlowers').checked = s.flowers;
     syncEditor();
   }
 
@@ -58,6 +59,7 @@
       if (v !== '') next[f[1]] = v;
     });
     next.capIncludesDealer = $('#mjCapDealer').checked;
+    next.flowers = $('#mjFlowers').checked;
     mj().settings = MJ.normalizeSettings(next);
   }
 
@@ -104,11 +106,16 @@
         var def = BUILTIN[id].tai;
         val = s.tai[id] != null ? s.tai[id] : def;
         var on = !s.off[id];
-        $('[data-te-on]', row).checked = on;
-        row.classList.toggle('is-off', !on);
+        var noFlower = !!(BUILTIN[id].flower && !s.flowers);
+        var toggle = $('[data-te-on]', row);
+        toggle.checked = on && !noFlower;
+        toggle.disabled = noFlower;
+        input.disabled = noFlower;
+        row.classList.toggle('is-off', !on || noFlower);
         row.classList.toggle('changed', val !== def);
         var note = onlyNote(BUILTIN[id]);
-        $('[data-te-hint]', row).textContent = (val !== def ? '預設 ' + def + ' 台' + (note ? '；' : '') : '') + note +
+        $('[data-te-hint]', row).textContent = noFlower ? '沒玩花牌，不會出現' :
+          (val !== def ? '預設 ' + def + ' 台' + (note ? '；' : '') : '') + note +
           (BUILTIN[id].max > 1 ? (note || val !== def ? '；' : '') + '最多 ' + BUILTIN[id].max + ' 組' : '');
         if (val !== def || !on) changed++;
       }
@@ -181,6 +188,7 @@
     var customised = Object.keys(s.tai).length || Object.keys(s.off).length || s.custom.length;
     $('#mjChips').innerHTML = '<span class="sum-chip">底 <b>' + T.money(s.base) + '</b></span>' +
       '<span class="sum-chip">每台 <b>' + T.money(s.perTai) + '</b></span>' +
+      '<span class="sum-chip">' + (s.flowers ? '有花' : '不玩花') + '</span>' +
       '<span class="sum-chip">' + (s.cap ? '限 <b>' + s.cap + '</b> 台' + (s.capIncludesDealer ? '（含莊）' : '') : '不限台') + '</span>' +
       (customised ? '<span class="sum-chip">台數表已自訂</span>' : '');
     $('#mjClear').disabled = !editable;
@@ -317,6 +325,7 @@
   function renderRules() {
     var s = settings();
     $('#mjRulesNow').textContent = '目前設定：底 ' + T.money(s.base) + '、每台 ' + T.money(s.perTai) + '，' +
+      (s.flowers ? '有玩花牌' : '沒玩花牌') + '，' +
       (s.cap ? '限 ' + s.cap + ' 台（莊家台' + (s.capIncludesDealer ? '算在內' : '另外加') + '）' : '不限台') +
       '，莊家 ' + s.dealerTai + ' 台、每連莊加 ' + s.streakTai + ' 台。';
     var rows = [

@@ -114,6 +114,17 @@ test('限台：超過上限的台數不算；莊家台可選擇算在限台內�
   assert.equal(none.transfers.find(t => t.from === 2).totalTai, 3);
 });
 
+test('不玩花牌：花牌台型不出現、也不算台；其他台型照常', () => {
+  const s = { flowers: false };
+  const ids = MJ.patternsFor(s).map(p => p.id);
+  ['hua', 'huaGang', 'baXian', 'qiQiangYi'].forEach(id => assert.equal(ids.includes(id), false));
+  assert.equal(ids.includes('sanYuan'), true);
+  assert.equal(MJ.countTai({ hua: 2, baXian: 1, sanYuan: 1 }, 'fangQiang', 0, s).tai, 1);
+  assert.deepEqual(MJ.togglePick({}, 'huaGang', 'ziMo', s), {});
+  assert.equal(MJ.normalizeSettings({}).flowers, true);
+  assert.equal(MJ.countTai({ hua: 2 }, 'fangQiang', 0, {}).tai, 2);
+});
+
 test('設定：台數和限台限制在合理範圍', () => {
   const s = MJ.normalizeSettings({ cap: -3, dealerTai: 200, tai: { qingYiSe: 8, unknown: 3 } });
   assert.equal(s.cap, 0);
