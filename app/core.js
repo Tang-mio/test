@@ -203,11 +203,30 @@
       var v = JSON.parse(localStorage.getItem(VIEW_KEY) || 'null');
       if (v && GAMES[v.game]) T.view.game = v.game;
       if (v && v.lastGame && GAMES[v.lastGame]) T.view.lastGame = v.lastGame;
+      if (v && v.mySeat != null && v.mySeat >= 0 && v.mySeat < 4) T.view.mySeat = Math.floor(v.mySeat);
     } catch (e) { /* 沒有偏好就用預設 */ }
   }
   function saveView() {
-    try { localStorage.setItem(VIEW_KEY, JSON.stringify({ game: T.view.game, lastGame: T.view.lastGame })); } catch (e) { /* 同上 */ }
+    try { localStorage.setItem(VIEW_KEY, JSON.stringify({ game: T.view.game, lastGame: T.view.lastGame, mySeat: T.view.mySeat })); } catch (e) { /* 同上 */ }
   }
+
+  // 這支手機的人坐哪一家（只存在這支手機）；沒選過就當作東家
+  T.mySeat = function () { return T.view.mySeat == null ? 0 : T.view.mySeat; };
+  T.hasMySeat = function () { return T.view.mySeat != null; };
+  T.setMySeat = function (i) {
+    T.view.mySeat = i;
+    saveView();
+    T.render();
+  };
+  // 相對於自己的位置：0 我、1 下家、2 對家、3 上家
+  T.RELATION = ['我', '下家', '對家', '上家'];
+  T.relationOf = function (i) { return (i - T.mySeat() + 4) % 4; };
+  T.mySeatButtons = function () {
+    return T.SEAT_CHARS.map(function (c, i) {
+      return '<button type="button" role="radio" data-me="' + i + '" aria-checked="' + (T.hasMySeat() && T.mySeat() === i) + '">' +
+        '<span class="w">' + c + '</span>' + T.esc(T.name(i)) + '</button>';
+    }).join('');
+  };
 
   /* ---------- 共用牌桌（db） ----------
    * seats/0..3      排七每家的蓋牌，以及前四位玩家的名字
@@ -528,6 +547,7 @@
       chips.push('<span class="name-chip"><span class="seat-badge" aria-hidden="true">' + T.badge(i) + '</span>' + T.esc(T.name(i)) + '</span>');
     }
     $('#homeNameChips').innerHTML = chips.join('');
+    $('#homeMe').innerHTML = T.mySeatButtons();
     var all = T.state.ledger;
     var list = $('#homeTotalsList');
     if (!all.length) {
@@ -664,6 +684,10 @@
       if (c) T.go('play', c.getAttribute('data-game'));
     });
     $('#homeNames').addEventListener('click', function () { T.openSetup({ scope: 'names' }); });
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-me]');
+      if (b) T.setMySeat(Number(b.getAttribute('data-me')));
+    });
     $('#homeLedger').addEventListener('click', function () { T.view.ledgerFilter = 'all'; T.go('ledger'); });
     $('#ledgerFilter').addEventListener('click', function (e) {
       var b = e.target.closest('[data-filter]');

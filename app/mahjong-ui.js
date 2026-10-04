@@ -11,6 +11,7 @@
 
   var chipsKey = '';
   var editorKey = '';
+  var pickDealer = false; // 按了「換莊家」，下一次點牌桌就是選莊家
 
   function mj() { return T.state.mahjong; }
   function hand() { return mj().hand; }
@@ -159,10 +160,71 @@
 
   /* ---------- 畫面 ---------- */
 
-  function seatButton(i, opts) {
-    return '<button type="button" class="sp" data-seat="' + i + '" aria-pressed="' + !!opts.on + '"' + (opts.disabled ? ' disabled' : '') + '>' +
-      (i === mj().dealer ? '<span class="tag">莊</span>' : '') +
-      '<span class="b">' + T.SEAT_CHARS[i] + '</span><span class="nm">' + esc(T.name(i)) + '</span></button>';
+  // 名字加上相對位置與莊家，例如「小華（下家・莊）」
+  function seatLabel(i) {
+    var parts = [];
+    if (T.hasMySeat()) parts.push(T.RELATION[T.relationOf(i)]);
+    if (i === mj().dealer) parts.push('莊');
+    return T.name(i) + (parts.length ? '（' + parts.join('・') + '）' : '');
+  }
+
+  // 牌桌現在在等什麼
+  function tableState() {
+    var h = hand();
+    if (pickDealer) return 'dealer';
+    if (isDraw()) return 'draw';
+    if (h.winner == null) return 'winner';
+    if (!h.method) return 'method';
+    if (h.method === 'fangQiang' && h.discarder == null) return 'discarder';
+    return 'done';
+  }
+
+  // 牌桌：自己坐下面，右邊下家、對面對家、左邊上家（東→南→西→北 逆時針輪）
+  function renderTable(r) {
+    var m = mj();
+    var h = hand();
+    var me = T.mySeat();
+    var editable = T.canEdit();
+    var state = tableState();
+    var POS = ['bottom', 'right', 'top', 'left'];
+    var ready = r && r.ready;
+    var html = '';
+    for (var k = 0; k < 4; k++) {
+      var i = (me + k) % 4;
+      var rel = T.hasMySeat() ? T.RELATION[k] : '';
+      var tags = [];
+      if (i === m.dealer) tags.push('<span class="tg dealer">莊' + (m.streak ? ' 連' + m.streak : '') + '</span>');
+      if (i === h.winner) tags.push('<span class="tg win">' + (h.method === 'ziMo' ? '自摸' : '胡') + '</span>');
+      if (h.method === 'fangQiang' && i === h.discarder) tags.push('<span class="tg pay">放槍</span>');
+      var net = ready ? r.nets[i] : 0;
+      html += '<button type="button" class="tseat p-' + POS[k] + (i === h.winner ? ' is-winner' : '') + (ready && net < 0 ? ' is-payer' : '') + '"' +
+        ' data-tseat="' + i + '"' + (editable ? '' : ' disabled') +
+        ' aria-label="' + esc(T.SEAT_CHARS[i] + '家 ' + T.name(i) + (rel ? '，' + rel : '')) + '">' +
+        (rel ? '<span class="rel' + (k === 0 ? ' me' : '') + '">' + rel + '</span>' : '') +
+        '<span class="wind">' + T.SEAT_CHARS[i] + '</span>' +
+        '<span class="nm">' + esc(T.name(i)) + '</span>' +
+        '<span class="tags">' + tags.join('') + '</span>' +
+        '<span class="amt ' + T.signClass(net) + '">' + (ready && net ? T.signedMoney(net) : '') + '</span>' +
+      '</button>';
+    }
+    var main;
+    var sub = '';
+    if (state === 'dealer') main = '點新的莊家';
+    else if (state === 'draw') { main = '流局'; sub = T.name(m.dealer) + '連莊'; }
+    else if (state === 'winner') { main = '點誰胡'; sub = '沒人胡就按「流局」'; }
+    else if (state === 'method') { main = '自摸還是放槍？'; sub = '點下面的按鈕'; }
+    else if (state === 'discarder') main = '點誰放槍';
+    else {
+      main = T.name(h.winner) + (h.method === 'ziMo' ? ' 自摸' : ' 胡');
+      sub = ready ? r.tai + ' 台' + (r.capped ? '・限 ' + r.settings.cap : '') : '';
+    }
+    html += '<div class="table-center" aria-live="polite"><span class="tc-main">' + esc(main) + '</span>' +
+      (sub ? '<span class="tc-sub">' + esc(sub) + '</span>' : '') + '</div>';
+    var table = $('#mjTable');
+    table.innerHTML = html;
+    table.classList.toggle('expect', editable && (state === 'dealer' || state === 'winner' || state === 'discarder'));
+    $('#mjQ1Text').textContent = state === 'discarder' ? '誰放槍？點牌桌上的人'
+      : state === 'dealer' ? '換莊家：點牌桌上的人' : '誰胡？點牌桌上的人';
   }
 
   function buildChips(pats) {
@@ -199,10 +261,13 @@
       '<span class="sum-chip">' + (preset ? MJ.PRESETS[preset].name : '自訂規則') + (s.custom.length ? '＋自訂台型' : '') + '</span>';
     $('#mjClear').disabled = !editable;
 
-    // 莊家
-    $('#mjDealer').innerHTML = T.SEAT_CHARS.map(function (c, i) {
-      return '<button type="button" data-dealer="' + i + '" aria-pressed="' + (i === m.dealer) + '" title="' + esc(T.name(i)) + '"' + (editable ? '' : ' disabled') + '>' + c + '</button>';
-    }).join('');
+    // 我坐哪、莊家
+    $('#mjMe').innerHTML = T.mySeatButtons();
+    $('#mjDealerName').textContent = T.SEAT_CHARS[m.dealer] + ' ' + T.name(m.dealer);
+    var pd = $('#mjPickDealer');
+    pd.setAttribute('aria-pressed', String(pickDealer));
+    pd.textContent = pickDealer ? '取消' : '換莊家';
+    pd.disabled = !editable;
     $('#mjStreak').textContent = m.streak;
     $('#mjStreakDown').disabled = !editable || m.streak === 0;
     $('#mjStreakUp').disabled = !editable;
@@ -212,25 +277,19 @@
         : '莊家胡牌或莊家付錢時，多算 ' + dTai + ' 台' +
           (m.streak ? '（莊家 ' + s.dealerTai + ' + 連莊 ' + m.streak + ' × ' + s.streakTai + '）' : '') + '。');
 
-    // 1 誰胡
-    $('#mjWinner').innerHTML = [0, 1, 2, 3].map(function (i) {
-      return seatButton(i, { on: h.winner === i, disabled: !editable });
-    }).join('');
+    // 1 牌桌：誰胡、誰放槍
+    renderTable(settleNow());
     var draw = $('#mjDraw');
     draw.setAttribute('aria-pressed', String(isDraw()));
     draw.disabled = !editable;
 
-    // 2 怎麼胡
+    // 自摸或放槍：點了誰胡之後才出現
     var hasWinner = h.winner != null && h.winner >= 0;
-    $('#mjStep2').classList.toggle('off', !hasWinner);
+    $('#mjStep2').hidden = !hasWinner;
     $$('#mjMethod [data-method]').forEach(function (b) {
       b.setAttribute('aria-pressed', String(h.method === b.getAttribute('data-method')));
       b.disabled = !editable || !hasWinner;
     });
-    $('#mjDiscWrap').hidden = h.method !== 'fangQiang' || !hasWinner;
-    $('#mjDiscarder').innerHTML = [0, 1, 2, 3].map(function (i) {
-      return seatButton(i, { on: h.discarder === i, disabled: !editable || i === h.winner });
-    }).join('');
 
     // 3 幾台
     var ready3 = hasWinner && !!h.method;
@@ -286,8 +345,8 @@
     }
     var w = r.winner;
     var transfers = r.transfers.map(function (t) {
-      return '<li><div class="t-line"><span class="t-who">' + esc(T.name(t.from)) + (t.from === m.dealer ? '（莊）' : '') +
-        '<span class="arrow">付</span>' + esc(T.name(w)) + '</span><span class="t-amt neg">' + T.money(t.amount) + '</span></div>' +
+      return '<li><div class="t-line"><span class="t-who">' + esc(seatLabel(t.from)) +
+        '<span class="arrow">付</span>' + esc(seatLabel(w)) + '</span><span class="t-amt neg">' + T.money(t.amount) + '</span></div>' +
         '<div class="t-formula">' + esc(formula(t, r.settings)) + '</div></li>';
     }).join('');
     box.innerHTML =
@@ -385,25 +444,41 @@
   }
 
   function init() {
-    $('#mjDealer').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-dealer]');
+    $('#mjPickDealer').addEventListener('click', function () {
+      if (!T.canEdit()) return;
+      pickDealer = !pickDealer;
+      T.render();
+    });
+    // 點牌桌：換莊家模式就設莊家；沒人胡就設誰胡；點胡的人取消；放槍時點別人就是放槍的人
+    $('#mjTable').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-tseat]');
       if (!b || !T.canEdit()) return;
-      var i = Number(b.getAttribute('data-dealer'));
-      if (i !== mj().dealer) { mj().dealer = i; mj().streak = 0; }
+      var i = Number(b.getAttribute('data-tseat'));
+      var m = mj();
+      if (pickDealer) {
+        pickDealer = false;
+        if (i !== m.dealer) { m.dealer = i; m.streak = 0; }
+        change();
+        T.toast(T.name(i) + '當莊');
+        return;
+      }
+      var h = hand();
+      if (h.winner == null || h.winner === -1) {
+        if (h.winner === -1) { m.hand = T.emptyHand(); h = hand(); }
+        h.winner = i;
+      } else if (i === h.winner) {
+        h.winner = null;
+        h.discarder = null;
+      } else if (h.method === 'fangQiang') {
+        h.discarder = i;
+      } else {
+        h.winner = i;
+      }
       change();
     });
     $('#mjStreakDown').addEventListener('click', function () { if (T.canEdit() && mj().streak > 0) { mj().streak -= 1; change(); } });
     $('#mjStreakUp').addEventListener('click', function () { if (T.canEdit()) { mj().streak += 1; change(); } });
 
-    $('#mjWinner').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-seat]');
-      if (!b || !T.canEdit()) return;
-      var i = Number(b.getAttribute('data-seat'));
-      var h = hand();
-      h.winner = h.winner === i ? null : i;
-      if (h.discarder === h.winner) h.discarder = null;
-      change();
-    });
     $('#mjDraw').addEventListener('click', function () {
       if (!T.canEdit()) return;
       var h = hand();
@@ -418,12 +493,6 @@
       h.method = b.getAttribute('data-method');
       if (h.method === 'ziMo') h.discarder = null;
       h.picks = MJ.cleanPicks(h.picks, h.method, settings());
-      change();
-    });
-    $('#mjDiscarder').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-seat]');
-      if (!b || b.disabled || !T.canEdit()) return;
-      hand().discarder = Number(b.getAttribute('data-seat'));
       change();
     });
     $('#mjTai').addEventListener('click', function (e) {

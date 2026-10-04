@@ -105,6 +105,7 @@
       netEl.textContent = info ? T.signedMoney(net) : '—';
       netEl.className = 'st-net ' + T.signClass(net);
       var tags = [];
+      if (T.hasMySeat() && T.mySeat() === i) tags.push('<span class="st-tag me">我</span>');
       if (info && result.winner === i) tags.push('<span class="st-tag win">贏</span>');
       if (info && info.kind !== 'normal') tags.push('<span class="st-tag kind">' + KIND_SHORT[info.kind] + '</span>');
       if (info && info.baoDian) tags.push('<span class="st-tag bao">爆</span>');

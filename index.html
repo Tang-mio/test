@@ -37,6 +37,9 @@
   --tile-face: #FBF8EF;
   --tile-back: #2F7A57;
   --tile-green: #1F7A4D;
+  --felt: #2C6A4E;
+  --felt-ink: #EEF6F1;
+  --felt-line: rgba(255, 255, 255, 0.16);
 
   --font-display: "Swei Meatball", "Noto Serif TC", "Songti TC", "PMingLiU", serif;
   --font-body: "Swei Meatball", "Noto Serif TC", "Songti TC", "PMingLiU", serif;
@@ -76,6 +79,9 @@
     --tile-face: #ECE6D6;
     --tile-back: #2A6B4D;
     --tile-green: #1F7A4D;
+    --felt: #1E4A37;
+    --felt-ink: #E3EFE8;
+    --felt-line: rgba(255, 255, 255, 0.12);
     color-scheme: dark;
   }
 }
@@ -103,6 +109,9 @@
   --tile-face: #ECE6D6;
   --tile-back: #2A6B4D;
   --tile-green: #1F7A4D;
+  --felt: #1E4A37;
+  --felt-ink: #E3EFE8;
+  --felt-line: rgba(255, 255, 255, 0.12);
   color-scheme: dark;
 }
 
@@ -240,6 +249,7 @@ legend { padding: 0; }
 .pill-bao, .st-tag.bao { background: var(--warn-soft); color: var(--warn); }
 .pill-win, .st-tag.win { background: var(--gain-soft); color: var(--gain); }
 .st-tag.first { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); line-height: 14px; }
+.st-tag.me { background: var(--accent); color: var(--surface); }
 .seat-tab[aria-selected="true"] .st-tag.kind { background: var(--surface); }
 
 /* 正在輸入的那家 */
@@ -372,16 +382,6 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .step h3 .aside { margin-left: auto; font-size: var(--step--1); color: var(--muted); font-weight: 500; }
 .step h3 .aside b { font-family: var(--font-num); color: var(--ink); font-size: var(--step-1); }
 .step.off { opacity: .45; }
-.seat-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.sp {
-  border: 1px solid var(--line); border-radius: 10px; padding: 7px 4px; background: var(--surface-2);
-  display: grid; justify-items: center; gap: 0; min-width: 0; position: relative;
-}
-.sp .b { font-family: var(--font-display); font-weight: 700; color: var(--accent); }
-.sp .nm { font-weight: 700; font-size: var(--step--1); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sp .tag { position: absolute; top: -7px; right: -4px; font-size: 10px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: var(--ink); color: var(--surface); line-height: 16px; }
-.sp[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); }
-.sp:disabled { opacity: .35; cursor: not-allowed; }
 .wide-toggle {
   border: 1px dashed var(--line); background: transparent; border-radius: 10px; padding: 8px; font-size: var(--step--1); color: var(--muted);
 }
@@ -390,9 +390,6 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .method button { height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 700; }
 .method button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); color: var(--accent); }
 .dealer-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
-.dealer-seats { display: flex; gap: 4px; }
-.dealer-seats button { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); font-family: var(--font-display); font-weight: 700; }
-.dealer-seats button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 .stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2); }
 .stepper button { width: 36px; height: 36px; border: 0; background: transparent; font-size: 18px; font-weight: 700; color: var(--ink); }
 .stepper button:disabled { opacity: .3; cursor: not-allowed; }
@@ -414,6 +411,53 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .tai-chip[aria-pressed="true"] b { color: var(--accent); }
 .tai-chip:disabled { opacity: .35; cursor: not-allowed; }
 .extra-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: var(--step--1); }
+/* 牌桌：自己坐在下面，右邊下家、對面對家、左邊上家 */
+.me-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.me-seats { display: flex; gap: 4px; flex-wrap: wrap; }
+.me-seats button {
+  border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px;
+  padding: 3px 10px 3px 4px; font-size: var(--step--1); display: inline-flex; align-items: center; gap: 5px;
+}
+.me-seats button .w { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-family: var(--font-display); font-weight: 700; font-size: 13px; }
+.me-seats button[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.me-seats button[aria-checked="true"] .w { background: var(--accent); color: var(--surface); }
+.mj-table {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr); gap: 6px;
+  padding: 10px; border-radius: 14px; background: var(--felt);
+  box-shadow: inset 0 0 0 1px var(--felt-line), inset 0 0 0 5px var(--felt), inset 0 0 0 6px var(--felt-line);
+}
+.mj-table .p-top { grid-column: 2; grid-row: 1; }
+.mj-table .p-left { grid-column: 1; grid-row: 2; }
+.mj-table .p-right { grid-column: 3; grid-row: 2; }
+.mj-table .p-bottom { grid-column: 2; grid-row: 3; }
+.table-center {
+  grid-column: 2; grid-row: 2; display: grid; place-content: center; text-align: center; gap: 2px;
+  color: var(--felt-ink); padding: 6px 4px; min-height: 76px; border-radius: 10px; border: 1px dashed var(--felt-line);
+}
+.table-center .tc-main { font-weight: 700; font-size: var(--step--1); line-height: 1.35; }
+.table-center .tc-sub { font-size: 11px; opacity: .85; }
+.tseat {
+  display: grid; justify-items: center; gap: 0; min-width: 0; padding: 6px 4px; line-height: 1.25;
+  border-radius: 10px; border: 1px solid transparent; background: var(--surface); color: var(--ink);
+  transition: transform .08s, box-shadow .15s;
+}
+.tseat:active { transform: translateY(1px); }
+.mj-table.expect .tseat { box-shadow: 0 0 0 2px var(--felt), 0 0 0 4px var(--warn); }
+.tseat .rel { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .08em; }
+.tseat .rel.me { color: var(--surface); background: var(--accent); padding: 0 6px; border-radius: 999px; }
+.tseat .wind { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; color: var(--accent); line-height: 1.2; }
+.tseat .nm { font-weight: 700; font-size: var(--step--1); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tseat .tags { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; min-height: 16px; }
+.tseat .tg { font-size: 10px; font-weight: 700; padding: 0 5px; border-radius: 999px; line-height: 16px; }
+.tseat .tg.dealer { background: var(--ink); color: var(--surface); }
+.tseat .tg.win { background: var(--gain-soft); color: var(--gain); }
+.tseat .tg.pay { background: var(--pay-soft); color: var(--pay); }
+.tseat .amt { font-family: var(--font-num); font-weight: 600; font-size: 12px; min-height: 15px; font-variant-numeric: tabular-nums; }
+.tseat.is-winner { border-color: var(--gain); box-shadow: 0 0 0 1px var(--gain); background: var(--gain-soft); }
+.tseat.is-payer { border-color: var(--pay); background: var(--pay-soft); }
+.tseat:disabled { cursor: not-allowed; }
+.dealer-row b { font-size: var(--step-0); }
+#mjPickDealer[aria-pressed="true"] { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); font-weight: 700; }
 .preset-box { display: grid; gap: 6px; }
 .preset-box .method button { height: auto; min-height: 52px; padding: 6px 8px; display: grid; gap: 0; justify-items: center; line-height: 1.3; }
 .preset-box .method button small { font-size: 11px; font-weight: 500; color: var(--muted); }
@@ -678,6 +722,11 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
           <button type="button" class="btn" id="homeNames">改名字</button>
         </div>
         <div class="name-chips" id="homeNameChips"></div>
+        <div class="me-row">
+          <span class="set-label" id="homeMeLabel">我坐</span>
+          <div class="me-seats" id="homeMe" role="radiogroup" aria-labelledby="homeMeLabel"></div>
+        </div>
+        <p class="hint">選你坐哪一家，麻將的牌桌會轉成你坐在下面。只存在這支手機。</p>
       </section>
 
       <section class="home-box" aria-labelledby="homeTotals">
@@ -730,33 +779,31 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         </div>
       </div>
       <button type="button" class="rule-line" id="mjChips" data-setup aria-label="目前規則，點一下調整"></button>
-      <section class="step" aria-label="莊家">
+      <section class="step table-step" aria-labelledby="mjQ1">
+        <div class="me-row">
+          <span class="set-label" id="mjMeLabel">我坐</span>
+          <div class="me-seats" id="mjMe" role="radiogroup" aria-labelledby="mjMeLabel"></div>
+        </div>
+        <h3 id="mjQ1"><span class="n">1</span><span id="mjQ1Text">誰胡？點牌桌上的人</span></h3>
+        <div class="mj-table" id="mjTable" role="group" aria-label="牌桌"></div>
+        <div id="mjStep2">
+          <div class="method" id="mjMethod" role="group" aria-label="胡法">
+            <button type="button" data-method="ziMo" aria-pressed="false">自摸</button>
+            <button type="button" data-method="fangQiang" aria-pressed="false">放槍</button>
+          </div>
+        </div>
+        <button type="button" class="wide-toggle" id="mjDraw" aria-pressed="false">流局（沒人胡，莊家連莊）</button>
         <div class="dealer-row">
           <span class="set-label">莊家</span>
-          <div class="dealer-seats" id="mjDealer" role="group" aria-label="選莊家"></div>
+          <b id="mjDealerName"></b>
+          <button type="button" class="btn" id="mjPickDealer" aria-pressed="false">換莊家</button>
           <span class="dealer-streak"><span class="set-label">連莊</span>
           <span class="stepper"><button type="button" id="mjStreakDown" aria-label="少連一次">−</button><output id="mjStreak">0</output><button type="button" id="mjStreakUp" aria-label="多連一次">+</button></span></span>
         </div>
         <p class="hint" id="mjDealerHint"></p>
       </section>
-      <section class="step" aria-labelledby="mjQ1">
-        <h3 id="mjQ1"><span class="n">1</span>誰胡？</h3>
-        <div class="seat-pick" id="mjWinner" role="group" aria-label="誰胡"></div>
-        <button type="button" class="wide-toggle" id="mjDraw" aria-pressed="false">流局（沒人胡，莊家連莊）</button>
-      </section>
-      <section class="step" id="mjStep2" aria-labelledby="mjQ2">
-        <h3 id="mjQ2"><span class="n">2</span>怎麼胡？</h3>
-        <div class="method" id="mjMethod" role="group" aria-label="胡法">
-          <button type="button" data-method="ziMo" aria-pressed="false">自摸</button>
-          <button type="button" data-method="fangQiang" aria-pressed="false">放槍</button>
-        </div>
-        <div id="mjDiscWrap" hidden>
-          <p class="hint">誰放槍？</p>
-          <div class="seat-pick" id="mjDiscarder" role="group" aria-label="誰放槍"></div>
-        </div>
-      </section>
       <section class="step" id="mjStep3" aria-labelledby="mjQ3">
-        <h3 id="mjQ3"><span class="n">3</span>幾台？<span class="aside">共 <b id="mjTaiSum">0</b> 台 <span class="cap-note" id="mjCapNote" hidden></span></span></h3>
+        <h3 id="mjQ3"><span class="n">2</span>幾台？<span class="aside">共 <b id="mjTaiSum">0</b> 台 <span class="cap-note" id="mjCapNote" hidden></span></span></h3>
         <div id="mjTai"></div>
         <div class="extra-row">
           <span>表上沒有的台數</span>
