@@ -414,6 +414,28 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .tai-chip[aria-pressed="true"] b { color: var(--accent); }
 .tai-chip:disabled { opacity: .35; cursor: not-allowed; }
 .extra-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: var(--step--1); }
+.cap-note { font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+.tai-editor { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.tai-editor > summary {
+  list-style: none; cursor: pointer; padding: 10px 12px;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; font-weight: 700; font-size: var(--step--1);
+}
+.tai-editor > summary::-webkit-details-marker { display: none; }
+.tai-editor > summary::after { content: "展開"; margin-left: auto; color: var(--accent); font-weight: 500; }
+.tai-editor[open] > summary::after { content: "收起"; }
+.tai-edit-list { border-top: 1px solid var(--line); display: grid; }
+.te-group h4 { margin: 0; padding: 10px 12px 4px; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .06em; }
+.te-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; align-items: center; padding: 6px 12px; }
+.te-row + .te-row { border-top: 1px dashed var(--line); }
+.te-name { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: var(--step--1); cursor: pointer; min-width: 0; }
+.te-row .hint { grid-column: 1; font-size: 12px; }
+.te-ctrl { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 6px; }
+.te-row.is-off .te-name span, .te-row.is-off .field, .te-row.is-off .hint { opacity: .45; }
+.te-row.changed .field { border-color: var(--accent); }
+.te-row.changed .field input { color: var(--accent); }
+.add-custom { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.add-custom #mjNewName { flex: 1; min-width: 8em; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 10px; }
+.add-custom #mjNewName:focus { outline: none; border-color: var(--accent); }
 
 /* 21 點 */
 .bj-list { display: grid; gap: 8px; }
@@ -730,7 +752,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         </div>
       </section>
       <section class="step" id="mjStep3" aria-labelledby="mjQ3">
-        <h3 id="mjQ3"><span class="n">3</span>幾台？<span class="aside">共 <b id="mjTaiSum">0</b> 台</span></h3>
+        <h3 id="mjQ3"><span class="n">3</span>幾台？<span class="aside">共 <b id="mjTaiSum">0</b> 台 <span class="cap-note" id="mjCapNote" hidden></span></span></h3>
         <div id="mjTai"></div>
         <div class="extra-row">
           <span>表上沒有的台數</span>
@@ -860,14 +882,19 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         <section>
           <h2>莊家與連莊</h2>
           <ul>
-            <li>莊家胡牌，或莊家付錢（莊家放槍、閒家自摸時莊家那份），都要多算莊家台：莊家 1 台，每連莊一次再加 2 台。連 2 拉 2 時多 5 台。</li>
+            <li>莊家胡牌，或莊家付錢（莊家放槍、閒家自摸時莊家那份），都要多算莊家台：預設莊家 1 台，每連莊一次再加 2 台（連 N 拉 N），連 2 拉 2 時多 5 台。</li>
             <li>兩個閒家之間的支付不算莊家台。</li>
             <li>莊家胡或流局：莊家連莊。閒家胡：換下一家（東 → 南 → 西 → 北）當莊，連莊歸零。記完一將會自動換。</li>
           </ul>
         </section>
         <section>
+          <h2>限台</h2>
+          <p>有些人會限制一把最多算幾台，例如「限 10 台」：牌型算出 13 台，也只照 10 台收。莊家台可以選擇算在上限裡面，或另外加在上限之外。限台在「名字・規則」裡設定，預設不限。</p>
+        </section>
+        <section>
           <h2>台數表</h2>
-          <p>依常見的台灣十六張算法。自摸 1 台；門清加自摸合計 3 台（門清自摸）。各家規矩不同的台型，可以用「表上沒有的台數」直接加減。</p>
+          <p class="note" id="mjRulesNow"></p>
+          <p>預設依常見的台灣十六張算法。每種台型的台數都可以在「名字・規則 → 台數表」裡改，也能關掉不用的、新增自己家的台型；臨時要加減，用輸入畫面的「表上沒有的台數」。</p>
           <div class="table-wrap"><table id="mjTaiTable"><thead><tr><th>台型</th><th>說明</th><th>台數</th></tr></thead><tbody></tbody></table></div>
         </section>
         <section>
@@ -1027,6 +1054,46 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         </div>
       </div>
       <p class="hint">常見的打法寫成「底 / 台」，例如 50 / 20、100 / 20、30 / 10。</p>
+      <div class="rule-list">
+        <div class="rule-row">
+          <label class="name" for="mjCap">限台</label>
+          <span class="hint">一把最多算幾台，填 0 是不限</span>
+          <span class="ctrl"><span class="field small"><input id="mjCap" type="number" min="0" step="1" inputmode="numeric"><span>台</span></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="mjCapDealer"><input type="checkbox" class="switch" id="mjCapDealer">莊家台算在限台內</label>
+          <span class="hint">關掉時，莊家台另外加在上限之外</span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="mjDealerTai">莊家</label>
+          <span class="hint">莊家胡牌或莊家付錢時多算</span>
+          <span class="ctrl"><span class="field small"><input id="mjDealerTai" type="number" min="0" step="1" inputmode="numeric"><span>台</span></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="mjStreakTai">每連莊加</label>
+          <span class="hint">連 N 拉 N 填 2；只算連 N 填 1</span>
+          <span class="ctrl"><span class="field small"><input id="mjStreakTai" type="number" min="0" step="1" inputmode="numeric"><span>台</span></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="mjZiMoTai">自摸</label>
+          <span class="hint">選「自摸」就自動算</span>
+          <span class="ctrl"><span class="field small"><input id="mjZiMoTai" type="number" min="0" step="1" inputmode="numeric"><span>台</span></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="mjMqzmTai">門清自摸</label>
+          <span class="hint">門清又自摸時，兩個合計幾台</span>
+          <span class="ctrl"><span class="field small"><input id="mjMqzmTai" type="number" min="0" step="1" inputmode="numeric"><span>台</span></span></span>
+        </div>
+      </div>
+      <details class="tai-editor" id="mjTaiEditor">
+        <summary><span>台數表</span><span class="hint" id="mjTaiEditorHint">修改台數、關掉不用的、新增自己家的台型</span></summary>
+        <div class="tai-edit-list" id="mjTaiRows"></div>
+        <div class="add-custom">
+          <input id="mjNewName" maxlength="12" placeholder="新台型名稱" aria-label="新台型名稱" autocomplete="off">
+          <span class="field small"><input id="mjNewTai" type="number" min="0" step="1" inputmode="numeric" value="1" aria-label="新台型台數"><span>台</span></span>
+          <button type="button" class="btn" id="mjAddCustom">新增</button>
+        </div>
+      </details>
     </fieldset>
 
     <fieldset class="sec" id="set-blackjack" hidden>

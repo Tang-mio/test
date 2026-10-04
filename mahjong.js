@@ -2,7 +2,8 @@
  * 麻將計錢（台灣十六張）：計分核心
  *
  * 每位付錢的人付「底 + 台數 × 每台」。
- * 莊家有關的支付（莊家胡，或莊家付錢）另外加莊家台：1 台 + 連莊數 × 2（連 N 拉 N）。
+ * 莊家有關的支付（莊家胡，或莊家付錢）另外加莊家台：預設 1 台 + 連莊數 × 2（連 N 拉 N）。
+ * 台數、莊家台、限台都可以在設定裡改，也能關掉或新增台型。
  * 瀏覽器載入後是 window.Mahjong，Node 用 require('./mahjong.js')。
  */
 (function (root, factory) {
@@ -19,7 +20,7 @@
    * only：'ziMo' 只有自摸才有、'fangQiang' 只有放槍（別人打出）才有。
    */
   var PATTERNS = [
-    { id: 'menQing', name: '門清', tai: 1, group: 'basic', note: '沒有吃、碰、明槓；自摸時算門清自摸共 3 台' },
+    { id: 'menQing', name: '門清', tai: 1, group: 'basic', note: '沒有吃、碰、明槓；又自摸時改算門清自摸' },
     { id: 'duTing', name: '獨聽', tai: 1, group: 'basic', note: '邊張、中洞、單吊' },
     { id: 'pingHu', name: '平胡', tai: 2, group: 'basic', note: '沒有字、沒有花、都是順子、聽兩面' },
     { id: 'banQiu', name: '半求', tai: 1, group: 'basic', ex: 'qiu', only: 'ziMo', note: '全部吃碰完，自摸最後一張' },
@@ -29,10 +30,10 @@
     { id: 'heDi', name: '河底撈魚', tai: 1, group: 'basic', only: 'fangQiang', note: '胡最後一張打出的牌' },
     { id: 'qiangGang', name: '搶槓', tai: 1, group: 'basic', only: 'fangQiang' },
 
-    { id: 'sanYuan', name: '三元牌', tai: 1, group: 'honor', max: 3, note: '中、發、白的刻子，每組 1 台' },
+    { id: 'sanYuan', name: '三元牌', tai: 1, group: 'honor', max: 3, note: '中、發、白的刻子，每組都算' },
     { id: 'quanFeng', name: '圈風', tai: 1, group: 'honor', note: '這一圈的風牌刻子' },
     { id: 'menFeng', name: '門風', tai: 1, group: 'honor', note: '自己座位的風牌刻子' },
-    { id: 'hua', name: '正花', tai: 1, group: 'honor', max: 2, note: '和座位對應的花，每張 1 台' },
+    { id: 'hua', name: '正花', tai: 1, group: 'honor', max: 2, note: '和座位對應的花，每張都算' },
     { id: 'huaGang', name: '花槓', tai: 2, group: 'honor', max: 2, note: '春夏秋冬或梅蘭竹菊一整組' },
 
     { id: 'pengPeng', name: '碰碰胡', tai: 4, group: 'big' },
@@ -55,26 +56,102 @@
   var BY_ID = {};
   PATTERNS.forEach(function (p) { BY_ID[p.id] = p; });
 
-  var DEFAULT_SETTINGS = { base: 50, perTai: 20 };
+  var GROUP_NAMES = { basic: '常見', honor: '字牌與花', big: '大牌', custom: '自訂' };
+  var MAX_CUSTOM = 20;
+
+  var DEFAULT_SETTINGS = {
+    base: 50,               // 底
+    perTai: 20,             // 每台
+    cap: 0,                 // 限台：一把最多幾台，0 是不限
+    capIncludesDealer: false, // 莊家台是否也算在限台裡
+    dealerTai: 1,           // 莊家台
+    streakTai: 2,           // 每連莊一次加幾台（連 N 拉 N 是 2）
+    ziMoTai: 1,             // 自摸
+    menQingZiMoTai: 3,      // 門清加自摸合計
+    tai: {},                // 改過的台數 { 台型 id: 台數 }
+    off: {},                // 不用的台型 { 台型 id: true }
+    custom: []              // 自訂台型 [{ id, name, tai }]
+  };
 
   function num(v, fallback, min) {
     var n = Number(v);
     if (!isFinite(n)) return fallback;
     return n < min ? min : n;
   }
+  function int(v, fallback, min, max) {
+    var n = Math.round(Number(v));
+    if (v === '' || v == null || !isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
 
   function normalizeSettings(s) {
     s = s || {};
-    return { base: num(s.base, DEFAULT_SETTINGS.base, 0), perTai: num(s.perTai, DEFAULT_SETTINGS.perTai, 0) };
+    var d = DEFAULT_SETTINGS;
+    var tai = {};
+    Object.keys(s.tai || {}).forEach(function (id) {
+      if (!BY_ID[id]) return;
+      var n = int(s.tai[id], null, 0, 99);
+      if (n != null && n !== BY_ID[id].tai) tai[id] = n;
+    });
+    var off = {};
+    Object.keys(s.off || {}).forEach(function (id) { if (BY_ID[id] && s.off[id]) off[id] = true; });
+    var seen = {};
+    var custom = [];
+    (Array.isArray(s.custom) ? s.custom : []).forEach(function (c) {
+      if (!c || custom.length >= MAX_CUSTOM) return;
+      var name = String(c.name == null ? '' : c.name).trim().slice(0, 12);
+      var id = typeof c.id === 'string' && /^c[A-Za-z0-9]{1,16}$/.test(c.id) ? c.id : null;
+      if (!name || !id || seen[id]) return;
+      seen[id] = true;
+      custom.push({ id: id, name: name, tai: int(c.tai, 1, 0, 99) });
+    });
+    return {
+      base: num(s.base, d.base, 0),
+      perTai: num(s.perTai, d.perTai, 0),
+      cap: int(s.cap, d.cap, 0, 999),
+      capIncludesDealer: !!s.capIncludesDealer,
+      dealerTai: int(s.dealerTai, d.dealerTai, 0, 99),
+      streakTai: int(s.streakTai, d.streakTai, 0, 99),
+      ziMoTai: int(s.ziMoTai, d.ziMoTai, 0, 99),
+      menQingZiMoTai: int(s.menQingZiMoTai, d.menQingZiMoTai, 0, 99),
+      tai: tai,
+      off: off,
+      custom: custom
+    };
+  }
+
+  // 依設定算出實際可用的台型（改過的台數、關掉的不算、加上自訂的）
+  function patternsFor(settings) {
+    var s = normalizeSettings(settings);
+    var list = [];
+    PATTERNS.forEach(function (p) {
+      if (s.off[p.id]) return;
+      var q = {};
+      Object.keys(p).forEach(function (k) { q[k] = p[k]; });
+      q.tai = s.tai[p.id] != null ? s.tai[p.id] : p.tai;
+      q.defaultTai = p.tai;
+      list.push(q);
+    });
+    s.custom.forEach(function (c) {
+      list.push({ id: c.id, name: c.name, tai: c.tai, group: 'custom', custom: true });
+    });
+    return list;
+  }
+
+  function byId(list) {
+    var m = {};
+    list.forEach(function (p) { m[p.id] = p; });
+    return m;
   }
 
   function round2(x) { return Math.round(x * 100) / 100; }
 
-  // 只留合法的選擇：存在的台型、次數在範圍內、符合胡法
-  function cleanPicks(picks, method) {
+  // 只留合法的選擇：存在且沒關掉的台型、次數在範圍內、符合胡法
+  function cleanPicks(picks, method, settings) {
+    var pats = byId(patternsFor(settings));
     var out = {};
     Object.keys(picks || {}).forEach(function (id) {
-      var p = BY_ID[id];
+      var p = pats[id];
       if (!p) return;
       var n = Math.floor(Number(picks[id]) || 0);
       n = Math.max(0, Math.min(p.max || 1, n));
@@ -84,18 +161,19 @@
   }
 
   // 點一下台型：一般台型切換有無，可多次的台型循環 0 → 1 → … → max → 0
-  function togglePick(picks, id, method) {
-    var p = BY_ID[id];
-    var out = cleanPicks(picks, method);
+  function togglePick(picks, id, method, settings) {
+    var list = patternsFor(settings);
+    var p = byId(list)[id];
+    var out = cleanPicks(picks, method, settings);
     if (!p || (p.only && method && p.only !== method)) return out;
     var next = ((out[id] || 0) + 1) % ((p.max || 1) + 1);
     if (next) {
       out[id] = next;
-      PATTERNS.forEach(function (q) {
+      list.forEach(function (q) {
         if (q !== p && p.ex && q.ex === p.ex) delete out[q.id];
       });
       (p.clears || []).forEach(function (c) { delete out[c]; });
-      PATTERNS.forEach(function (q) {
+      list.forEach(function (q) {
         if (q.clears && q.clears.indexOf(id) !== -1) delete out[q.id];
       });
     } else {
@@ -104,12 +182,14 @@
     return out;
   }
 
-  // 胡牌者的台數（不含莊家台）。自摸 1 台；門清加自摸合計 3 台（門清自摸）
-  function countTai(picks, method, extra) {
-    var clean = cleanPicks(picks, method);
+  // 胡牌者的台數（不含莊家台、還沒套用限台）
+  function countTai(picks, method, extra, settings) {
+    var s = normalizeSettings(settings);
+    var list = patternsFor(s);
+    var clean = cleanPicks(picks, method, s);
     var items = [];
     var tai = 0;
-    PATTERNS.forEach(function (p) {
+    list.forEach(function (p) {
       var n = clean[p.id];
       if (!n) return;
       tai += p.tai * n;
@@ -117,12 +197,13 @@
     });
     if (method === 'ziMo') {
       if (clean.menQing) {
-        tai += 2;
+        var mq = byId(list).menQing.tai;
+        tai += s.menQingZiMoTai - mq;
         items = items.filter(function (it) { return it.id !== 'menQing'; });
-        items.unshift({ id: 'buQiuRen', name: '門清自摸', tai: 3 });
+        items.unshift({ id: 'buQiuRen', name: '門清自摸', tai: s.menQingZiMoTai });
       } else {
-        tai += 1;
-        items.unshift({ id: 'ziMo', name: '自摸', tai: 1 });
+        tai += s.ziMoTai;
+        items.unshift({ id: 'ziMo', name: '自摸', tai: s.ziMoTai });
       }
     }
     var more = Math.round(Number(extra) || 0);
@@ -133,10 +214,14 @@
     return { tai: Math.max(0, tai), items: items };
   }
 
-  function dealerTai(streak) { return 1 + 2 * Math.max(0, Math.floor(Number(streak) || 0)); }
+  function dealerTai(streak, settings) {
+    var s = normalizeSettings(settings);
+    return s.dealerTai + s.streakTai * Math.max(0, Math.floor(Number(streak) || 0));
+  }
 
   /*
    * hand = { dealer, streak, winner, method: 'ziMo' | 'fangQiang', discarder, tai }
+   * tai 是胡牌者的台數（countTai 的結果），限台在這裡套用。
    * 回傳每筆支付與每人淨額；資料不完整時回傳 { ready: false, reason }
    */
   function settle(hand, settings) {
@@ -148,22 +233,34 @@
       return { ready: false, reason: 'discarder' };
     }
     var tai = Math.max(0, Math.round(Number(hand.tai) || 0));
-    var dTai = dealerTai(hand.streak);
+    var dTai = dealerTai(hand.streak, s);
     var payers = [];
     for (var i = 0; i < SEATS; i++) {
       if (i === w) continue;
       if (hand.method === 'ziMo' || i === hand.discarder) payers.push(i);
     }
     var nets = [0, 0, 0, 0];
+    var capped = false;
     var transfers = payers.map(function (p) {
-      var withDealer = p === hand.dealer || w === hand.dealer;
-      var total = tai + (withDealer ? dTai : 0);
+      var extra = p === hand.dealer || w === hand.dealer ? dTai : 0;
+      var total;
+      if (!s.cap) total = tai + extra;
+      else if (s.capIncludesDealer) total = Math.min(s.cap, tai + extra);
+      else total = Math.min(s.cap, tai) + extra;
+      var cut = total < tai + extra;
+      if (cut) capped = true;
       var amount = round2(s.base + total * s.perTai);
       nets[p] = round2(nets[p] - amount);
       nets[w] = round2(nets[w] + amount);
-      return { from: p, to: w, tai: tai, dealerTai: withDealer ? dTai : 0, totalTai: total, base: s.base, perTai: s.perTai, amount: amount };
+      return {
+        from: p, to: w, tai: tai, dealerTai: extra, totalTai: total, capped: cut,
+        base: s.base, perTai: s.perTai, amount: amount
+      };
     });
-    return { ready: true, settings: s, winner: w, method: hand.method, tai: tai, dealerTai: dTai, transfers: transfers, nets: nets };
+    return {
+      ready: true, settings: s, winner: w, method: hand.method, tai: tai, dealerTai: dTai,
+      capped: capped, transfers: transfers, nets: nets
+    };
   }
 
   // 莊家胡或流局：連莊；其他人胡：下一家當莊
@@ -174,8 +271,11 @@
 
   return {
     PATTERNS: PATTERNS,
+    GROUP_NAMES: GROUP_NAMES,
+    MAX_CUSTOM: MAX_CUSTOM,
     DEFAULT_SETTINGS: DEFAULT_SETTINGS,
     normalizeSettings: normalizeSettings,
+    patternsFor: patternsFor,
     cleanPicks: cleanPicks,
     togglePick: togglePick,
     countTai: countTai,

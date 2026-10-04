@@ -110,15 +110,16 @@
     var h = d.hand || {};
     var method = h.method === 'ziMo' || h.method === 'fangQiang' ? h.method : null;
     var winner = h.winner === -1 ? -1 : (h.winner == null ? null : int(h.winner, null, 0, 3));
+    var settings = MJ.normalizeSettings(d.settings);
     return {
-      settings: MJ.normalizeSettings(d.settings),
+      settings: settings,
       dealer: int(d.dealer, 0, 0, 3),
       streak: int(d.streak, 0, 0, 99),
       hand: {
         winner: winner,
         method: method,
         discarder: h.discarder == null ? null : int(h.discarder, null, 0, 3),
-        picks: MJ.cleanPicks(h.picks, method),
+        picks: MJ.cleanPicks(h.picks, method, settings),
         extra: int(h.extra, 0, -99, 99)
       },
       nextRound: int(d.nextRound, 1, 1)
@@ -633,6 +634,7 @@
     if (v.screen === 'ledger') renderLedger();
     else $('#ledgerBadge').textContent = T.state.ledger.length;
     if (v.screen === 'rules') {
+      if (T.games[v.rulesGame].renderRules) T.games[v.rulesGame].renderRules();
       $$('#rulesFilter [data-rules]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-rules') === v.rulesGame)); });
       Object.keys(GAMES).forEach(function (g) { $('#rules-' + g).hidden = g !== v.rulesGame; });
     }
@@ -690,9 +692,24 @@
       T.render();
     });
 
-    $('#resetSettings').addEventListener('click', function () {
+    // 恢復預設要按兩次，免得不小心把自己設好的台數表清掉
+    var resetBtn = $('#resetSettings');
+    resetBtn.addEventListener('click', function () {
       var g = T.games[T.view.setupScope];
       if (!g || !T.canEdit()) return;
+      if (!resetBtn.classList.contains('armed')) {
+        resetBtn.classList.add('armed', 'danger');
+        resetBtn.textContent = '再按一次恢復預設';
+        clearTimeout(resetBtn.timer);
+        resetBtn.timer = setTimeout(function () {
+          resetBtn.classList.remove('armed', 'danger');
+          resetBtn.textContent = '恢復預設規則';
+        }, 4000);
+        return;
+      }
+      clearTimeout(resetBtn.timer);
+      resetBtn.classList.remove('armed', 'danger');
+      resetBtn.textContent = '恢復預設規則';
       g.resetSettings();
       syncSettingsForms();
       T.toast('已恢復預設規則');

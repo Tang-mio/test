@@ -7,7 +7,7 @@ const S = { base: 50, perTai: 20 };
 test('放槍：只有放槍的人付「底 + 台數 × 每台」', () => {
   const r = MJ.settle({ dealer: 0, streak: 0, winner: 1, method: 'fangQiang', discarder: 2, tai: 3 }, S);
   assert.equal(r.transfers.length, 1);
-  assert.deepEqual(r.transfers[0], { from: 2, to: 1, tai: 3, dealerTai: 0, totalTai: 3, base: 50, perTai: 20, amount: 110 });
+  assert.deepEqual(r.transfers[0], { from: 2, to: 1, tai: 3, dealerTai: 0, totalTai: 3, capped: false, base: 50, perTai: 20, amount: 110 });
   assert.deepEqual(r.nets, [0, 110, -110, 0]);
 });
 
@@ -67,4 +67,56 @@ test('換莊：莊家胡或流局連莊，閒家胡就下一家當莊', () => {
   assert.deepEqual(MJ.nextDealer(0, 0, 0), { dealer: 0, streak: 1 });
   assert.deepEqual(MJ.nextDealer(0, 1, -1), { dealer: 0, streak: 2 });
   assert.deepEqual(MJ.nextDealer(3, 2, 1), { dealer: 0, streak: 0 });
+});
+
+test('自己改台數：改過的台型照新台數算，關掉的台型不算', () => {
+  const s = { tai: { qingYiSe: 10, menQing: 2 }, off: { pingHu: true } };
+  assert.equal(MJ.countTai({ qingYiSe: 1 }, 'fangQiang', 0, s).tai, 10);
+  assert.equal(MJ.countTai({ pingHu: 1 }, 'fangQiang', 0, s).tai, 0);
+  assert.equal(MJ.patternsFor(s).some(p => p.id === 'pingHu'), false);
+  // 門清自摸合計照設定，不受門清單獨的台數影響
+  assert.equal(MJ.countTai({ menQing: 1 }, 'ziMo', 0, s).tai, 3);
+  assert.equal(MJ.countTai({ menQing: 1 }, 'fangQiang', 0, s).tai, 2);
+});
+
+test('自訂台型：可以點選、算進台數；名字空白或 id 不合法的會被丟掉', () => {
+  const s = MJ.normalizeSettings({ custom: [{ id: 'c1', name: '見字', tai: 1 }, { id: 'c2', name: '  ', tai: 3 }, { id: 'x', name: '壞的', tai: 2 }] });
+  assert.deepEqual(s.custom, [{ id: 'c1', name: '見字', tai: 1 }]);
+  const picks = MJ.togglePick({}, 'c1', 'ziMo', s);
+  assert.deepEqual(picks, { c1: 1 });
+  assert.equal(MJ.countTai(picks, 'ziMo', 0, s).tai, 2);
+});
+
+test('自摸、門清自摸、莊家台、每連幾台都照設定', () => {
+  const s = { ziMoTai: 2, menQingZiMoTai: 4, dealerTai: 2, streakTai: 1 };
+  assert.equal(MJ.countTai({}, 'ziMo', 0, s).tai, 2);
+  assert.equal(MJ.countTai({ menQing: 1 }, 'ziMo', 0, s).tai, 4);
+  assert.equal(MJ.dealerTai(3, s), 5);
+  const r = MJ.settle({ dealer: 0, streak: 3, winner: 0, method: 'ziMo', tai: 0 }, { ...s, base: 0, perTai: 10 });
+  r.transfers.forEach(t => assert.equal(t.amount, 50));
+});
+
+test('限台：超過上限的台數不算；莊家台可選擇算在限台內或另外加', () => {
+  const hand = { dealer: 0, streak: 2, winner: 1, method: 'ziMo', tai: 13 };
+  const out = MJ.settle(hand, { cap: 10 });
+  const east = out.transfers.find(t => t.from === 0);
+  const west = out.transfers.find(t => t.from === 2);
+  assert.equal(west.totalTai, 10);
+  assert.equal(west.capped, true);
+  assert.equal(east.totalTai, 10 + 5);
+  assert.equal(out.capped, true);
+
+  const inside = MJ.settle(hand, { cap: 10, capIncludesDealer: true });
+  assert.equal(inside.transfers.find(t => t.from === 0).totalTai, 10);
+
+  const none = MJ.settle({ ...hand, tai: 3 }, { cap: 10 });
+  assert.equal(none.capped, false);
+  assert.equal(none.transfers.find(t => t.from === 2).totalTai, 3);
+});
+
+test('設定：台數和限台限制在合理範圍', () => {
+  const s = MJ.normalizeSettings({ cap: -3, dealerTai: 200, tai: { qingYiSe: 8, unknown: 3 } });
+  assert.equal(s.cap, 0);
+  assert.equal(s.dealerTai, 99);
+  assert.deepEqual(s.tai, {});
 });
