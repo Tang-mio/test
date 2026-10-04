@@ -16,7 +16,7 @@
   var LOCAL_KEY = 'paitable-v2';
   var OLD_LOCAL_KEY = 'paiqi-calc-v1';
   var VIEW_KEY = 'paitable-view';
-  var GAMES = { paiqi: '排七', mahjong: '麻將', blackjack: '21點' };
+  var GAMES = { mahjong: '麻將', paiqi: '排七', blackjack: '21點' };
   var ROUND_WORD = { paiqi: '局', mahjong: '把', blackjack: '局' };
   var ID_PREFIX = { paiqi: 'r', mahjong: 'm', blackjack: 'b' };
   var MODE_TEXT = {
@@ -47,10 +47,11 @@
   T.signedMoney = function (x) { return (x > 0 ? '+' : x < 0 ? '−' : '') + T.money(x); };
   T.signClass = function (x) { return x > 0 ? 'pos' : x < 0 ? 'neg' : 'zero'; };
   T.round2 = function (x) { return Math.round(x * 100) / 100; };
-  T.badge = function (i) { return i < 4 ? SEAT_CHARS[i] : String(i + 1); };
+  // 玩家用編號和名字；東南西北只在麻將的牌桌上用（要抓位）
+  T.badge = function (i) { return String(i + 1); };
   T.name = function (i) {
     var n = (T.state.names[i] || '').trim();
-    return n || (i < 4 ? SEAT_CHARS[i] + '家' : '玩家 ' + (i + 1));
+    return n || '玩家 ' + (i + 1);
   };
   T.canEdit = function () { return T.view.mode === 'local' || T.view.mode === 'sync'; };
   function $(s, el) { return T.$(s, el); }
@@ -167,6 +168,8 @@
       winner: int(e.winner, -1, -1, MAX_PLAYERS - 1),
       kind: typeof e.kind === 'string' ? e.kind.slice(0, 20) : '',
       tai: e.tai == null ? null : int(e.tai, null, 0, 999),
+      jiang: e.jiang == null ? null : int(e.jiang, null, 1, 999), // 麻將：第幾將
+      round: typeof e.round === 'string' ? e.round.slice(0, 6) : '', // 麻將：例如「東風南」
       nets: nets
     };
   }
@@ -227,18 +230,14 @@
     try { localStorage.setItem(VIEW_KEY, JSON.stringify({ game: T.view.game, lastGame: T.view.lastGame, mySeat: T.view.mySeat })); } catch (e) { /* 同上 */ }
   }
 
-  // 這支手機的人是第幾位玩家（只存在這支手機）。排七的前四位依序是東南西北；麻將坐哪要抓位
+  // 這支手機的人是第幾位玩家（只存在這支手機）；麻將坐哪要抓位
   T.me = function () { return T.view.mySeat == null ? null : T.view.mySeat; };
   T.setMySeat = function (i) {
     T.view.mySeat = T.view.mySeat === i ? null : i; // 再點一次取消
     saveView();
     T.render();
   };
-  // 不帶東南西北的名字（首頁用）
-  T.plainName = function (i) {
-    var n = (T.state.names[i] || '').trim();
-    return n || '玩家 ' + (i + 1);
-  };
+  T.plainName = T.name;
   // 相對於自己的位置：0 我、1 下家、2 對家、3 上家
   T.RELATION = ['我', '下家', '對家', '上家'];
 
@@ -464,6 +463,7 @@
       return esc(T.plainName(e.winner)) + k;
     }
     if (e.game === 'mahjong') {
+      if (e.kind === 'draw') return '<span class="muted">流局</span>';
       var how = e.kind === 'ziMo' ? '自摸' : '胡';
       return esc(T.plainName(e.winner)) + ' <span class="pill pill-kind">' + how + (e.tai != null ? ' ' + e.tai + ' 台' : '') + '</span>';
     }
@@ -498,13 +498,25 @@
     }).join('');
     var head = '<tr><th>#</th><th>' + (filter === 'all' ? '遊戲・' : '') + '結果</th>' +
       who.map(function (i) { return '<th>' + T.esc(T.plainName(i)) + '</th>'; }).join('') + '</tr>';
+    // 麻將打了不只一將時，每將上面加一條細細的「第 N 將」
+    var jiangs = {};
+    list.forEach(function (e) { if (e.game === 'mahjong' && e.jiang) jiangs[e.jiang] = true; });
+    var showJiang = Object.keys(jiangs).length > 1;
+    var lastJiang = null;
     var rows = list.map(function (e, n) {
       var t = new Date(e.at);
       var hhmm = isNaN(t) ? '' : String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
-      return '<tr><td class="num">' + (n + 1) + '<span class="time">' + hhmm + '</span></td>' +
+      // 麻將那格小字寫圈風（例如東風南），其他遊戲寫時間
+      var sub = e.game === 'mahjong' && e.round ? e.round : hhmm;
+      return { e: e, html: '<tr><td class="num"' + (sub !== hhmm && hhmm ? ' title="' + hhmm + '"' : '') + '>' + (n + 1) + '<span class="time">' + sub + '</span></td>' +
         '<td>' + (filter === 'all' ? '<span class="game-tag">' + GAMES[e.game] + '</span>' : '') + entrySummary(e) + '</td>' +
-        who.map(function (i) { return '<td class="num ' + T.signClass(e.nets[i]) + '">' + (e.nets[i] ? T.signedMoney(e.nets[i]) : '·') + '</td>'; }).join('') + '</tr>';
-    }).reverse().join('');
+        who.map(function (i) { return '<td class="num ' + T.signClass(e.nets[i]) + '">' + (e.nets[i] ? T.signedMoney(e.nets[i]) : '·') + '</td>'; }).join('') + '</tr>' };
+    }).reverse().map(function (r) {
+      var e = r.e;
+      if (!showJiang || e.game !== 'mahjong' || !e.jiang || e.jiang === lastJiang) return r.html;
+      lastJiang = e.jiang;
+      return '<tr class="jiang-row"><td colspan="' + (who.length + 2) + '">第 ' + e.jiang + ' 將</td></tr>' + r.html;
+    }).join('');
     var foot = '<tr><td>合計</td><td></td>' + who.map(function (i) {
       return '<td class="' + T.signClass(totals[i]) + '">' + T.signedMoney(totals[i]) + '</td>';
     }).join('') + '</tr>';
@@ -591,23 +603,21 @@
     $('#nameGrid').innerHTML = html;
   }
 
-  // 一般只是填玩家（1、2、3…）；排七照順序坐，所以在排七裡打開時前四位標東南西北
+  // 名字只標玩家編號（1、2、3…）
   function renderNameInputs() {
     var scope = T.view.setupScope;
-    var winds = scope === 'paiqi';
     var showAll = scope === 'blackjack' || scope === 'names' || T.state.blackjack.settings.count > 4;
     var shown = scope === 'names' ? Math.max(4, T.state.blackjack.settings.count) : MAX_PLAYERS;
     for (var i = 0; i < MAX_PLAYERS; i++) {
       var input = $('#pname-' + i);
       if (document.activeElement !== input && input.value !== T.state.names[i]) input.value = T.state.names[i];
-      var useWind = winds && i < 4;
-      $('[data-name-badge]', $('[data-name-row="' + i + '"]')).textContent = useWind ? SEAT_CHARS[i] : String(i + 1);
-      input.placeholder = useWind ? SEAT_CHARS[i] + '家' : '玩家 ' + (i + 1);
+      $('[data-name-badge]', $('[data-name-row="' + i + '"]')).textContent = String(i + 1);
+      input.placeholder = '玩家 ' + (i + 1);
       $('[data-name-row="' + i + '"]').hidden = (i >= 4 && !showAll) || i >= shown;
     }
     $('#namesHint').textContent = scope === 'names'
       ? '排七用前四位；麻將在牌桌上抓位；21 點最多 8 位（在 21 點的規則裡加人數）。'
-      : winds ? '前四位依序坐東、南、西、北。'
+      : scope === 'paiqi' ? '排七用前四位，照編號順序輪流出牌。'
       : scope === 'mahjong' ? '誰坐東南西北，在麻將頁的牌桌上抓位。' : '21 點超過四人時再填 5 到 8。';
   }
 
@@ -706,8 +716,8 @@
       if (screen === 'rules') T.view.rulesGame = T.view.game;
       T.go(screen);
     });
-    $('.games').addEventListener('click', function (e) {
-      var c = e.target.closest('[data-game]');
+    $('#screen-home').addEventListener('click', function (e) {
+      var c = e.target.closest('.game-card[data-game]');
       if (c) T.go('play', c.getAttribute('data-game'));
     });
     $('#homeNames').addEventListener('click', function () { T.openSetup({ scope: 'names' }); });

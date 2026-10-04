@@ -122,7 +122,7 @@
     var count = p.covered.length;
     var waiting = totalCovered() === 0;
 
-    $('#pqBadge').textContent = T.SEAT_CHARS[i];
+    $('#pqBadge').textContent = T.badge(i);
     $('#pqNameText').textContent = T.name(i);
     $('#pqName').disabled = !editable;
     var first = $('#pqFirst');
@@ -308,9 +308,9 @@
   }
 
   function init() {
-    $('#pqTabs').innerHTML = T.SEAT_CHARS.map(function (seat, i) {
+    $('#pqTabs').innerHTML = [0, 1, 2, 3].map(function (i) {
       return '<button type="button" class="seat-tab" role="tab" data-seat="' + i + '" aria-selected="false">' +
-        '<span class="st-top"><span class="st-badge">' + seat + '</span><span class="st-name" data-name></span></span>' +
+        '<span class="st-top"><span class="st-badge">' + T.badge(i) + '</span><span class="st-name" data-name></span></span>' +
         '<span class="st-pts" data-pts></span>' +
         '<span class="st-net" data-net></span>' +
         '<span class="st-tags" data-tags></span>' +

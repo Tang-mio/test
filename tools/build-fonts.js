@@ -32,7 +32,7 @@ function big5Common() {
 
 let ascii = '';
 for (let c = 0x20; c < 0x7F; c++) ascii += String.fromCharCode(c);
-const sources = ['index.html', 'paiqi.js', 'mahjong.js', 'blackjack.js']
+const sources = ['index.html', 'paiqi.js', 'mahjong.js', 'mahjong-hand.js', 'blackjack.js']
   .concat(fs.readdirSync(path.join(root, 'app')).filter(f => f.endsWith('.js')).map(f => 'app/' + f));
 const text = ascii + big5Common() + sources.map(f => fs.readFileSync(path.join(root, f), 'utf8')).join('');
 

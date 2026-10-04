@@ -7,7 +7,7 @@
   var PATH = 'table/mahjong';
   var GROUP_ORDER = ['basic', 'honor', 'big', 'custom'];
   // 輸入這把時的分組：三元牌和風牌刻子是一張張的牌
-  var HAND_GROUPS = [['basic', '常見'], ['dragon', '三元牌刻子'], ['wind', '風牌刻子'], ['honor', '花牌'], ['big', '大牌'], ['custom', '自訂']];
+  var HAND_GROUPS = [['basic', '常見'], ['tiles', '字牌刻子'], ['honor', '花牌'], ['big', '大牌'], ['custom', '自訂']];
   var TILE_CLASS = { zhong: ' t-zhong', fa: ' t-fa', bai: ' t-bai' };
   var BUILTIN = {};
   MJ.PATTERNS.forEach(function (p) { BUILTIN[p.id] = p; });
@@ -387,23 +387,23 @@
       : state === 'dealer' ? '換莊家：點牌桌上的人' : '誰胡？點牌桌上的人';
   }
 
-  // 風牌刻子的標題：說明現在哪張算台
+  // 字牌刻子的標題：說明現在哪張風牌算台
   function windTitle(ctx) {
     var s = settings();
     var on = function (id) { return MJ.isOn(MJ.PATTERNS.filter(function (p) { return p.id === id; })[0], s); };
-    if (on('jianFeng')) return '風牌刻子（見字有台）';
+    if (on('jianFeng')) return '字牌刻子・見字有台';
     var parts = [];
-    if (on('quanFeng')) parts.push('圈風 ' + T.SEAT_CHARS[ctx.roundWind]);
-    if (on('menFeng')) parts.push('門風 ' + (ctx.seatWind == null ? '看誰胡' : T.SEAT_CHARS[ctx.seatWind]));
-    return '風牌刻子' + (parts.length ? '（' + parts.join('・') + '）' : '');
+    if (on('quanFeng')) parts.push('圈風' + T.SEAT_CHARS[ctx.roundWind]);
+    if (on('menFeng')) parts.push('門風' + (ctx.seatWind == null ? '看誰胡' : T.SEAT_CHARS[ctx.seatWind]));
+    return '字牌刻子' + (parts.length ? '・' + parts.join(' ') : '');
   }
 
+  // 小小一張牌：上面是字，下面是台數；風牌標「圈」「門」，對不到寫「不算」
   function tileChip(p) {
-    var why = p.tile === 'wind' ? p.why.map(function (x) { return x.charAt(0); }).join('・') : '';
+    var why = p.tile === 'wind' ? p.why.map(function (x) { return x.charAt(0); }).join('') : '';
     var label = p.name + '刻子，' + (p.tai ? p.tai + ' 台' + (p.why && p.why.length ? '（' + p.why.join('、') + '）' : '') : '不算台');
     return '<button type="button" class="tai-chip tile-chip' + (TILE_CLASS[p.id] || '') + '" data-pat="' + p.id + '" aria-pressed="false" aria-label="' + esc(label) + '">' +
-      '<span class="face">' + p.name + '</span>' + (p.tile === 'wind' ? '<span class="why">' + why + '</span>' : '') +
-      '<b>' + (p.tai ? p.tai + ' 台' : '不算') + '</b></button>';
+      '<span class="face">' + p.name + '</span><b>' + (p.tai ? why + p.tai : '不算') + '</b></button>';
   }
 
   function buildChips(pats, ctx) {
@@ -412,11 +412,14 @@
     if (key === chipsKey) return;
     chipsKey = key;
     $('#mjTai').innerHTML = HAND_GROUPS.map(function (g) {
-      var list = pats.filter(function (p) { return p.group === g[0]; });
+      var list = pats.filter(function (p) { return g[0] === 'tiles' ? !!p.tile : p.group === g[0]; });
       if (!list.length) return '';
-      if (g[0] === 'dragon' || g[0] === 'wind') {
-        return '<div class="tai-group"><h4>' + esc(g[0] === 'wind' ? wt : g[1]) + '</h4><div class="tile-row">' +
-          list.map(tileChip).join('') + '</div></div>';
+      if (g[0] === 'tiles') {
+        var dragons = list.filter(function (p) { return p.tile === 'dragon'; });
+        var winds = list.filter(function (p) { return p.tile === 'wind'; });
+        return '<div class="tai-group"><h4>' + esc(winds.length ? wt : g[1]) + '</h4><div class="tile-row">' +
+          (dragons.length ? '<span class="tile-set">' + dragons.map(tileChip).join('') + '</span>' : '') +
+          (winds.length ? '<span class="tile-set">' + winds.map(tileChip).join('') + '</span>' : '') + '</div></div>';
       }
       return '<div class="tai-group"><h4>' + g[1] + '</h4><div class="tai-chips">' +
         list.map(function (p) {
@@ -497,6 +500,7 @@
       if (nm) nm.textContent = p.name + (n > 1 ? ' ×' + n : '');
     });
     $('#mjExtra').textContent = h.extra > 0 ? '+' + h.extra : h.extra;
+    $('#mjCalcOpen').disabled = !editable || !ready3;
     $('#mjExtraDown').disabled = !editable || !ready3;
     $('#mjExtraUp').disabled = !editable || !ready3;
     $('#mjTaiList').textContent = ready3 && t.items.length
@@ -605,7 +609,10 @@
 
   function change() { T.changed(PATH); }
 
-  function resetHand() { mj().hand = T.emptyHand(); }
+  function resetHand() {
+    mj().hand = T.emptyHand();
+    if (T.mjCalc) T.mjCalc.reset();
+  }
 
   // 這把打完：換莊或連莊，莊家輪一輪就換圈，北風圈打完進下一將並重新抓位；回傳要顯示的訊息
   function finishHand(m, winner) {
@@ -625,25 +632,29 @@
   function commit() {
     if (!T.canEdit() || seating()) return;
     var m = mj();
-    if (isDraw()) {
-      m.nextRound += 1;
-      var msg = finishHand(m, -1);
-      change();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      T.toast('流局，' + msg);
-      return;
-    }
-    var r = settleNow();
-    if (!r.ready) return;
-    // 累計帳記的是玩家，不是位置
+    // 累計帳記的是玩家，不是位置；每把都記第幾將和圈風，流局也記一筆
     var nets = [];
     for (var p = 0; p < T.MAX_PLAYERS; p++) nets.push(0);
-    r.nets.forEach(function (n, w) { nets[playerAt(w)] = n; });
-    T.commitEntry('mahjong', { winner: playerAt(r.winner), kind: r.method, tai: r.tai, nets: nets }, function () {
-      var msg = finishHand(mj(), r.winner);
+    var entry = { jiang: m.jiang, round: MJ.roundName(m.wind, m.dealer, m.startDealer), nets: nets };
+    var winner = -1;
+    if (isDraw()) {
+      entry.winner = -1;
+      entry.kind = 'draw';
+      entry.tai = null;
+    } else {
+      var r = settleNow();
+      if (!r.ready) return;
+      r.nets.forEach(function (n, w) { nets[playerAt(w)] = n; });
+      winner = r.winner;
+      entry.winner = playerAt(r.winner);
+      entry.kind = r.method;
+      entry.tai = r.tai;
+    }
+    T.commitEntry('mahjong', entry, function () {
+      var msg = finishHand(mj(), winner);
       change();
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      T.toast('已記入，' + msg);
+      T.toast((winner < 0 ? '流局，' : '已記入，') + msg);
     });
   }
 
@@ -750,6 +761,20 @@
       if (!b || b.disabled || !T.canEdit()) return;
       hand().picks = MJ.togglePick(hand().picks, b.getAttribute('data-pat'), hand().method, settings());
       change();
+    });
+    // 牌型計算器：照這把的胡法、圈風、門風算，算好可以直接套用
+    $('#mjCalcOpen').addEventListener('click', function () {
+      var h = hand();
+      if (!T.canEdit() || h.winner == null || h.winner < 0 || !h.method) return;
+      var ctx = windCtx();
+      T.mjCalc.open({
+        fromHand: true, who: seatName(h.winner), method: h.method, roundWind: ctx.roundWind, seatWind: ctx.seatWind,
+        onApply: function (r) {
+          hand().picks = r.picks;
+          change();
+          T.toast('已套用牌型：' + r.tai + ' 台');
+        }
+      });
     });
     $('#mjExtraDown').addEventListener('click', function () { if (T.canEdit()) { hand().extra -= 1; change(); } });
     $('#mjExtraUp').addEventListener('click', function () { if (T.canEdit()) { hand().extra += 1; change(); } });

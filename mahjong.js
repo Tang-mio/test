@@ -26,7 +26,7 @@
   var PATTERNS = [
     { id: 'menQing', name: '門清', tai: 1, group: 'basic', note: '沒有吃、碰、明槓；又自摸時改算門清自摸' },
     { id: 'duTing', name: '獨聽', tai: 1, group: 'basic', note: '邊張、中洞、單吊' },
-    { id: 'pingHu', name: '平胡', tai: 2, group: 'basic', note: '沒有字、沒有花、都是順子、聽兩面' },
+    { id: 'pingHu', name: '平胡', tai: 2, group: 'basic', only: 'fangQiang', note: '沒有字、沒有花、都是順子、聽兩面，胡別人打的' },
     { id: 'banQiu', name: '半求', tai: 1, group: 'basic', ex: 'qiu', only: 'ziMo', note: '全部吃碰完，自摸最後一張' },
     { id: 'quanQiu', name: '全求', tai: 2, group: 'basic', ex: 'qiu', only: 'fangQiang', note: '全部吃碰完，胡別人打的' },
     { id: 'gangShang', name: '槓上開花', tai: 1, group: 'basic', only: 'ziMo' },
