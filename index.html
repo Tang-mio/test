@@ -346,20 +346,84 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .games.two .game-card { grid-template-columns: minmax(0, 1fr); justify-items: start; row-gap: 2px; padding: 12px; }
 .games.two .g-art { grid-row: auto; width: 56px; height: 52px; margin-bottom: 4px; transform: scale(.9); transform-origin: left top; }
 .games.two .g-name { font-size: var(--step-1); }
-.tool-card {
-  display: flex; align-items: center; gap: 12px; text-align: left; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px;
-  background: var(--surface); color: var(--ink);
+.tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tool-btn {
+  display: grid; justify-items: center; align-content: start; gap: 2px; padding: 10px 4px 9px; text-align: center;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink);
 }
-.tool-card:active { transform: translateY(1px); }
-.tool-card .t-ico {
-  flex: none; width: 34px; height: 42px; border-radius: 6px; display: grid; place-items: center;
+.tool-btn:active { transform: translateY(1px); }
+.tool-btn .t-ico {
+  width: 30px; height: 36px; border-radius: 6px; display: grid; place-items: center; margin-bottom: 3px;
   background: var(--tile-face); border: 1px solid var(--line); box-shadow: 0 2px 0 var(--tile-back);
-  font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--accent);
+  font-family: var(--font-display); font-weight: 700; font-size: 16px; color: #2F5DA8;
 }
-.tool-card .t-text { display: grid; gap: 0; min-width: 0; flex: 1; }
-.tool-card .t-text b { font-family: var(--font-display); font-size: var(--step-0); }
-.tool-card .t-text span { font-size: var(--step--1); color: var(--muted); }
-.tool-card .t-go { color: var(--muted); font-size: 22px; }
+.tool-btn .t-ico svg { width: 18px; height: 18px; }
+.tool-btn b { font-size: var(--step--1); }
+.tool-btn span:last-child { font-size: 11px; color: var(--muted); line-height: 1.3; }
+/* 麻將頁的小工具列 */
+.mj-tools { display: flex; gap: 6px; flex-wrap: wrap; margin-top: -4px; }
+.mini-tool { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 600; }
+.mini-tool svg { width: 14px; height: 14px; color: var(--accent); }
+.mini-tool.warn { border-color: var(--warn); background: var(--warn-soft); }
+/* 擲骰子、剩幾張牌 */
+.tool-sheet { max-height: 92vh; }
+.tool-body { padding: 12px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; }
+.dice-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dice { display: flex; gap: 8px; }
+.die {
+  width: 46px; height: 46px; padding: 6px; border-radius: 10px; border: 1px solid var(--line); background: #FBF8EF;
+  box-shadow: 0 2px 0 rgba(0,0,0,.18); display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+}
+.die i { width: 8px; height: 8px; border-radius: 50%; place-self: center; }
+.die i.on { background: #1E2430; }
+.die.one i.on { background: #C62839; width: 11px; height: 11px; }
+.die.blank { display: grid; place-items: center; grid-template-columns: 1fr; grid-template-rows: 1fr; color: #6A6458; font-weight: 700; font-size: 18px; }
+.die.rolling { animation: shake .12s linear infinite; }
+@keyframes shake { 50% { transform: rotate(8deg) translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { .die.rolling { animation: none; } }
+.dice-roll { flex: 1; min-width: 110px; height: 46px; font-size: var(--step-0); }
+.dice-result { display: grid; gap: 8px; }
+.dice-sum { font-size: var(--step--1); color: var(--muted); }
+.dice-sum b { font-family: var(--font-num); font-size: var(--step-3); color: var(--ink); margin-right: 4px; }
+.dice-what { font-size: var(--step-0); line-height: 1.5; }
+.dice-what b { color: var(--accent); }
+.wall-map { position: relative; width: min(100%, 250px); aspect-ratio: 1; margin: 0 auto; border-radius: 12px; background: var(--felt); color: var(--felt-ink); }
+.wall-map .wl { position: absolute; display: flex; gap: 1px; }
+.wall-map .wl.at-bottom { left: 26px; right: 26px; bottom: 10px; height: 12px; flex-direction: row-reverse; }
+.wall-map .wl.at-top { left: 26px; right: 26px; top: 10px; height: 12px; flex-direction: row; }
+.wall-map .wl.at-right { top: 26px; bottom: 26px; right: 10px; width: 12px; flex-direction: column; }
+.wall-map .wl.at-left { top: 26px; bottom: 26px; left: 10px; width: 12px; flex-direction: column-reverse; }
+.wall-map .st { flex: 1; border-radius: 2px; background: var(--tile-face); opacity: .55; }
+.wall-map .st.tail { background: var(--warn); opacity: 1; }
+.wall-map .st.start { background: #C62839; opacity: 1; box-shadow: 0 0 0 2px #fff; }
+.wall-map .wl.pick .st:not(.tail):not(.start) { opacity: .95; }
+.wall-map .who { position: absolute; font-size: 11px; font-weight: 700; text-align: center; line-height: 1.25; }
+.wall-map .who.at-bottom { left: 0; right: 0; bottom: 26px; }
+.wall-map .who.at-top { left: 0; right: 0; top: 26px; }
+.wall-map .who.at-left { left: 28px; top: 50%; transform: translateY(-50%); text-align: left; }
+.wall-map .who.at-right { right: 28px; top: 50%; transform: translateY(-50%); text-align: right; }
+.wall-map .who .tg { display: inline-block; padding: 0 5px; border-radius: 999px; background: var(--ink); color: var(--surface); font-size: 10px; }
+.wall-map .center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; font-size: 11px; opacity: .9; padding: 60px; }
+.wall-legend { display: flex; gap: 12px; justify-content: center; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
+.wall-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.wall-big { display: grid; justify-items: center; gap: 2px; text-align: center; padding: 6px 0; }
+.wall-big .n { font-family: var(--font-num); font-size: 56px; font-weight: 600; line-height: 1; }
+.wall-big .n.warn { color: var(--pay); }
+.wall-big .lb { font-size: var(--step--1); color: var(--muted); }
+.wall-big .st-msg { font-size: var(--step-0); font-weight: 700; }
+.wall-big .st-msg.warn { color: var(--pay); }
+.wall-draw { height: 52px; font-size: var(--step-1); }
+.wall-acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.wall-acts .btn { height: 40px; }
+.wall-set { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stepper.small button { width: 30px; height: 30px; font-size: 16px; }
+.stepper.small output { min-width: 2em; width: 2.6em; }
+/* 首頁玩家：前四位排七・麻將，第 5 位起 21 點 */
+.home-box-head .stepper.small { margin-left: auto; }
+.roster { display: grid; gap: 8px; }
+.roster-row { display: grid; gap: 4px; }
+.roster-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.roster-tag { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .08em; }
 .game-card {
   display: grid; grid-template-columns: 64px minmax(0, 1fr); grid-template-rows: auto auto auto; column-gap: 14px; row-gap: 2px;
   align-items: center; text-align: left; padding: 14px; border: 1px solid var(--line); border-radius: 14px;
@@ -837,11 +901,11 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
             <span class="g-desc">台灣十六張：抓位、圈風、莊家連莊，自摸放槍自動算錢</span>
             <span class="g-meta" data-meta="mahjong"></span>
           </button>
-          <button type="button" class="tool-card" data-tool="mjcalc">
-            <span class="t-ico" aria-hidden="true">台</span>
-            <span class="t-text"><b>牌型計算器</b><span>點手上的牌，自動算幾台</span></span>
-            <span class="t-go" aria-hidden="true">›</span>
-          </button>
+        </div>
+        <div class="tools" role="group" aria-label="麻將工具">
+          <button type="button" class="tool-btn" data-tool="mjcalc"><span class="t-ico">台</span><b>牌型計算器</b><span>點牌自動算台</span></button>
+          <button type="button" class="tool-btn" data-tool="dice"><span class="t-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"></circle><circle cx="12" cy="12" r="1.2" fill="currentColor"></circle><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"></circle></svg></span><b>擲骰子</b><span>從哪裡開始抓</span></button>
+          <button type="button" class="tool-btn" data-tool="wall"><span class="t-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="5" height="12" rx="1"></rect><rect x="9.5" y="6" width="5" height="12" rx="1"></rect><rect x="16" y="6" width="5" height="12" rx="1"></rect></svg></span><b>剩幾張牌</b><span>摸到哪、何時海底</span></button>
         </div>
       </section>
       <section class="game-group" aria-labelledby="grpPoker">
@@ -865,10 +929,11 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
       <section class="home-box" aria-labelledby="homePlayers">
         <div class="home-box-head">
           <h3 id="homePlayers">玩家</h3>
+          <span class="stepper small" aria-label="玩家人數"><button type="button" id="homeCountDown" aria-label="少一人">−</button><output id="homeCount">4</output><button type="button" id="homeCountUp" aria-label="多一人">+</button></span>
           <button type="button" class="btn" id="homeNames">改名字</button>
         </div>
-        <div class="name-chips" id="homeNameChips" role="radiogroup" aria-label="點自己的名字"></div>
-        <p class="hint">點自己的名字，標成「我」。</p>
+        <div class="roster" id="homeNameChips" role="radiogroup" aria-label="點自己的名字"></div>
+        <p class="hint">4 到 8 人。前四位打排七、麻將，第 5 位起加入 21 點；點自己的名字標成「我」。</p>
       </section>
 
       <section class="home-box" aria-labelledby="homeTotals">
@@ -921,6 +986,10 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
         </div>
       </div>
       <button type="button" class="rule-line" id="mjChips" data-setup aria-label="目前規則，點一下調整"></button>
+      <div class="mj-tools" role="group" aria-label="麻將工具">
+        <button type="button" class="mini-tool" data-tool="dice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"></circle><circle cx="12" cy="12" r="1.2" fill="currentColor"></circle><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"></circle></svg>擲骰開門</button>
+        <button type="button" class="mini-tool" data-tool="wall"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="5" height="12" rx="1"></rect><rect x="9.5" y="6" width="5" height="12" rx="1"></rect><rect x="16" y="6" width="5" height="12" rx="1"></rect></svg><span id="mjWallChip">還能摸 63 張</span></button>
+      </div>
       <section class="step table-step" aria-labelledby="mjQ1">
         <div class="seat-bar" id="mjSeatBar">
           <span class="seat-summary" id="mjSeatSummary"></span>
@@ -1112,6 +1181,14 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
             <li>門風預設跟著莊家：莊家是東，莊家的下家南、對家西、上家北。有些人照座位算（坐東就是東風），在「名字・規則」打開「門風照座位算」。</li>
             <li>南部打法的「見字有台」：東南西北不用對位，每組都算。</li>
             <li>小三元、大三元已經含中發白，小四喜、大四喜已經含東南西北，點了大牌會自動取消重複的牌。</li>
+          </ul>
+        </section>
+        <section>
+          <h2>開門與牌牆</h2>
+          <ul>
+            <li><b>擲骰子開門</b>：莊家擲三顆骰子，從莊家數點數（莊家算 1，往下家數），數到那一家面前的牌牆；從他那邊看的右邊數點數那麼多墩當牌尾，從下一墩開始抓。首頁和麻將頁的「擲骰子」會直接告訴你從哪一墩開始。</li>
+            <li><b>配牌</b>：莊家先抓 2 墩（4 張），下家、對家、上家輪流，抓 4 輪每人 16 張，莊家再跳牌多拿 1 張，共 65 張。</li>
+            <li><b>剩幾張</b>：有花 144 張配完剩 79 張、沒花 136 張配完剩 71 張；最後留 16 張不摸（可以改）。「剩幾張牌」每摸一張按一下，就知道還能摸幾張、下一張是不是海底。</li>
           </ul>
         </section>
         <section>
@@ -1442,17 +1519,57 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
   </div>
 </dialog>
 
+<dialog class="sheet tool-sheet" id="mjDice" aria-labelledby="diceTitle">
+  <div class="sheet-head">
+    <h2 id="diceTitle">擲骰子</h2>
+    <button type="button" class="btn primary" data-close>關閉</button>
+  </div>
+  <div class="tool-body">
+    <div class="dice-row">
+      <div class="dice" id="diceFaces"></div>
+      <button type="button" class="btn primary dice-roll" id="diceRoll">擲骰子</button>
+    </div>
+    <p class="hint">莊家擲三顆骰子；用實體骰子的話，點骰子改成擲出來的點數。</p>
+    <div class="dice-result" id="diceResult" aria-live="polite"></div>
+  </div>
+</dialog>
+
+<dialog class="sheet tool-sheet" id="mjWall" aria-labelledby="wallTitle">
+  <div class="sheet-head">
+    <h2 id="wallTitle">剩幾張牌</h2>
+    <button type="button" class="btn primary" data-close>關閉</button>
+  </div>
+  <div class="tool-body">
+    <div class="wall-big" id="wallBig" aria-live="polite"></div>
+    <button type="button" class="btn primary wall-draw" id="wallDraw">摸一張</button>
+    <div class="wall-acts">
+      <button type="button" class="btn" id="wallFlower">補花</button>
+      <button type="button" class="btn" id="wallKong">槓</button>
+      <button type="button" class="btn" id="wallUndo">復原一張</button>
+    </div>
+    <p class="hint" id="wallLog"></p>
+    <div class="wall-set">
+      <span class="set-label" id="wallReserveLabel">最後留幾張不摸</span>
+      <span class="stepper small" aria-labelledby="wallReserveLabel"><button type="button" id="wallReserveDown" aria-label="少留兩張">−</button><output id="wallReserve">16</output><button type="button" id="wallReserveUp" aria-label="多留兩張">+</button></span>
+    </div>
+    <button type="button" class="btn" id="wallReset">重新配牌（這把重算）</button>
+    <p class="hint">配牌每人 16 張、莊家 17 張，共 65 張。每摸一張（含補花、槓）按一下；記入下一把時會自動重算。誰按都一樣，同一桌的手機會同步。</p>
+  </div>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="paiqi.js"></script>
 <script src="mahjong.js"></script>
 <script src="mahjong-hand.js"></script>
+<script src="mahjong-wall.js"></script>
 <script src="blackjack.js"></script>
 <script src="app/core.js"></script>
 <script src="app/paiqi-ui.js"></script>
 <script src="app/mahjong-ui.js"></script>
 <script src="app/blackjack-ui.js"></script>
 <script src="app/mjcalc-ui.js"></script>
+<script src="app/mjtools-ui.js"></script>
 <script>TableApp.start();</script>
 </body>
 </html>

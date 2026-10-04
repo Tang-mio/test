@@ -78,6 +78,9 @@
 
   function emptyPaiqiSeat() { return { covered: [], lastSeven: false }; }
   function emptyHand() { return { winner: null, method: null, discarder: null, picks: {}, extra: 0 }; }
+  // 麻將這把配牌後又摸了幾張：drawn 全部（含補花、槓），flowers 補花、kongs 槓
+  function emptyWall() { return { drawn: 0, flowers: 0, kongs: 0 }; }
+  T.emptyWall = emptyWall;
   function filled(v) { var a = []; for (var i = 0; i < MAX_PLAYERS; i++) a.push(typeof v === 'function' ? v(i) : v); return a; }
 
   function emptyState() {
@@ -91,7 +94,8 @@
       },
       mahjong: {
         settings: MJ.normalizeSettings(), seats: [0, 1, 2, 3], seatsAt: 0,
-        jiang: 1, wind: 0, startDealer: 0, hands: 0, dealer: 0, streak: 0, hand: emptyHand(), nextRound: 1
+        jiang: 1, wind: 0, startDealer: 0, hands: 0, dealer: 0, streak: 0, hand: emptyHand(), nextRound: 1,
+        wall: emptyWall()
       },
       blackjack: { settings: BJ.normalizeSettings(), banker: 0, bets: filled(null), results: filled(null), doubled: filled(false), nextRound: 1 },
       ledger: []
@@ -140,8 +144,13 @@
         picks: MJ.cleanPicks(h.picks, method, settings),
         extra: int(h.extra, 0, -99, 99)
       },
-      nextRound: int(d.nextRound, 1, 1)
+      nextRound: int(d.nextRound, 1, 1),
+      wall: cleanWall(d.wall)
     };
+  }
+  function cleanWall(w) {
+    w = w || {};
+    return { drawn: int(w.drawn, 0, 0, 144), flowers: int(w.flowers, 0, 0, 144), kongs: int(w.kongs, 0, 0, 144) };
   }
   function cleanBlackjack(d) {
     d = d || {};
@@ -439,6 +448,16 @@
     });
   };
 
+  // 玩家人數 4–8：前四位排七、麻將，全部的人都能玩 21 點（和 21 點的人數是同一個設定）
+  T.playerCount = function () { return Math.max(4, T.state.blackjack.settings.count); };
+  T.setPlayerCount = function (n) {
+    var bj = T.state.blackjack;
+    n = Math.max(4, Math.min(MAX_PLAYERS, n));
+    bj.settings = BJ.normalizeSettings(Object.assign({}, bj.settings, { count: n }));
+    if (bj.banker >= n) bj.banker = 0;
+    T.changed('table/blackjack');
+  };
+
   T.countOf = function (game) {
     return T.state.ledger.filter(function (e) { return e.game === game; }).length;
   };
@@ -566,15 +585,21 @@
       meta.textContent = n ? '已記 ' + n + ' ' + ROUND_WORD[g] : (T.view.lastGame === g ? '上次玩這個' : '');
       $('.game-card[data-game="' + g + '"]').classList.toggle('last', T.view.lastGame === g);
     });
-    // 玩家：只列名字，點自己的名字標成「我」
-    var shown = Math.max(4, T.state.blackjack.settings.count);
-    var chips = [];
-    for (var i = 0; i < shown; i++) {
+    // 玩家：4 到 8 人，前四位排七・麻將，第 5 位起 21 點；點自己的名字標成「我」
+    var shown = T.playerCount();
+    var chip = function (i) {
       var mine = T.me() === i;
-      chips.push('<button type="button" class="player-chip" role="radio" data-me="' + i + '" aria-checked="' + mine + '">' +
-        T.esc(T.plainName(i)) + (mine ? '<span class="me-tag">我</span>' : '') + '</button>');
-    }
-    $('#homeNameChips').innerHTML = chips.join('');
+      return '<button type="button" class="player-chip" role="radio" data-me="' + i + '" aria-checked="' + mine + '">' +
+        T.esc(T.plainName(i)) + (mine ? '<span class="me-tag">我</span>' : '') + '</button>';
+    };
+    var first = [0, 1, 2, 3].map(chip).join('');
+    var more = [];
+    for (var i = 4; i < shown; i++) more.push(chip(i));
+    $('#homeNameChips').innerHTML = '<div class="roster-row"><span class="roster-tag">排七・麻將</span><div class="roster-chips">' + first + '</div></div>' +
+      (more.length ? '<div class="roster-row"><span class="roster-tag">21 點也一起玩</span><div class="roster-chips">' + more.join('') + '</div></div>' : '');
+    $('#homeCount').textContent = shown;
+    $('#homeCountDown').disabled = !T.canEdit() || shown <= 4;
+    $('#homeCountUp').disabled = !T.canEdit() || shown >= MAX_PLAYERS;
     var all = T.state.ledger;
     var list = $('#homeTotalsList');
     if (!all.length) {
@@ -616,7 +641,7 @@
       $('[data-name-row="' + i + '"]').hidden = (i >= 4 && !showAll) || i >= shown;
     }
     $('#namesHint').textContent = scope === 'names'
-      ? '排七用前四位；麻將在牌桌上抓位；21 點最多 8 位（在 21 點的規則裡加人數）。'
+      ? '前四位打排七、麻將（麻將在牌桌上抓位），第 5 位起加入 21 點；人數在首頁的玩家旁邊加減。'
       : scope === 'paiqi' ? '排七用前四位，照編號順序輪流出牌。'
       : scope === 'mahjong' ? '誰坐東南西北，在麻將頁的牌桌上抓位。' : '21 點超過四人時再填 5 到 8。';
   }
@@ -696,6 +721,7 @@
       Object.keys(GAMES).forEach(function (g) { $('#rules-' + g).hidden = g !== v.rulesGame; });
     }
     if ($('#setup').open) renderNameInputs();
+    if (T.mjTools) T.mjTools.render(); // 麻將小工具（擲骰子、剩幾張牌）首頁也能開
     measureDock();
   };
 
@@ -721,6 +747,8 @@
       if (c) T.go('play', c.getAttribute('data-game'));
     });
     $('#homeNames').addEventListener('click', function () { T.openSetup({ scope: 'names' }); });
+    $('#homeCountDown').addEventListener('click', function () { if (T.canEdit()) T.setPlayerCount(T.playerCount() - 1); });
+    $('#homeCountUp').addEventListener('click', function () { if (T.canEdit()) T.setPlayerCount(T.playerCount() + 1); });
     document.addEventListener('click', function (e) {
       var b = e.target.closest('[data-me]');
       if (b) T.setMySeat(Number(b.getAttribute('data-me')));

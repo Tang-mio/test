@@ -619,6 +619,7 @@
     var p = MJ.advance(m, winner);
     ['jiang', 'wind', 'dealer', 'streak', 'hands'].forEach(function (k) { m[k] = p[k]; });
     resetHand();
+    if (T.mjTools) T.mjTools.newHand(); // 下一把重新配牌
     if (p.newJiang) {
       m.seatsAt = 0;
       seatingOpen = false;
