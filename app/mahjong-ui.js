@@ -48,6 +48,11 @@
     FIELDS.forEach(function (f) { if ($(f[0]) !== a) $(f[0]).value = s[f[1]]; });
     $('#mjCapDealer').checked = s.capIncludesDealer;
     $('#mjFlowers').checked = s.flowers;
+    $('#mjDealerNeedsStreak').checked = s.dealerNeedsStreak;
+    var preset = MJ.matchPreset(s);
+    $$('#mjPresets [data-preset]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-preset') === preset));
+    });
     syncEditor();
   }
 
@@ -60,6 +65,7 @@
     });
     next.capIncludesDealer = $('#mjCapDealer').checked;
     next.flowers = $('#mjFlowers').checked;
+    next.dealerNeedsStreak = $('#mjDealerNeedsStreak').checked;
     mj().settings = MJ.normalizeSettings(next);
   }
 
@@ -105,7 +111,7 @@
       } else {
         var def = BUILTIN[id].tai;
         val = s.tai[id] != null ? s.tai[id] : def;
-        var on = !s.off[id];
+        var on = MJ.isOn(BUILTIN[id], s);
         var noFlower = !!(BUILTIN[id].flower && !s.flowers);
         var toggle = $('[data-te-on]', row);
         toggle.checked = on && !noFlower;
@@ -117,7 +123,7 @@
         $('[data-te-hint]', row).textContent = noFlower ? '沒玩花牌，不會出現' :
           (val !== def ? '預設 ' + def + ' 台' + (note ? '；' : '') : '') + note +
           (BUILTIN[id].max > 1 ? (note || val !== def ? '；' : '') + '最多 ' + BUILTIN[id].max + ' 組' : '');
-        if (val !== def || !on) changed++;
+        if (val !== def || on === !!BUILTIN[id].defaultOff) changed++;
       }
       if (input !== a) input.value = val;
     });
@@ -185,12 +191,12 @@
     pats.forEach(function (p) { byId[p.id] = p; });
 
     $('#mjRound').textContent = '第 ' + m.nextRound + ' 將';
-    var customised = Object.keys(s.tai).length || Object.keys(s.off).length || s.custom.length;
+    var preset = MJ.matchPreset(s);
     $('#mjChips').innerHTML = '<span class="sum-chip">底 <b>' + T.money(s.base) + '</b></span>' +
       '<span class="sum-chip">每台 <b>' + T.money(s.perTai) + '</b></span>' +
       '<span class="sum-chip">' + (s.flowers ? '有花' : '不玩花') + '</span>' +
       '<span class="sum-chip">' + (s.cap ? '限 <b>' + s.cap + '</b> 台' + (s.capIncludesDealer ? '（含莊）' : '') : '不限台') + '</span>' +
-      (customised ? '<span class="sum-chip">台數表已自訂</span>' : '');
+      '<span class="sum-chip">' + (preset ? MJ.PRESETS[preset].name : '自訂規則') + (s.custom.length ? '＋自訂台型' : '') + '</span>';
     $('#mjClear').disabled = !editable;
 
     // 莊家
@@ -200,9 +206,11 @@
     $('#mjStreak').textContent = m.streak;
     $('#mjStreakDown').disabled = !editable || m.streak === 0;
     $('#mjStreakUp').disabled = !editable;
-    $('#mjDealerHint').textContent = T.name(m.dealer) + '當莊' + (m.streak ? '，連 ' + m.streak : '') +
-      '：莊家胡牌或莊家付錢時，多算 ' + dTai + ' 台' +
-      (m.streak ? '（莊家 ' + s.dealerTai + ' + 連莊 ' + m.streak + ' × ' + s.streakTai + '）' : '') + '。';
+    $('#mjDealerHint').textContent = T.name(m.dealer) + '當莊' + (m.streak ? '，連 ' + m.streak : '') + '：' +
+      (dTai === 0
+        ? (s.dealerNeedsStreak && !m.streak ? '還沒連莊，莊家不算台。' : '莊家不算台。')
+        : '莊家胡牌或莊家付錢時，多算 ' + dTai + ' 台' +
+          (m.streak ? '（莊家 ' + s.dealerTai + ' + 連莊 ' + m.streak + ' × ' + s.streakTai + '）' : '') + '。');
 
     // 1 誰胡
     $('#mjWinner').innerHTML = [0, 1, 2, 3].map(function (i) {
@@ -327,7 +335,8 @@
     $('#mjRulesNow').textContent = '目前設定：底 ' + T.money(s.base) + '、每台 ' + T.money(s.perTai) + '，' +
       (s.flowers ? '有玩花牌' : '沒玩花牌') + '，' +
       (s.cap ? '限 ' + s.cap + ' 台（莊家台' + (s.capIncludesDealer ? '算在內' : '另外加') + '）' : '不限台') +
-      '，莊家 ' + s.dealerTai + ' 台、每連莊加 ' + s.streakTai + ' 台。';
+      '，莊家 ' + s.dealerTai + ' 台' + (s.dealerNeedsStreak ? '（沒連莊不算）' : '') + '、每連莊加 ' + s.streakTai + ' 台' +
+      (MJ.matchPreset(s) ? '（' + MJ.PRESETS[MJ.matchPreset(s)].name + '）' : '') + '。';
     var rows = [
       ['自摸', '選「自摸」就自動算', String(s.ziMoTai)],
       ['門清自摸', '門清又自摸，兩個合計', String(s.menQingZiMoTai)]
@@ -463,7 +472,11 @@
       if (e.target.matches('[data-te-on]')) {
         var id = e.target.closest('[data-te]').getAttribute('data-te');
         var on = e.target.checked;
-        updateSettings(function (x) { if (on) delete x.off[id]; else x.off[id] = true; });
+        updateSettings(function (x) {
+          if (BUILTIN[id].defaultOff) { if (on) x.on[id] = true; else delete x.on[id]; }
+          else if (on) delete x.off[id];
+          else x.off[id] = true;
+        });
       } else if (e.target.matches('[data-te-tai]')) {
         syncEditor();
       }
@@ -477,6 +490,16 @@
       if (c) T.toast('已刪除「' + c.name + '」');
     });
     $('#mjAddCustom').addEventListener('click', function () { if (T.canEdit()) addCustom(); });
+    $('#mjPresets').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-preset]');
+      if (!b || !T.canEdit()) return;
+      var name = b.getAttribute('data-preset');
+      mj().settings = MJ.applyPreset(settings(), name);
+      hand().picks = MJ.cleanPicks(hand().picks, hand().method, settings());
+      T.changed(PATH);
+      syncSettings();
+      T.toast('已套用' + MJ.PRESETS[name].name);
+    });
     $('#mjNewName').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); if (T.canEdit()) addCustom(); }
     });

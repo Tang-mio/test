@@ -19,6 +19,7 @@
    * ex：同一組只能選一個；clears：選了它就清掉被包含的台型。
    * only：'ziMo' 只有自摸才有、'fangQiang' 只有放槍（別人打出）才有。
    * flower：花牌的台型，設定成不玩花牌時不出現。
+   * defaultOff：預設不用的台型，要在設定裡打開（例如南部的風牌刻子）。
    */
   var PATTERNS = [
     { id: 'menQing', name: '門清', tai: 1, group: 'basic', note: '沒有吃、碰、明槓；又自摸時改算門清自摸' },
@@ -34,6 +35,8 @@
     { id: 'sanYuan', name: '三元牌', tai: 1, group: 'honor', max: 3, note: '中、發、白的刻子，每組都算' },
     { id: 'quanFeng', name: '圈風', tai: 1, group: 'honor', note: '這一圈的風牌刻子' },
     { id: 'menFeng', name: '門風', tai: 1, group: 'honor', note: '自己座位的風牌刻子' },
+    { id: 'jianFeng', name: '風牌刻子', tai: 1, group: 'honor', max: 4, defaultOff: true, clears: ['quanFeng', 'menFeng'],
+      note: '不分圈風、門風，有風牌刻子就算（南部的見字有台）' },
     { id: 'hua', name: '正花', tai: 1, group: 'honor', max: 2, flower: true, note: '和座位對應的花，每張都算' },
     { id: 'huaGang', name: '花槓', tai: 2, group: 'honor', max: 2, flower: true, note: '春夏秋冬或梅蘭竹菊一整組' },
 
@@ -46,8 +49,8 @@
     { id: 'ziYiSe', name: '字一色', tai: 16, group: 'big', ex: 'yiSe' },
     { id: 'xiaoSanYuan', name: '小三元', tai: 4, group: 'big', ex: 'sanYuanDa', clears: ['sanYuan'] },
     { id: 'daSanYuan', name: '大三元', tai: 8, group: 'big', ex: 'sanYuanDa', clears: ['sanYuan'] },
-    { id: 'xiaoSiXi', name: '小四喜', tai: 8, group: 'big', ex: 'siXi', clears: ['quanFeng', 'menFeng'] },
-    { id: 'daSiXi', name: '大四喜', tai: 16, group: 'big', ex: 'siXi', clears: ['quanFeng', 'menFeng'] },
+    { id: 'xiaoSiXi', name: '小四喜', tai: 8, group: 'big', ex: 'siXi', clears: ['quanFeng', 'menFeng', 'jianFeng'] },
+    { id: 'daSiXi', name: '大四喜', tai: 16, group: 'big', ex: 'siXi', clears: ['quanFeng', 'menFeng', 'jianFeng'] },
     { id: 'baXian', name: '八仙過海', tai: 8, group: 'big', ex: 'huaAll', flower: true, clears: ['hua', 'huaGang'] },
     { id: 'qiQiangYi', name: '七搶一', tai: 8, group: 'big', ex: 'huaAll', flower: true, clears: ['hua', 'huaGang'] },
     { id: 'tianHu', name: '天胡', tai: 16, group: 'big', ex: 'tian', only: 'ziMo' },
@@ -67,11 +70,13 @@
     cap: 0,                 // 限台：一把最多幾台，0 是不限
     capIncludesDealer: false, // 莊家台是否也算在限台裡
     dealerTai: 1,           // 莊家台
+    dealerNeedsStreak: false, // 沒連莊時莊家不算台（南部打法）
     streakTai: 2,           // 每連莊一次加幾台（連 N 拉 N 是 2）
     ziMoTai: 1,             // 自摸
     menQingZiMoTai: 3,      // 門清加自摸合計
     tai: {},                // 改過的台數 { 台型 id: 台數 }
     off: {},                // 不用的台型 { 台型 id: true }
+    on: {},                 // 打開的預設不用台型 { 台型 id: true }
     custom: []              // 自訂台型 [{ id, name, tai }]
   };
 
@@ -96,7 +101,9 @@
       if (n != null && n !== BY_ID[id].tai) tai[id] = n;
     });
     var off = {};
-    Object.keys(s.off || {}).forEach(function (id) { if (BY_ID[id] && s.off[id]) off[id] = true; });
+    Object.keys(s.off || {}).forEach(function (id) { if (BY_ID[id] && !BY_ID[id].defaultOff && s.off[id]) off[id] = true; });
+    var on = {};
+    Object.keys(s.on || {}).forEach(function (id) { if (BY_ID[id] && BY_ID[id].defaultOff && s.on[id]) on[id] = true; });
     var seen = {};
     var custom = [];
     (Array.isArray(s.custom) ? s.custom : []).forEach(function (c) {
@@ -114,21 +121,25 @@
       cap: int(s.cap, d.cap, 0, 999),
       capIncludesDealer: !!s.capIncludesDealer,
       dealerTai: int(s.dealerTai, d.dealerTai, 0, 99),
+      dealerNeedsStreak: !!s.dealerNeedsStreak,
       streakTai: int(s.streakTai, d.streakTai, 0, 99),
       ziMoTai: int(s.ziMoTai, d.ziMoTai, 0, 99),
       menQingZiMoTai: int(s.menQingZiMoTai, d.menQingZiMoTai, 0, 99),
       tai: tai,
       off: off,
+      on: on,
       custom: custom
     };
   }
+
+  function isOn(p, s) { return p.defaultOff ? !!s.on[p.id] : !s.off[p.id]; }
 
   // 依設定算出實際可用的台型（改過的台數、關掉的不算、沒玩花牌時拿掉花牌台型、加上自訂的）
   function patternsFor(settings) {
     var s = normalizeSettings(settings);
     var list = [];
     PATTERNS.forEach(function (p) {
-      if (s.off[p.id] || (p.flower && !s.flowers)) return;
+      if (!isOn(p, s) || (p.flower && !s.flowers)) return;
       var q = {};
       Object.keys(p).forEach(function (k) { q[k] = p[k]; });
       q.tai = s.tai[p.id] != null ? s.tai[p.id] : p.tai;
@@ -217,9 +228,12 @@
     return { tai: Math.max(0, tai), items: items };
   }
 
+  // 莊家台：莊家台數 + 連莊數 × 每連幾台；設定「沒連莊時莊家不算台」時，沒連莊就是 0
   function dealerTai(streak, settings) {
     var s = normalizeSettings(settings);
-    return s.dealerTai + s.streakTai * Math.max(0, Math.floor(Number(streak) || 0));
+    var n = Math.max(0, Math.floor(Number(streak) || 0));
+    if (s.dealerNeedsStreak && n === 0) return 0;
+    return s.dealerTai + s.streakTai * n;
   }
 
   /*
@@ -266,6 +280,46 @@
     };
   }
 
+  /*
+   * 一鍵套用的打法。只改規則與台數表，底、每台、自訂台型保持不變。
+   * 南部打法（無花）：不打花牌；邊張、中洞、單吊不算台；見字有台（風牌不用對位）；
+   * 滿台 4 台；莊家沒連莊不算台，連 N 拉 N 共 2N+1 台；碰碰胡 2 台。
+   */
+  var PRESETS = {
+    north: {
+      name: '北部打法', flowers: true, cap: 0, capIncludesDealer: false,
+      dealerTai: 1, dealerNeedsStreak: false, streakTai: 2, ziMoTai: 1, menQingZiMoTai: 3,
+      tai: {}, off: {}, on: {}
+    },
+    south: {
+      name: '南部打法', flowers: false, cap: 4, capIncludesDealer: false,
+      dealerTai: 1, dealerNeedsStreak: true, streakTai: 2, ziMoTai: 1, menQingZiMoTai: 3,
+      tai: { pengPeng: 2 }, off: { duTing: true, quanFeng: true, menFeng: true }, on: { jianFeng: true }
+    }
+  };
+  var PRESET_KEYS = ['flowers', 'cap', 'capIncludesDealer', 'dealerTai', 'dealerNeedsStreak', 'streakTai', 'ziMoTai', 'menQingZiMoTai', 'tai', 'off', 'on'];
+
+  function applyPreset(settings, name) {
+    var p = PRESETS[name];
+    var s = normalizeSettings(settings);
+    if (!p) return s;
+    var next = JSON.parse(JSON.stringify(s));
+    PRESET_KEYS.forEach(function (k) { next[k] = JSON.parse(JSON.stringify(p[k])); });
+    return normalizeSettings(next);
+  }
+
+  // 目前的規則和哪個打法一樣（不看底、每台、自訂台型）；都不一樣就回傳 null
+  function matchPreset(settings) {
+    var s = normalizeSettings(settings);
+    var found = null;
+    Object.keys(PRESETS).forEach(function (name) {
+      var p = normalizeSettings(applyPreset(s, name));
+      var same = PRESET_KEYS.every(function (k) { return JSON.stringify(p[k]) === JSON.stringify(s[k]); });
+      if (same && !found) found = name;
+    });
+    return found;
+  }
+
   // 莊家胡或流局：連莊；其他人胡：下一家當莊
   function nextDealer(dealer, streak, winner) {
     if (winner == null || winner < 0 || winner === dealer) return { dealer: dealer, streak: streak + 1 };
@@ -279,6 +333,10 @@
     DEFAULT_SETTINGS: DEFAULT_SETTINGS,
     normalizeSettings: normalizeSettings,
     patternsFor: patternsFor,
+    isOn: isOn,
+    PRESETS: PRESETS,
+    applyPreset: applyPreset,
+    matchPreset: matchPreset,
     cleanPicks: cleanPicks,
     togglePick: togglePick,
     countTai: countTai,

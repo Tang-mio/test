@@ -414,6 +414,10 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .tai-chip[aria-pressed="true"] b { color: var(--accent); }
 .tai-chip:disabled { opacity: .35; cursor: not-allowed; }
 .extra-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: var(--step--1); }
+.preset-box { display: grid; gap: 6px; }
+.preset-box .method button { height: auto; min-height: 52px; padding: 6px 8px; display: grid; gap: 0; justify-items: center; line-height: 1.3; }
+.preset-box .method button small { font-size: 11px; font-weight: 500; color: var(--muted); }
+.preset-box .method button[aria-pressed="true"] small { color: var(--accent); }
 .cap-note { font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
 .tai-editor { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .tai-editor > summary {
@@ -888,6 +892,24 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
           </ul>
         </section>
         <section>
+          <h2>北部打法與南部打法</h2>
+          <p>台灣十六張常分成北部、南部兩種打法。在「名字・規則」可以一鍵套用，套用後每一項都還能再改。</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>規則</th><th>北部打法</th><th>南部打法</th></tr></thead>
+              <tbody>
+                <tr><td>花牌</td><td style="white-space:normal">有，正花、花槓有台</td><td style="white-space:normal">不打花牌（136 張）</td></tr>
+                <tr><td>邊張、中洞、單吊</td><td>1 台</td><td>不算台</td></tr>
+                <tr><td>字牌</td><td style="white-space:normal">三元牌有台；風牌要對到圈風或門風</td><td style="white-space:normal">見字有台，風牌刻子不用對位</td></tr>
+                <tr><td>莊家</td><td style="white-space:normal">1 台，每連莊加 2 台</td><td style="white-space:normal">沒連莊不算台，連 N 拉 N 共 2N+1 台</td></tr>
+                <tr><td>碰碰胡</td><td>4 台</td><td>2 台</td></tr>
+                <tr><td>上限</td><td>不限台</td><td>滿台 4 台</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="hint">南部打法各家差很多，例如有些只算 2N、有些碰碰胡和混一色都算 2 台、滿台裡含不含連莊台也不一樣。照你們家的習慣在台數表裡調整就好。</p>
+        </section>
+        <section>
           <h2>限台</h2>
           <p>有些人會限制一把最多算幾台，例如「限 10 台」：牌型算出 13 台，也只照 10 台收。莊家台可以選擇算在上限裡面，或另外加在上限之外。限台在「名字・規則」裡設定，預設不限。</p>
         </section>
@@ -1043,6 +1065,13 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
 
     <fieldset class="sec" id="set-mahjong" hidden>
       <legend class="set-label">麻將計錢規則</legend>
+      <div class="preset-box">
+        <span class="hint" id="mjPresetLabel">一鍵套用打法（只改規則和台數表，底和每台不變，套用後還能再改）</span>
+        <div class="method" id="mjPresets" role="group" aria-labelledby="mjPresetLabel">
+          <button type="button" data-preset="north" aria-pressed="false">北部打法<small>有花・邊張中洞單吊有台</small></button>
+          <button type="button" data-preset="south" aria-pressed="false">南部打法<small>無花・見字有台・滿台 4 台</small></button>
+        </div>
+      </div>
       <div class="set-grid">
         <div class="set-row">
           <label class="hint" for="mjBase">底</label>
@@ -1053,7 +1082,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
           <span class="field"><span>$</span><input id="mjPerTai" type="number" min="0" step="10" inputmode="numeric"></span>
         </div>
       </div>
-      <p class="hint">常見的打法寫成「底 / 台」，例如 50 / 20、100 / 20、30 / 10。</p>
+      <p class="hint">常見的打法寫成「底 / 台」，例如 50 / 20、100 / 20；南部常見 30 / 10。</p>
       <div class="rule-list">
         <div class="rule-row">
           <label class="name" for="mjFlowers"><input type="checkbox" class="switch" id="mjFlowers">玩花牌</label>
@@ -1072,6 +1101,10 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
           <label class="name" for="mjDealerTai">莊家</label>
           <span class="hint">莊家胡牌或莊家付錢時多算</span>
           <span class="ctrl"><span class="field small"><input id="mjDealerTai" type="number" min="0" step="1" inputmode="numeric"><span>台</span></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="mjDealerNeedsStreak"><input type="checkbox" class="switch" id="mjDealerNeedsStreak">沒連莊時莊家不算台</label>
+          <span class="hint">南部打法：連莊才有台，連 N 拉 N 共 2N+1 台</span>
         </div>
         <div class="rule-row">
           <label class="name" for="mjStreakTai">每連莊加</label>

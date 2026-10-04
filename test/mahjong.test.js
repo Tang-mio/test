@@ -131,3 +131,39 @@ test('設定：台數和限台限制在合理範圍', () => {
   assert.equal(s.dealerTai, 99);
   assert.deepEqual(s.tai, {});
 });
+
+test('南部打法：不打花、邊張中洞單吊不算、見風就算、碰碰胡 2 台、滿台 4 台', () => {
+  const s = MJ.applyPreset({ base: 30, perTai: 10 }, 'south');
+  assert.equal(s.base, 30);
+  assert.equal(MJ.matchPreset(s), 'south');
+  const ids = MJ.patternsFor(s).map(p => p.id);
+  ['hua', 'huaGang', 'duTing', 'quanFeng', 'menFeng'].forEach(id => assert.equal(ids.includes(id), false));
+  assert.equal(ids.includes('jianFeng'), true);
+  assert.equal(MJ.countTai({ pengPeng: 1, jianFeng: 2, sanYuan: 1 }, 'fangQiang', 0, s).tai, 2 + 2 + 1);
+  // 6 台照滿台 4 台算：30 + 4 × 10
+  const r = MJ.settle({ dealer: 3, streak: 0, winner: 1, method: 'fangQiang', discarder: 2, tai: 6 }, s);
+  assert.equal(r.transfers[0].amount, 70);
+});
+
+test('南部打法：莊家沒連莊不算台，連 N 拉 N 是 2N+1 台', () => {
+  const s = MJ.applyPreset({}, 'south');
+  assert.equal(MJ.dealerTai(0, s), 0);
+  assert.equal(MJ.dealerTai(1, s), 3);
+  assert.equal(MJ.dealerTai(2, s), 5);
+  // 只算 2N 的打法：莊家 0 台、每連 2 台
+  assert.equal(MJ.dealerTai(2, { dealerTai: 0, streakTai: 2 }), 4);
+});
+
+test('打法切換：預設是北部打法，改過任何一項就不算任何一種打法', () => {
+  assert.equal(MJ.matchPreset({}), 'north');
+  const s = MJ.applyPreset({}, 'south');
+  assert.equal(MJ.matchPreset({ ...s, cap: 5 }), null);
+  assert.equal(MJ.matchPreset(MJ.applyPreset(s, 'north')), 'north');
+});
+
+test('預設不用的台型（風牌刻子）要打開才出現；選了會清掉圈風、門風', () => {
+  assert.equal(MJ.patternsFor({}).some(p => p.id === 'jianFeng'), false);
+  const s = { on: { jianFeng: true } };
+  assert.deepEqual(MJ.togglePick({ quanFeng: 1, menFeng: 1 }, 'jianFeng', 'ziMo', s), { jianFeng: 1 });
+  assert.deepEqual(MJ.togglePick({ jianFeng: 2 }, 'quanFeng', 'ziMo', s), { quanFeng: 1 });
+});
