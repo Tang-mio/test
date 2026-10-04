@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
 <style>
-/* 版面：上方是規則設定，左邊四個座位（東南西北）點選蓋牌，右邊即時結算；窄螢幕時上下堆疊 */
+/* 版面：手機優先的單欄。上方四家分頁看點數與輸贏，中間是正在輸入的那家，底部固定牌面鍵盤和本局結算 */
 :root {
   --bg: #ECEFF4;
   --surface: #FFFFFF;
@@ -28,18 +28,21 @@
   --warn: #9A5500;
   --warn-soft: #FBEED8;
   --shadow: 0 1px 2px rgba(22, 30, 48, 0.08);
+  --dock-shadow: 0 -8px 24px rgba(22, 30, 48, 0.10);
+  --scrim: rgba(14, 18, 26, 0.45);
 
   --font-display: "LXGW WenKai TC", "Kaiti TC", "BiauKai", "DFKai-SB", serif;
   --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
   --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
+  --step--2: 0.6875rem;
   --step--1: 0.8125rem;
   --step-0: 0.9375rem;
   --step-1: 1.125rem;
   --step-2: 1.375rem;
-  --step-3: 1.875rem;
-  --step-4: 2.375rem;
+  --step-3: 1.75rem;
   --radius: 12px;
+  --dock-h: 250px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -61,6 +64,8 @@
     --warn: #F0B65C;
     --warn-soft: #382A14;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --dock-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+    --scrim: rgba(0, 0, 0, 0.6);
     color-scheme: dark;
   }
 }
@@ -83,6 +88,8 @@
   --warn: #F0B65C;
   --warn-soft: #382A14;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --dock-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+  --scrim: rgba(0, 0, 0, 0.6);
   color-scheme: dark;
 }
 
@@ -95,86 +102,262 @@ body {
   font-family: var(--font-body);
   font-size: var(--step-0);
   line-height: 1.6;
+  -webkit-tap-highlight-color: transparent;
 }
 [hidden] { display: none !important; }
 button, input { font: inherit; color: inherit; }
-button { cursor: pointer; }
+button { cursor: pointer; touch-action: manipulation; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 h1, h2, h3 { text-wrap: balance; margin: 0; }
 p { margin: 0; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+legend { padding: 0; }
 
 .app {
-  max-width: 1120px;
+  max-width: 600px;
   margin: 0 auto;
   padding-inline: 16px;
-  padding-block: 20px 48px;
+  padding-block: 14px 32px;
   display: grid;
-  gap: 20px;
+  gap: 14px;
 }
-@media (min-width: 720px) { .app { padding-inline: 24px; } }
+.app.has-dock { padding-bottom: calc(var(--dock-h) + 20px); }
 
 /* 標頭 */
-.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
-.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .mark {
-  flex: none;
-  width: 40px; height: 56px;
-  border-radius: 6px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
-  position: relative;
-  font-family: var(--font-num);
-  color: var(--ink);
+  flex: none; width: 30px; height: 42px; border-radius: 5px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
+  position: relative; font-family: var(--font-num); color: var(--ink);
 }
 .mark span { position: absolute; font-weight: 600; line-height: 1; }
-.mark .ix { top: 5px; left: 6px; font-size: 14px; }
-.mark .pip { inset: 0; display: grid; place-items: center; padding-top: 10px; font-size: 20px; }
-.brand h1 { font-family: var(--font-display); font-weight: 700; font-size: var(--step-3); line-height: 1.15; letter-spacing: 0.04em; }
-.brand p { color: var(--muted); font-size: var(--step--1); }
+.mark .ix { top: 4px; left: 4px; font-size: 11px; }
+.mark .pip { inset: 0; display: grid; place-items: center; padding-top: 8px; font-size: 16px; }
+.brand h1 { font-family: var(--font-display); font-weight: 700; font-size: var(--step-2); line-height: 1.15; letter-spacing: 0.04em; white-space: nowrap; }
 
 .tabs { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
 .tabs button {
   border: 0; background: transparent; border-radius: 999px;
-  padding: 6px 16px; font-size: var(--step--1); font-weight: 500; color: var(--muted);
-  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; font-size: var(--step--1); font-weight: 500; color: var(--muted);
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
 }
-.tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
+.tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
 .tabs .badge { font-family: var(--font-num); font-size: 11px; min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--surface-2); color: var(--muted); text-align: center; }
 .tabs button[aria-selected="true"] .badge { background: var(--surface); color: var(--accent); }
-@media (max-width: 560px) {
-  .tabs { width: 100%; }
-  .tabs button { flex: 1; justify-content: center; }
+@media (max-width: 380px) {
+  .brand { gap: 8px; }
+  .brand h1 { font-size: var(--step-1); }
+  .mark { width: 26px; height: 36px; }
+  .tabs button { padding: 5px 9px; }
 }
 
-/* 規則設定 */
-.settings { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-.settings > summary {
-  list-style: none; cursor: pointer;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
-  padding: 12px 16px;
+/* 本局標題列 */
+.calc { display: grid; gap: 12px; }
+.round-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.round-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.round-title b { font-family: var(--font-display); font-size: var(--step-1); }
+.round-actions { display: flex; gap: 6px; }
+.sync-pill { display: inline-flex; align-items: center; gap: 5px; font-size: var(--step--2); font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); white-space: nowrap; }
+.sync-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.sync-pill[data-mode="sync"] { background: var(--gain-soft); color: var(--gain); border-color: transparent; }
+.sync-pill[data-mode="readonly"], .sync-pill[data-mode="offline"] { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.sync-pill[data-mode="connecting"] .dot { animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: .2; } }
+
+.rule-line {
+  display: flex; flex-wrap: wrap; gap: 5px; width: 100%;
+  border: 0; background: none; padding: 0; text-align: left;
 }
-.settings > summary::-webkit-details-marker { display: none; }
-.settings .sum-label { font-weight: 700; font-size: var(--step--1); }
-.sum-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
-.sum-chip { font-size: 12px; padding: 1px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); white-space: nowrap; }
+.sum-chip { font-size: var(--step--2); padding: 0 8px; line-height: 20px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); white-space: nowrap; }
 .sum-chip.off { color: var(--muted); text-decoration: line-through; }
 .sum-chip b { font-family: var(--font-num); font-weight: 600; }
-.sum-edit { font-size: var(--step--1); color: var(--accent); font-weight: 500; }
-.sum-edit .when-open, .settings[open] .sum-edit .when-closed { display: none; }
-.settings[open] .sum-edit .when-open { display: inline; }
-.settings-body { border-top: 1px solid var(--line); padding: 16px; display: grid; gap: 14px; }
-.set-grid { display: grid; gap: 14px 28px; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); }
-.set-row { display: grid; gap: 6px; align-content: start; }
-.set-label { font-size: var(--step--1); font-weight: 700; }
+
+.btn {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 8px; padding: 6px 12px; font-size: var(--step--1); font-weight: 500;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+}
+.btn svg { width: 15px; height: 15px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--pay); }
+.btn.danger.armed { background: var(--pay); color: var(--surface); border-color: var(--pay); }
+.btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+.link-btn { border: 0; background: none; padding: 4px; color: var(--muted); font-size: var(--step--1); text-decoration: underline; text-underline-offset: 3px; }
+.link-btn:hover { color: var(--pay); }
+.link-btn:disabled { opacity: .4; cursor: not-allowed; }
 .hint { color: var(--muted); font-size: var(--step--1); }
+
+/* 四家分頁 */
+.seat-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.seat-tab {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 10px;
+  padding: 7px 7px 6px; display: grid; gap: 1px; justify-items: start; text-align: left; min-width: 0;
+  transition: border-color .15s, background .15s;
+}
+.seat-tab[aria-selected="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.st-top { display: flex; gap: 4px; align-items: baseline; min-width: 0; width: 100%; }
+.st-badge { font-family: var(--font-display); font-weight: 700; color: var(--accent); flex: none; }
+.st-name { font-weight: 700; font-size: var(--step--1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.st-pts { font-size: var(--step--2); color: var(--muted); white-space: nowrap; }
+.st-pts b { font-family: var(--font-num); font-weight: 600; color: var(--ink); }
+.st-net { font-family: var(--font-num); font-weight: 600; font-size: var(--step--1); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.st-tags { display: flex; flex-wrap: wrap; gap: 2px; min-height: 16px; }
+.st-tag { font-size: 10px; font-weight: 700; padding: 0 5px; border-radius: 999px; line-height: 16px; white-space: nowrap; }
+.pos { color: var(--gain); }
+.neg { color: var(--pay); }
+.zero { color: var(--muted); }
+
+.pill { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; line-height: 1.5; padding: 0 8px; border-radius: 999px; white-space: nowrap; }
+.pill-kind, .st-tag.kind { background: var(--accent-soft); color: var(--accent); }
+.pill-bao, .st-tag.bao { background: var(--warn-soft); color: var(--warn); }
+.pill-win, .st-tag.win { background: var(--gain-soft); color: var(--gain); }
+.st-tag.first { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); line-height: 14px; }
+.seat-tab[aria-selected="true"] .st-tag.kind { background: var(--surface); }
+
+/* 正在輸入的那家 */
+.active-seat {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 12px 14px; display: grid; gap: 10px; min-width: 0;
+}
+.as-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.seat-badge {
+  flex: none; width: 34px; height: 34px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent);
+  font-family: var(--font-display); font-weight: 700; font-size: 1.15rem;
+}
+.as-name {
+  flex: 1; min-width: 0; border: 0; background: none; padding: 0; text-align: left;
+  display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: var(--step-1);
+}
+.as-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.as-name svg { flex: none; width: 14px; height: 14px; color: var(--muted); }
+.first-btn {
+  border: 1px dashed var(--line); background: transparent; border-radius: 999px;
+  padding: 2px 10px; font-size: 12px; color: var(--muted); white-space: nowrap; flex: none;
+}
+.first-btn[aria-pressed="true"] { border-style: solid; border-color: var(--ink); color: var(--ink); font-weight: 700; }
+.first-btn:disabled { cursor: not-allowed; }
+.tally { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: var(--step--1); color: var(--muted); }
+.tally b { font-family: var(--font-num); font-weight: 600; color: var(--ink); font-size: var(--step-1); font-variant-numeric: tabular-nums; }
+.tally .net { margin-left: auto; font-family: var(--font-num); font-weight: 600; font-size: var(--step-1); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 52px; align-items: center; padding: 6px; border-radius: 8px; background: var(--surface-2); }
+.chips-empty { font-size: var(--step--1); color: var(--muted); padding-inline: 4px; }
+.chip {
+  width: 30px; height: 40px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface);
+  box-shadow: var(--shadow); padding: 0;
+  font-family: var(--font-num); font-weight: 600; font-size: 14px; letter-spacing: -0.03em;
+  display: grid; place-items: center;
+}
+button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration: line-through; }
+.chip.new { animation: pop .18s ease-out; }
+@keyframes pop { from { transform: translateY(6px) scale(.9); opacity: .4; } }
+.last7 { display: flex; gap: 8px; align-items: center; font-size: var(--step--1); cursor: pointer; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); }
+.last7 input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+.last7:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.as-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* 結算明細 */
+.detail { display: grid; gap: 10px; min-width: 0; }
+.win-card {
+  border-radius: 14px; padding: 14px 16px; color: var(--back-ink);
+  background-color: var(--back);
+  background-image:
+    repeating-linear-gradient(45deg, var(--back-weave) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(-45deg, var(--back-weave) 0 2px, transparent 2px 9px);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 4px 12px;
+  box-shadow: inset 0 0 0 4px var(--back), inset 0 0 0 5px var(--back-weave);
+}
+.win-card .eyebrow { grid-column: 1 / -1; font-size: 12px; letter-spacing: 0.12em; opacity: .8; }
+.win-name { font-family: var(--font-display); font-weight: 700; font-size: var(--step-3); line-height: 1.1; overflow-wrap: anywhere; }
+.win-total { text-align: right; font-size: var(--step--1); white-space: nowrap; }
+.win-total b { display: block; font-family: var(--font-num); font-size: var(--step-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.win-meta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: var(--step--1); }
+.win-kind { display: inline-flex; align-items: baseline; gap: 4px; font-weight: 700; padding: 0 9px; border-radius: 999px; background: var(--back-ink); color: var(--back); }
+.win-kind b { font-family: var(--font-num); }
+.win-why { opacity: .9; }
+
+.panel-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 6px; }
+.sub { font-size: var(--step--1); font-weight: 700; color: var(--muted); letter-spacing: 0.06em; }
+.transfers { list-style: none; margin: 0; padding: 0; display: grid; }
+.transfers li { display: grid; gap: 2px; padding-block: 8px; }
+.transfers li + li { border-top: 1px dashed var(--line); }
+.t-line { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.t-who { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.t-who .arrow { color: var(--muted); padding-inline: 4px; }
+.t-amt { font-family: var(--font-num); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.t-formula { font-family: var(--font-num); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.alert { background: var(--pay-soft); color: var(--ink); border-radius: 10px; padding: 12px 14px; font-size: var(--step--1); display: grid; gap: 4px; }
+.alert b { color: var(--pay); }
+.guide { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 6px; }
+.guide strong { font-family: var(--font-display); font-size: var(--step-1); }
+.guide ol { margin: 0; padding-left: 1.3em; display: grid; gap: 2px; color: var(--muted); font-size: var(--step--1); }
+.guide ol li::marker { font-family: var(--font-num); color: var(--accent); }
+
+/* 底部鍵盤 */
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  background: var(--surface); border-top: 1px solid var(--line); box-shadow: var(--dock-shadow);
+  padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.dock-inner { max-width: 576px; margin: 0 auto; display: grid; gap: 8px; }
+.summary { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+.sum-text { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font-size: var(--step--1); line-height: 1.4; }
+.sum-text .who { font-weight: 700; font-size: var(--step-0); }
+.sum-text .amt { font-family: var(--font-num); font-weight: 600; color: var(--gain); }
+.sum-text .muted { color: var(--muted); }
+.summary .btn.primary { padding: 9px 16px; font-size: var(--step-0); white-space: nowrap; }
+.keys { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.key {
+  height: 50px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2);
+  display: grid; place-content: center; justify-items: center; padding: 0; line-height: 1.1;
+  transition: border-color .12s, transform .06s, background .12s;
+}
+.key .r { font-family: var(--font-num); font-weight: 600; font-size: 19px; letter-spacing: -0.03em; }
+.key .p { font-family: var(--font-num); font-size: 10px; color: var(--muted); }
+.key:hover:not(:disabled) { border-color: var(--accent); }
+.key:active:not(:disabled) { transform: translateY(1px); background: var(--accent-soft); }
+.key:disabled { opacity: .3; cursor: not-allowed; }
+.dock-actions { display: grid; grid-template-columns: 1fr 1.7fr; gap: 6px; }
+.dock-actions button {
+  height: 44px; border-radius: 8px; font-size: var(--step-0); font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.undo-btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.next-btn { border: 1px solid var(--ink); background: var(--ink); color: var(--surface); }
+.dock-actions button:disabled { opacity: .4; cursor: not-allowed; }
+.dock-actions svg { width: 18px; height: 18px; }
+
+/* 設定面板 */
+.sheet {
+  width: 100%; max-width: 600px; max-height: 88vh; margin: auto auto 0;
+  border: 0; border-radius: 16px 16px 0 0; padding: 0;
+  background: var(--surface); color: var(--ink);
+}
+@media (min-width: 640px) { .sheet { margin: auto; border-radius: 16px; } }
+.sheet::backdrop { background: var(--scrim); }
+.sheet-body { padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 18px; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; background: var(--surface); padding: 14px 16px 10px; border-bottom: 1px solid var(--line); z-index: 1; }
+.sheet-head h2 { font-family: var(--font-display); font-size: var(--step-2); }
+.set-label { font-size: var(--step--1); font-weight: 700; }
+.sec { display: grid; gap: 10px; }
+.name-grid { display: grid; gap: 8px 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.name-field { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.name-field input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 7px 10px; font-weight: 700; }
+.name-field input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+.name-field input:disabled { opacity: .7; }
+.set-grid { display: grid; gap: 14px 24px; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); }
+.set-row { display: grid; gap: 6px; align-content: start; }
 .field {
-  display: inline-flex; align-items: center; gap: 4px;
+  display: inline-flex; align-items: center; gap: 4px; width: fit-content;
   background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
   padding: 2px 8px; font-family: var(--font-num); color: var(--muted);
 }
 .field input {
-  width: 4.5em; border: 0; background: transparent; padding: 4px 0;
+  width: 4.5em; border: 0; background: transparent; padding: 5px 0;
   font-family: var(--font-num); font-weight: 600; color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
@@ -182,23 +365,20 @@ p { margin: 0; }
 .field:focus-within { border-color: var(--accent); }
 .field.small input { width: 3em; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; width: fit-content; }
-.seg label { position: relative; padding: 5px 14px; font-size: var(--step--1); cursor: pointer; background: var(--surface-2); }
+.seg label { position: relative; padding: 6px 14px; font-size: var(--step--1); cursor: pointer; background: var(--surface-2); }
 .seg label + label { border-left: 1px solid var(--line); }
 .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
 .seg label:has(input:checked) { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
 .seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
-.rule-list { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.rule-list { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .rule-row {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 12px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 12px;
   padding: 10px 12px; background: var(--surface);
 }
 .rule-row + .rule-row { border-top: 1px solid var(--line); }
 .rule-row .name { font-weight: 700; font-size: var(--step--1); display: flex; align-items: center; gap: 10px; cursor: pointer; }
-.rule-row .ctrl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-@media (max-width: 520px) {
-  .rule-row { grid-template-columns: 1fr auto; }
-  .rule-row .hint { grid-column: 1 / -1; grid-row: 2; }
-}
+.rule-row .hint { grid-column: 1; }
+.rule-row .ctrl { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .switch {
   appearance: none; -webkit-appearance: none; margin: 0;
   width: 34px; height: 20px; border-radius: 999px; flex: none;
@@ -211,165 +391,14 @@ p { margin: 0; }
 .switch:checked { background: var(--accent); }
 .switch:checked::after { transform: translateX(14px); }
 .rule-row:has(.switch:not(:checked)) .field { opacity: .45; }
-.settings-foot { display: flex; justify-content: flex-end; }
-
-.btn {
-  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
-  border-radius: 8px; padding: 7px 14px; font-size: var(--step--1); font-weight: 500;
-}
-.btn:hover { border-color: var(--accent); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
-.btn.primary:hover { filter: brightness(1.08); }
-.btn.danger { color: var(--pay); }
-.btn.danger.armed { background: var(--pay); color: var(--surface); border-color: var(--pay); }
-.btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
-.link-btn { border: 0; background: none; padding: 2px 4px; color: var(--muted); font-size: var(--step--1); text-decoration: underline; text-underline-offset: 3px; }
-.link-btn:hover { color: var(--pay); }
-
-/* 本局 */
-.calc { display: grid; gap: 16px; }
-.lead { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
-.lead .hint { max-width: 62ch; }
-
-/* 玩家與同步 */
-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
-.players { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 12px; }
-.players-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-.players-head h2 { font-size: var(--step-0); font-weight: 700; }
-.sync-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
-.sync-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.sync-pill[data-mode="sync"] { background: var(--gain-soft); color: var(--gain); border-color: transparent; }
-.sync-pill[data-mode="readonly"], .sync-pill[data-mode="offline"] { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
-.sync-pill[data-mode="connecting"] .dot { animation: blink 1s infinite; }
-@keyframes blink { 50% { opacity: .2; } }
-.name-grid { display: grid; gap: 8px 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (min-width: 760px) { .name-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.name-field { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.name-field input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 6px 10px; font-weight: 700; }
-.name-field input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
-.name-field input:disabled { opacity: .7; }
-.me-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
-.choices { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
-.choices label {
-  position: relative; padding: 3px 12px; border: 1px solid var(--line); border-radius: 999px;
-  font-size: var(--step--1); background: var(--surface-2); cursor: pointer;
-  max-width: 10em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.choices input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
-.choices label:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
-.choices label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
-.waiting { text-align: center; padding-block: 24px; justify-items: center; }
-.waiting strong { font-size: var(--step-1); font-family: var(--font-display); }
-.waiting span { color: var(--muted); font-size: var(--step--1); max-width: 30ch; }
-.calc-grid { display: grid; gap: 20px; align-items: start; }
-@media (min-width: 980px) { .calc-grid { grid-template-columns: minmax(0, 1fr) 340px; } }
-.seats { display: grid; gap: 14px; }
-@media (min-width: 640px) { .seats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-
-.seat {
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 14px; display: grid; gap: 12px; align-content: start; min-width: 0;
-  transition: border-color .2s, box-shadow .2s;
-}
-.seat.is-winner { border-color: var(--gain); box-shadow: 0 0 0 1px var(--gain); }
-.seat-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.seat-badge {
-  flex: none; width: 34px; height: 34px; border-radius: 8px;
-  display: grid; place-items: center;
-  background: var(--accent-soft); color: var(--accent);
-  font-family: var(--font-display); font-weight: 700; font-size: 1.15rem;
-}
-.seat-title { flex: 1; min-width: 0; font-weight: 700; font-size: var(--step-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.seat.mine { border-color: var(--accent); }
-.seat.mine.is-winner { border-color: var(--gain); }
-.seat-net { font-family: var(--font-num); font-weight: 600; font-size: var(--step-1); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.pos { color: var(--gain); }
-.neg { color: var(--pay); }
-.zero { color: var(--muted); }
-
-.seat-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.tally { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: var(--step--1); color: var(--muted); }
-.tally b { font-family: var(--font-num); font-weight: 600; color: var(--ink); font-size: var(--step-0); font-variant-numeric: tabular-nums; }
-.first-btn {
-  border: 1px dashed var(--line); background: transparent; border-radius: 999px;
-  padding: 1px 10px; font-size: 12px; color: var(--muted); white-space: nowrap;
-}
-.first-btn[aria-pressed="true"] { border-style: solid; border-color: var(--ink); color: var(--ink); font-weight: 700; }
-
-.pill { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; line-height: 1.5; padding: 0 8px; border-radius: 999px; white-space: nowrap; }
-.pill-kind { background: var(--accent-soft); color: var(--accent); }
-.pill-bao { background: var(--warn-soft); color: var(--warn); }
-.pill-win { background: var(--gain-soft); color: var(--gain); }
-.pill-me { background: var(--accent); color: var(--surface); }
-
-.chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 44px; align-items: center; padding: 6px; border-radius: 8px; background: var(--surface-2); }
-.chips-empty { font-size: var(--step--1); color: var(--muted); padding-inline: 4px; }
-.chip {
-  width: 30px; height: 40px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface);
-  box-shadow: var(--shadow); padding: 0;
-  font-family: var(--font-num); font-weight: 600; font-size: 14px; letter-spacing: -0.03em;
-  display: grid; place-items: center;
-}
-button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration: line-through; }
-.last7 { display: flex; gap: 8px; align-items: center; font-size: var(--step--1); cursor: pointer; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); }
-.last7 input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
-.last7:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
-
-.keys { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
-.key {
-  height: 46px; border-radius: 7px; border: 1px solid var(--line); background: var(--surface-2);
-  display: grid; place-content: center; justify-items: center; gap: 0; padding: 0; line-height: 1.1;
-  transition: border-color .12s, transform .06s;
-}
-.key .r { font-family: var(--font-num); font-weight: 600; font-size: 16px; letter-spacing: -0.03em; }
-.key .p { font-family: var(--font-num); font-size: 10px; color: var(--muted); }
-.key:hover:not(:disabled) { border-color: var(--accent); }
-.key:active:not(:disabled) { transform: translateY(1px); }
-.key:disabled { opacity: .3; cursor: not-allowed; }
-.seat-foot { display: flex; justify-content: flex-end; margin-top: -4px; }
-
-/* 結算 */
-.result { display: grid; gap: 14px; min-width: 0; }
-@media (min-width: 980px) { .result { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); } }
-.win-card {
-  border-radius: 14px; padding: 18px 18px 16px; color: var(--back-ink);
-  background-color: var(--back);
-  background-image:
-    repeating-linear-gradient(45deg, var(--back-weave) 0 2px, transparent 2px 9px),
-    repeating-linear-gradient(-45deg, var(--back-weave) 0 2px, transparent 2px 9px);
-  display: grid; gap: 6px; position: relative; overflow: hidden;
-  box-shadow: inset 0 0 0 4px var(--back), inset 0 0 0 5px var(--back-weave);
-}
-.win-card .eyebrow { font-size: 12px; letter-spacing: 0.12em; opacity: .8; }
-.win-name { font-family: var(--font-display); font-weight: 700; font-size: var(--step-4); line-height: 1.1; overflow-wrap: anywhere; }
-.win-why { font-size: var(--step--1); opacity: .9; }
-.win-kind { display: inline-flex; width: fit-content; align-items: baseline; gap: 6px; font-weight: 700; font-size: var(--step-0); padding: 1px 10px; border-radius: 999px; background: var(--back-ink); color: var(--back); }
-.win-kind b { font-family: var(--font-num); }
-.win-total { margin-top: 6px; display: flex; align-items: baseline; gap: 8px; font-size: var(--step--1); }
-.win-total b { font-family: var(--font-num); font-size: var(--step-3); font-weight: 600; font-variant-numeric: tabular-nums; }
-
-.panel-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 10px; }
-.sub { font-size: var(--step--1); font-weight: 700; color: var(--muted); letter-spacing: 0.06em; }
-.transfers { list-style: none; margin: 0; padding: 0; display: grid; }
-.transfers li { display: grid; gap: 2px; padding-block: 8px; }
-.transfers li + li { border-top: 1px dashed var(--line); }
-.t-line { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
-.t-who { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
-.t-who .arrow { color: var(--muted); padding-inline: 4px; }
-.t-amt { font-family: var(--font-num); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.t-formula { font-family: var(--font-num); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
-.alert { background: var(--pay-soft); color: var(--ink); border-radius: 10px; padding: 12px 14px; font-size: var(--step--1); display: grid; gap: 4px; }
-.alert b { color: var(--pay); }
-.result-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.result-actions .btn.primary { flex: 1; }
+.sheet-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 /* 累計帳 */
-.ledger { display: grid; gap: 16px; }
+.ledger { display: grid; gap: 14px; }
 .section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
 .section-head h2 { font-family: var(--font-display); font-size: var(--step-2); }
-.totals { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (min-width: 720px) { .totals { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.total-tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 2px; min-width: 0; }
+.totals { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.total-tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
 .total-tile .who { display: flex; align-items: center; gap: 8px; font-weight: 700; min-width: 0; }
 .total-tile .who span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .total-tile .seat-badge { width: 24px; height: 24px; font-size: 0.85rem; border-radius: 6px; }
@@ -377,12 +406,11 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .total-tile .meta { font-size: 12px; color: var(--muted); }
 .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
 table { border-collapse: collapse; width: 100%; font-size: var(--step--1); }
-th, td { padding: 8px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+th, td { padding: 8px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
 th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
 thead th { font-weight: 700; color: var(--muted); background: var(--surface-2); font-size: 12px; }
 td.num, tfoot td { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 tfoot td { font-weight: 600; border-bottom: 0; background: var(--surface-2); }
-tbody tr:last-child td { border-bottom: 1px solid var(--line); }
 td .time { display: block; font-size: 11px; color: var(--muted); font-family: var(--font-num); }
 .empty-state { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); padding: 28px 20px; text-align: center; color: var(--muted); display: grid; gap: 6px; justify-items: center; }
 .empty-state strong { color: var(--ink); font-size: var(--step-1); }
@@ -390,30 +418,30 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
 .copy-fallback { width: 100%; min-height: 120px; font-family: var(--font-num); font-size: var(--step--1); border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--surface); color: var(--ink); }
 
 /* 規則 */
-.rules { display: grid; gap: 22px; max-width: 760px; }
+.rules { display: grid; gap: 22px; }
 .rules section { display: grid; gap: 10px; }
 .rules h2 { font-family: var(--font-display); font-size: var(--step-2); }
 .rules p, .rules li { max-width: 65ch; }
 .rules ul, .rules ol { margin: 0; padding-left: 1.4em; display: grid; gap: 6px; }
 .rules ol li::marker { font-family: var(--font-num); font-weight: 600; color: var(--accent); }
 .rules .note { padding: 12px 14px; border-radius: 10px; background: var(--accent-soft); font-size: var(--step--1); }
-.special { display: grid; gap: 10px; }
-.special-item { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 4px 14px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.special { display: grid; gap: 10px; margin: 0; }
+.special-item { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 4px 12px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
 .special-item dt { font-weight: 700; display: grid; gap: 4px; align-content: start; }
 .special-item dt .x { font-family: var(--font-num); font-size: var(--step-2); color: var(--accent); line-height: 1; }
 .special-item dt .x.bao { color: var(--warn); }
 .special-item dd { margin: 0; display: grid; gap: 4px; }
-@media (max-width: 480px) { .special-item { grid-template-columns: 1fr; } .special-item dt { grid-auto-flow: column; justify-content: start; align-items: baseline; gap: 10px; } }
 .formula-box { font-family: var(--font-num); font-size: var(--step--1); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; overflow-x: auto; }
 .rules .table-wrap td:first-child { font-family: var(--font-body); }
 
 .toast {
-  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
-  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
-  background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 999px;
+  position: fixed; left: 50%; bottom: calc(var(--dock-h) + 12px); z-index: 20;
+  transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
+  background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 999px;
   font-size: var(--step--1); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
   transition: opacity .2s, transform .2s; max-width: calc(100% - 32px); text-align: center;
 }
+.toast.no-dock { bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -422,14 +450,11 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app has-dock" id="app">
   <header class="top">
     <div class="brand">
       <div class="mark" aria-hidden="true"><span class="ix">7</span><span class="pip">♠</span></div>
-      <div>
-        <h1>排七計錢</h1>
-        <p>翻開蓋牌點一點，馬上知道誰付誰多少</p>
-      </div>
+      <h1>排七計錢</h1>
     </div>
     <nav class="tabs" role="tablist" aria-label="頁面">
       <button type="button" role="tab" id="tab-btn-calc" data-tab="calc" aria-controls="tab-calc" aria-selected="true">本局</button>
@@ -440,90 +465,42 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
 
   <main>
     <section id="tab-calc" class="calc" role="tabpanel" aria-labelledby="tab-btn-calc">
-      <section class="players" aria-labelledby="playersTitle">
-        <div class="players-head">
-          <h2 id="playersTitle">玩家</h2>
+      <div class="round-bar">
+        <div class="round-title">
+          <b id="roundNo">第 1 局</b>
           <span class="sync-pill" id="syncPill" data-mode="connecting"><span class="dot" aria-hidden="true"></span><span id="syncText">連線中…</span></span>
         </div>
-        <div class="name-grid">
-          <label class="name-field"><span class="seat-badge" aria-hidden="true">東</span><input id="pname-0" data-pname="0" maxlength="10" autocomplete="off" placeholder="東家" aria-label="東家名字"></label>
-          <label class="name-field"><span class="seat-badge" aria-hidden="true">南</span><input id="pname-1" data-pname="1" maxlength="10" autocomplete="off" placeholder="南家" aria-label="南家名字"></label>
-          <label class="name-field"><span class="seat-badge" aria-hidden="true">西</span><input id="pname-2" data-pname="2" maxlength="10" autocomplete="off" placeholder="西家" aria-label="西家名字"></label>
-          <label class="name-field"><span class="seat-badge" aria-hidden="true">北</span><input id="pname-3" data-pname="3" maxlength="10" autocomplete="off" placeholder="北家" aria-label="北家名字"></label>
+        <div class="round-actions">
+          <button type="button" class="btn" id="clearRound">清空本局</button>
+          <button type="button" class="btn" id="openSetup" aria-haspopup="dialog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            名字・規則
+          </button>
         </div>
-        <div class="me-row">
-          <span class="set-label" id="meLabel">這支手機是</span>
-          <div class="choices" role="radiogroup" aria-labelledby="meLabel">
-            <label><input type="radio" name="me" id="me-0" value="0"><span data-me-name="0">東家</span></label>
-            <label><input type="radio" name="me" id="me-1" value="1"><span data-me-name="1">南家</span></label>
-            <label><input type="radio" name="me" id="me-2" value="2"><span data-me-name="2">西家</span></label>
-            <label><input type="radio" name="me" id="me-3" value="3"><span data-me-name="3">北家</span></label>
-            <label><input type="radio" name="me" id="me-none" value="">都不是</label>
-          </div>
+      </div>
+      <button type="button" class="rule-line" id="settingsChips" aria-label="目前規則，點一下調整"></button>
+
+      <div class="seat-tabs" id="seatTabs" role="tablist" aria-label="選擇要輸入哪一家"></div>
+
+      <section class="active-seat" id="activeSeat" aria-live="polite">
+        <div class="as-head">
+          <span class="seat-badge" id="asBadge" aria-hidden="true">東</span>
+          <button type="button" class="as-name" id="asName" title="改名字">
+            <span id="asNameText">東家</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+          </button>
+          <button type="button" class="first-btn" id="asFirst" aria-pressed="false" title="這局拿到 ♠7、先出牌的人">♠7 先出</button>
         </div>
-        <p class="hint" id="syncHint"></p>
+        <p class="tally" id="asTally"></p>
+        <div class="chips" id="asChips" aria-label="已蓋的牌，點一下可移除"></div>
+        <label class="last7" id="asLast7Wrap" hidden><input type="checkbox" id="asLast7">最後一張打出的是 7（尾張七）</label>
+        <div class="as-foot">
+          <span class="hint">點上面的牌可以移除</span>
+          <button type="button" class="link-btn" id="asClear">清空這家</button>
+        </div>
       </section>
 
-      <details class="settings" id="settings">
-        <summary>
-          <span class="sum-label">規則設定</span>
-          <span class="sum-chips" id="settingsChips"></span>
-          <span class="sum-edit"><span class="when-closed">調整</span><span class="when-open">收起</span></span>
-        </summary>
-        <fieldset class="settings-body" id="settingsFields">
-          <div class="set-grid">
-            <div class="set-row">
-              <label class="set-label" for="rate">每點金額</label>
-              <span class="field"><span>$</span><input id="rate" type="number" min="0" step="0.5" inputmode="decimal"></span>
-              <p class="hint">1 點算多少錢，可以填小數。</p>
-            </div>
-            <div class="set-row">
-              <span class="set-label" id="modeLabel">計錢方式</span>
-              <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
-                <label><input type="radio" name="mode" id="mode-full" value="full">付全額</label>
-                <label><input type="radio" name="mode" id="mode-diff" value="diff">付差額</label>
-              </div>
-              <p class="hint" id="modeHint"></p>
-            </div>
-          </div>
-          <div class="rule-list">
-            <div class="rule-row">
-              <label class="name" for="on-tuoShou"><input type="checkbox" class="switch" id="on-tuoShou">脫手</label>
-              <span class="hint">贏家一張都沒蓋</span>
-              <span class="ctrl"><span class="field small"><span>×</span><input id="mult-tuoShou" type="number" min="1" step="1" inputmode="numeric" aria-label="脫手倍數"></span></span>
-            </div>
-            <div class="rule-row">
-              <label class="name" for="on-weiQi"><input type="checkbox" class="switch" id="on-weiQi">尾張七</label>
-              <span class="hint">贏家脫手，最後一張打出 7（取代脫手倍數）</span>
-              <span class="ctrl"><span class="field small"><span>×</span><input id="mult-weiQi" type="number" min="1" step="1" inputmode="numeric" aria-label="尾張七倍數"></span></span>
-            </div>
-            <div class="rule-row">
-              <label class="name" for="on-shiSanGai"><input type="checkbox" class="switch" id="on-shiSanGai">十三蓋</label>
-              <span class="hint">13 張全蓋，反敗為勝直接算贏家</span>
-              <span class="ctrl"><span class="field small"><span>×</span><input id="mult-shiSanGai" type="number" min="1" step="1" inputmode="numeric" aria-label="十三蓋倍數"></span></span>
-            </div>
-            <div class="rule-row">
-              <label class="name" for="on-baoDian"><input type="checkbox" class="switch" id="on-baoDian">爆點</label>
-              <span class="hint">輸家蓋牌超過門檻點數，自己付的錢再加倍</span>
-              <span class="ctrl">
-                <span class="field"><span>&gt;</span><input id="threshold-baoDian" type="number" min="0" step="1" inputmode="numeric" aria-label="爆點門檻"><span>點</span></span>
-                <span class="field small"><span>×</span><input id="mult-baoDian" type="number" min="1" step="1" inputmode="numeric" aria-label="爆點倍數"></span>
-              </span>
-            </div>
-          </div>
-          <div class="settings-foot"><button type="button" class="btn" id="resetSettings">恢復預設規則</button></div>
-        </fieldset>
-      </details>
-
-      <div class="lead">
-        <p class="hint">依座位順序 東 → 南 → 西 → 北 輪流出牌。翻開每家的蓋牌，在牌面鍵盤上點選加入，點上方已加入的牌可以移除。7 一定能出、不會被蓋，所以鍵盤上沒有 7。</p>
-        <button type="button" class="btn" id="clearRound">清空本局</button>
-      </div>
-
-      <div class="calc-grid">
-        <div class="seats" id="seats"></div>
-        <aside class="result" id="result" aria-live="polite" aria-label="本局結算"></aside>
-      </div>
+      <section class="detail" id="result" aria-label="本局結算"></section>
     </section>
 
     <section id="tab-ledger" class="ledger" role="tabpanel" aria-labelledby="tab-btn-ledger" hidden>
@@ -539,10 +516,10 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         <h2>怎麼玩</h2>
         <ul>
           <li>一副牌 52 張，四人各拿 13 張。拿到 ♠7 的人先出，第一張一定要出 ♠7。</li>
-          <li>依座位順序輪流，每次出一張：任何花色的 7 隨時可以出，開一條新的龍；或接在桌上同花色那條龍的頭尾，7 往上接 8、9…K，往下接 6、5…A。</li>
+          <li>依座位順序（東 → 南 → 西 → 北）輪流，每次出一張：任何花色的 7 隨時可以出，開一條新的龍；或接在桌上同花色那條龍的頭尾，7 往上接 8、9…K，往下接 6、5…A。</li>
           <li>有牌能出就一定要出，不能故意留著。</li>
           <li>真的沒牌能出，才從手上挑一張牌面朝下蓋起來，這輪就算過。</li>
-          <li>手上有 7 一定能出，所以 7 永遠不會被蓋。</li>
+          <li>手上有 7 一定能出，所以 7 永遠不會被蓋，鍵盤上也沒有 7。</li>
         </ul>
       </section>
 
@@ -613,19 +590,105 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       </section>
 
       <section>
-        <h2>多支手機一起用</h2>
+        <h2>大家一起用</h2>
         <ul>
-          <li>大家用自己的 Claude 帳號登入，打開同一個連結，就會看到同一局。蓋牌、名字、規則和累計帳都會即時同步。</li>
-          <li>在「這支手機是」選自己坐哪一家，自己那家會排在最前面，其他家收起來；要幫別人輸入就按「幫他輸入」。</li>
-          <li>要能輸入，需要這個頁面的編輯權限；只有檢視權限的人可以即時看，但不能改。</li>
+          <li>最簡單：一支手機記帳。每局結束到「累計帳」按「複製結算文字」，貼到群組，大家都看得到。</li>
+          <li>有 Claude 帳號的人登入後打開同一個連結，會看到同一局，即時同步。要能輸入，需要這個頁面的編輯權限；只有檢視權限的人可以看，不能改。</li>
         </ul>
       </section>
 
-      <p class="note">各家規矩不太一樣。倍數、爆點門檻、付全額或付差額，都可以在「本局」頁上方的「規則設定」裡改，改完立刻重算。</p>
+      <p class="note">各家規矩不太一樣。倍數、爆點門檻、付全額或付差額，都可以在「本局 → 名字・規則」裡改，改完立刻重算。</p>
     </section>
   </main>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </div>
+
+<div class="dock" id="dock">
+  <div class="dock-inner">
+    <div class="summary">
+      <div class="sum-text" id="sumText" aria-live="polite"></div>
+      <button type="button" class="btn primary" id="commitRound">記入，下一局</button>
+    </div>
+    <div class="keys" id="keys" role="group" aria-label="點牌加入蓋牌"></div>
+    <div class="dock-actions">
+      <button type="button" class="undo-btn" id="undoCard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"></path><path d="m18 9-6 6"></path><path d="m12 9 6 6"></path></svg>
+        退一張
+      </button>
+      <button type="button" class="next-btn" id="nextSeat">
+        <span id="nextText">下一家</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<dialog class="sheet" id="setup" aria-labelledby="setupTitle">
+  <div class="sheet-head">
+    <h2 id="setupTitle">名字・規則</h2>
+    <button type="button" class="btn primary" id="closeSetup">完成</button>
+  </div>
+  <div class="sheet-body">
+    <fieldset class="sec" id="namesFields">
+      <legend class="set-label">玩家名字</legend>
+      <div class="name-grid">
+        <label class="name-field"><span class="seat-badge" aria-hidden="true">東</span><input id="pname-0" data-pname="0" maxlength="10" autocomplete="off" placeholder="東家" aria-label="東家名字"></label>
+        <label class="name-field"><span class="seat-badge" aria-hidden="true">南</span><input id="pname-1" data-pname="1" maxlength="10" autocomplete="off" placeholder="南家" aria-label="南家名字"></label>
+        <label class="name-field"><span class="seat-badge" aria-hidden="true">西</span><input id="pname-2" data-pname="2" maxlength="10" autocomplete="off" placeholder="西家" aria-label="西家名字"></label>
+        <label class="name-field"><span class="seat-badge" aria-hidden="true">北</span><input id="pname-3" data-pname="3" maxlength="10" autocomplete="off" placeholder="北家" aria-label="北家名字"></label>
+      </div>
+    </fieldset>
+
+    <fieldset class="sec" id="settingsFields">
+      <legend class="set-label">計錢規則</legend>
+      <div class="set-grid">
+        <div class="set-row">
+          <label class="hint" for="rate">每點金額（可填小數）</label>
+          <span class="field"><span>$</span><input id="rate" type="number" min="0" step="0.5" inputmode="decimal"></span>
+        </div>
+        <div class="set-row">
+          <span class="hint" id="modeLabel">計錢方式</span>
+          <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
+            <label><input type="radio" name="mode" id="mode-full" value="full">付全額</label>
+            <label><input type="radio" name="mode" id="mode-diff" value="diff">付差額</label>
+          </div>
+          <p class="hint" id="modeHint"></p>
+        </div>
+      </div>
+      <div class="rule-list">
+        <div class="rule-row">
+          <label class="name" for="on-tuoShou"><input type="checkbox" class="switch" id="on-tuoShou">脫手</label>
+          <span class="hint">贏家一張都沒蓋</span>
+          <span class="ctrl"><span class="field small"><span>×</span><input id="mult-tuoShou" type="number" min="1" step="1" inputmode="numeric" aria-label="脫手倍數"></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="on-weiQi"><input type="checkbox" class="switch" id="on-weiQi">尾張七</label>
+          <span class="hint">贏家脫手，最後一張打出 7（取代脫手倍數）</span>
+          <span class="ctrl"><span class="field small"><span>×</span><input id="mult-weiQi" type="number" min="1" step="1" inputmode="numeric" aria-label="尾張七倍數"></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="on-shiSanGai"><input type="checkbox" class="switch" id="on-shiSanGai">十三蓋</label>
+          <span class="hint">13 張全蓋，反敗為勝直接算贏家</span>
+          <span class="ctrl"><span class="field small"><span>×</span><input id="mult-shiSanGai" type="number" min="1" step="1" inputmode="numeric" aria-label="十三蓋倍數"></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="on-baoDian"><input type="checkbox" class="switch" id="on-baoDian">爆點</label>
+          <span class="hint">輸家蓋牌超過門檻，自己付的錢再加倍</span>
+          <span class="ctrl">
+            <span class="field small"><span>&gt;</span><input id="threshold-baoDian" type="number" min="0" step="1" inputmode="numeric" aria-label="爆點門檻"></span>
+            <span class="field small"><span>×</span><input id="mult-baoDian" type="number" min="1" step="1" inputmode="numeric" aria-label="爆點倍數"></span>
+          </span>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="sheet-foot">
+      <p class="hint" id="syncHint"></p>
+      <button type="button" class="btn" id="resetSettings">恢復預設規則</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="paiqi.js"></script>
 <script>
@@ -634,7 +697,6 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
   var P = window.PaiQi;
   var SEATS = ['東', '南', '西', '北'];
   var LOCAL_KEY = 'paiqi-calc-v1';   // 單機模式的牌局、規則、累計帳
-  var VIEW_KEY = 'paiqi-view-v1';    // 這支手機自己的偏好（坐哪一家）
   var NAME_MAX = 10;
   var RULE_KEYS = ['tuoShou', 'weiQi', 'shiSanGai', 'baoDian'];
   var KIND_DESC = {
@@ -643,16 +705,18 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     tuoShou: '一張都沒蓋',
     normal: '蓋牌點數最少'
   };
+  var KIND_SHORT = { shiSanGai: '十三蓋', weiQi: '尾七', tuoShou: '脫手', normal: '' };
   var MODE_TEXT = {
     connecting: ['連線中…', '正在連到共用的牌桌…'],
-    sync: ['多人同步', '大家打開同一個連結就會看到同一局，任何一支手機輸入的蓋牌、名字和規則都會即時同步。'],
-    readonly: ['同步・只能看', '你可以即時看到這一局，但沒有編輯權限，不能輸入。需要輸入的話，請建立這個頁面的人在分享選單給你編輯權限。'],
+    sync: ['已同步', '資料存在共用牌桌。有 Claude 帳號的人登入後打開同一個連結，會看到同一局。'],
+    readonly: ['只能看', '你可以即時看到這一局，但沒有編輯權限，不能輸入。'],
     offline: ['連線中斷', '和共用牌桌的連線中斷了，重新整理頁面再試一次。'],
-    local: ['單機', '目前是單機模式，資料只存在這支手機。登入 Claude 後打開這個頁面，就能和其他手機同步同一局。']
+    local: ['單機', '資料只存在這支手機。']
   };
+  var KEYBOARD = { a: 'A', 1: 'A', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 8: '8', 9: '9', 0: '10', t: '10', j: 'J', q: 'Q', k: 'K' };
 
   var state = emptyState();
-  var view = { mode: 'local', mySeat: null, expanded: {} };
+  var view = { mode: 'local', active: 0, lastAdded: null };
   var result = null;
   var db = null;
   var nameTimers = {};
@@ -691,7 +755,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       lastSeven: !!p.lastSeven
     };
   }
-  function cleanFirst(v) {
+  function cleanSeatIdx(v) {
     var n = Number(v);
     return n >= 0 && n < 4 ? Math.floor(n) : 0;
   }
@@ -702,7 +766,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     return {
       id: id || null,
       at: Number(e.at) || 0,
-      winner: cleanFirst(e.winner),
+      winner: cleanSeatIdx(e.winner),
       kind: Object.prototype.hasOwnProperty.call(P.KIND_LABEL, e.kind) ? e.kind : 'normal',
       nets: nets
     };
@@ -716,7 +780,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       if (!raw || !raw.round || !Array.isArray(raw.round.players) || raw.round.players.length !== 4) return null;
       var s = emptyState();
       s.settings = P.normalizeSettings(raw.settings);
-      s.round.firstIdx = cleanFirst(raw.round.firstIdx);
+      s.round.firstIdx = cleanSeatIdx(raw.round.firstIdx);
       s.round.players = raw.round.players.map(function (p) {
         var seat = cleanSeat(p);
         if (raw.round.example) { seat.covered = []; seat.lastSeven = false; } // 舊版的範例局不留
@@ -734,20 +798,9 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     } catch (e) { /* 無痕視窗等情況存不了，畫面照常運作 */ }
   }
 
-  function loadView() {
-    try {
-      var v = JSON.parse(localStorage.getItem(VIEW_KEY) || 'null');
-      if (v && v.mySeat !== null && v.mySeat !== undefined) view.mySeat = cleanFirst(v.mySeat);
-    } catch (e) { /* 沒有偏好就用預設 */ }
-  }
-
-  function saveView() {
-    try { localStorage.setItem(VIEW_KEY, JSON.stringify({ mySeat: view.mySeat })); } catch (e) { /* 同上 */ }
-  }
-
   /* ---------- 共用牌桌（db） ----------
-   * seats/0..3   每家一份：名字、蓋牌、尾張七
-   * table/meta   規則、誰拿 ♠7、下一局編號
+   * seats/0..3    每家一份：名字、蓋牌、尾張七
+   * table/meta    規則、誰拿 ♠7、下一局編號
    * ledger/rNNNNN 每局結果；兩支手機同時按記入，寫到同一份文件，不會重複記帳
    */
 
@@ -790,7 +843,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
 
   function seatChanged(i) {
     if (db) queueWrite('seats/' + i, seatDoc(i));
-    recalc();
+    render();
   }
   function metaChanged(delay) {
     if (db) {
@@ -802,7 +855,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         queueWrite('table/meta', metaDoc());
       }
     }
-    recalc();
+    render();
   }
 
   function onWriteError(e) {
@@ -831,22 +884,22 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         if (nameTimers[i] || document.activeElement === $('#pname-' + i)) seat.name = state.round.players[i].name;
         state.round.players[i] = seat;
       }
-      recalc();
+      render();
     }, onSubError);
 
     db.doc('table/meta').onSnapshot(function (d) {
       if (metaTimer || hasUnsent('table/meta')) return;
       var m = (d.exists && d.data()) || {};
       state.settings = P.normalizeSettings(m.settings);
-      state.round.firstIdx = cleanFirst(m.firstIdx);
+      state.round.firstIdx = cleanSeatIdx(m.firstIdx);
       state.nextRound = Math.max(1, Math.floor(Number(m.nextRound)) || 1);
       syncSettingsForm();
-      recalc();
+      render();
     }, onSubError);
 
     db.collection('ledger').orderBy('at').onSnapshot(function (snap) {
       state.ledger = snap.docs.map(function (d) { return d.exists ? cleanEntry(d.data(), d.id) : null; }).filter(Boolean);
-      recalc();
+      render();
     }, onSubError);
   }
 
@@ -881,7 +934,8 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     $('#syncText').textContent = t[0];
     $('#syncHint').textContent = t[1];
     $('#settingsFields').disabled = !canEdit();
-    recalc();
+    $('#namesFields').disabled = !canEdit();
+    render();
   }
 
   function displayName(i) {
@@ -892,6 +946,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
   function toast(msg) {
     var t = $('#toast');
     t.textContent = msg;
+    t.classList.toggle('no-dock', $('#dock').hidden);
     t.classList.add('show');
     clearTimeout(toast.timer);
     toast.timer = setTimeout(function () { t.classList.remove('show'); }, 2600);
@@ -944,51 +999,29 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       : '輸家付和贏家的點數差；十三蓋的贏家以 0 點計。';
   }
 
-  /* ---------- 玩家與座位 ---------- */
-
-  function renderPlayers() {
-    var editable = canEdit();
+  function renderNames() {
     for (var i = 0; i < 4; i++) {
       var input = $('#pname-' + i);
-      input.disabled = !editable;
       if (document.activeElement !== input && input.value !== state.round.players[i].name) input.value = state.round.players[i].name;
-      $('[data-me-name="' + i + '"]').textContent = SEATS[i] + ' ' + displayName(i);
     }
-    var me = view.mySeat === null ? $('#me-none') : $('#me-' + view.mySeat);
-    me.checked = true;
   }
 
-  function keysHtml() {
-    return P.RANKS.map(function (r) {
+  /* ---------- 輸入區 ---------- */
+
+  function buildStatic() {
+    $('#seatTabs').innerHTML = SEATS.map(function (seat, i) {
+      return '<button type="button" class="seat-tab" role="tab" data-seat="' + i + '" aria-selected="false">' +
+        '<span class="st-top"><span class="st-badge">' + seat + '</span><span class="st-name" data-name></span></span>' +
+        '<span class="st-pts" data-pts></span>' +
+        '<span class="st-net" data-net></span>' +
+        '<span class="st-tags" data-tags></span>' +
+      '</button>';
+    }).join('');
+    $('#keys').innerHTML = P.RANKS.map(function (r) {
       var pts = P.RANK_POINTS[r];
       var showPts = r === 'A' || pts > 10;
       return '<button type="button" class="key" data-r="' + r + '" aria-label="蓋 ' + r + '（' + pts + ' 點）">' +
         '<span class="r">' + r + '</span>' + (showPts ? '<span class="p">' + pts + '</span>' : '') + '</button>';
-    }).join('');
-  }
-
-  function buildSeats() {
-    var keys = keysHtml();
-    $('#seats').innerHTML = SEATS.map(function (seat, i) {
-      return '<section class="seat" data-seat="' + i + '" aria-label="' + seat + '家">' +
-        '<header class="seat-head">' +
-          '<span class="seat-badge" aria-hidden="true">' + seat + '</span>' +
-          '<span class="seat-title" data-title></span>' +
-          '<span class="pill pill-me" data-me hidden>你</span>' +
-          '<span class="seat-net" data-net></span>' +
-        '</header>' +
-        '<div class="seat-meta">' +
-          '<p class="tally" data-tally></p>' +
-          '<button type="button" class="first-btn" data-first aria-pressed="false" title="這局拿到 ♠7、先出牌的人">♠7 先出</button>' +
-        '</div>' +
-        '<div class="chips" data-chips></div>' +
-        '<label class="last7" data-last7-wrap hidden><input type="checkbox" id="last7-' + i + '" data-last7>最後一張打出的是 7（尾張七）</label>' +
-        '<div class="keys" data-keys role="group" aria-label="加入' + seat + '家的蓋牌">' + keys + '</div>' +
-        '<div class="seat-foot">' +
-          '<button type="button" class="link-btn" data-toggle hidden></button>' +
-          '<button type="button" class="link-btn" data-clear>清空這家</button>' +
-        '</div>' +
-      '</section>';
     }).join('');
   }
 
@@ -1008,71 +1041,99 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     return state.round.players.reduce(function (n, p) { return n + p.covered.length; }, 0);
   }
 
-  function updateSeats() {
-    var used = usedCounts();
-    var s = state.settings;
-    var editable = canEdit();
-    var waiting = totalCovered() === 0;
+  function seatInfo(i) {
+    return result && totalCovered() > 0 ? result.players[i] : null;
+  }
+
+  function renderSeatTabs() {
     state.round.players.forEach(function (p, i) {
-      var el = $('[data-seat="' + i + '"]');
-      var info = result && !waiting ? result.players[i] : null;
-      var count = p.covered.length;
-      var isWinner = !!(info && result.winner === i);
-      var mine = view.mySeat === i;
-      var compact = view.mySeat !== null && !mine && !view.expanded[i];
-
-      $('[data-title]', el).textContent = displayName(i);
-      $('[data-me]', el).hidden = !mine;
-
-      var tags = [];
-      if (isWinner) tags.push('<span class="pill pill-win">贏家</span>');
-      if (info && info.kind !== 'normal') tags.push('<span class="pill pill-kind">' + P.KIND_LABEL[info.kind] + '</span>');
-      if (info && info.baoDian) tags.push('<span class="pill pill-bao">爆點</span>');
-      $('[data-tally]', el).innerHTML = '蓋 <b>' + count + '</b> 張 · <b>' + P.sumPoints(p.covered) + '</b> 點 ' + tags.join('');
-
+      var el = $('#seatTabs [data-seat="' + i + '"]');
+      var info = seatInfo(i);
+      el.setAttribute('aria-selected', String(view.active === i));
+      $('[data-name]', el).textContent = displayName(i);
+      $('[data-pts]', el).innerHTML = '<b>' + p.covered.length + '</b>張 <b>' + P.sumPoints(p.covered) + '</b>點';
       var net = info ? info.net : 0;
       var netEl = $('[data-net]', el);
-      netEl.textContent = signedMoney(net);
-      netEl.className = 'seat-net ' + signClass(net);
-
-      $('[data-chips]', el).innerHTML = count
-        ? sortedCovered(p.covered).map(function (r) {
-            return editable
-              ? '<button type="button" class="chip" data-chip="' + r + '" aria-label="移除一張 ' + r + '">' + r + '</button>'
-              : '<span class="chip">' + r + '</span>';
-          }).join('')
-        : '<span class="chips-empty">' + (waiting ? '還沒輸入蓋牌' : '沒有蓋牌（脫手）') + '</span>';
-
-      var wrap = $('[data-last7-wrap]', el);
-      wrap.hidden = compact || waiting || !(count === 0 && s.weiQi.on);
-      var last7 = $('[data-last7]', el);
-      last7.checked = p.lastSeven;
-      last7.disabled = !editable;
-
-      var firstBtn = $('[data-first]', el);
-      firstBtn.setAttribute('aria-pressed', String(state.round.firstIdx === i));
-      firstBtn.disabled = !editable;
-
-      $('[data-keys]', el).hidden = compact;
-      $$('.key', el).forEach(function (k) {
-        var r = k.getAttribute('data-r');
-        k.disabled = !editable || count >= P.HAND_SIZE || (used[r] || 0) >= P.PER_RANK;
-      });
-
-      var toggle = $('[data-toggle]', el);
-      toggle.hidden = view.mySeat === null || mine || !editable;
-      toggle.textContent = compact ? '幫' + displayName(i) + '輸入' : '收起';
-      var clear = $('[data-clear]', el);
-      clear.hidden = compact;
-      clear.disabled = !editable;
-
-      el.classList.toggle('is-winner', isWinner);
-      el.classList.toggle('mine', mine);
-      el.style.order = mine ? '-1' : '';
+      netEl.textContent = info ? signedMoney(net) : '—';
+      netEl.className = 'st-net ' + signClass(net);
+      var tags = [];
+      if (info && result.winner === i) tags.push('<span class="st-tag win">贏</span>');
+      if (info && info.kind !== 'normal') tags.push('<span class="st-tag kind">' + KIND_SHORT[info.kind] + '</span>');
+      if (info && info.baoDian) tags.push('<span class="st-tag bao">爆</span>');
+      if (state.round.firstIdx === i) tags.push('<span class="st-tag first">♠7</span>');
+      $('[data-tags]', el).innerHTML = tags.join('');
     });
   }
 
-  /* ---------- 結算 ---------- */
+  function renderActiveSeat() {
+    var i = view.active;
+    var p = state.round.players[i];
+    var info = seatInfo(i);
+    var editable = canEdit();
+    var count = p.covered.length;
+    var waiting = totalCovered() === 0;
+
+    $('#asBadge').textContent = SEATS[i];
+    $('#asNameText').textContent = displayName(i);
+    $('#asName').disabled = !editable;
+
+    var first = $('#asFirst');
+    first.setAttribute('aria-pressed', String(state.round.firstIdx === i));
+    first.disabled = !editable;
+
+    var tags = [];
+    if (info && result.winner === i) tags.push('<span class="pill pill-win">贏家</span>');
+    if (info && info.kind !== 'normal') tags.push('<span class="pill pill-kind">' + P.KIND_LABEL[info.kind] + '</span>');
+    if (info && info.baoDian) tags.push('<span class="pill pill-bao">爆點</span>');
+    var net = info ? '<span class="net ' + signClass(info.net) + '">' + signedMoney(info.net) + '</span>' : '';
+    $('#asTally').innerHTML = '蓋 <b>' + count + '</b> 張 · <b>' + P.sumPoints(p.covered) + '</b> 點 ' + tags.join('') + net;
+
+    var lastAdded = view.lastAdded;
+    view.lastAdded = null;
+    $('#asChips').innerHTML = count
+      ? sortedCovered(p.covered).map(function (r) {
+          var isNew = lastAdded === r;
+          if (isNew) lastAdded = null;
+          return editable
+            ? '<button type="button" class="chip' + (isNew ? ' new' : '') + '" data-chip="' + r + '" aria-label="移除一張 ' + r + '">' + r + '</button>'
+            : '<span class="chip">' + r + '</span>';
+        }).join('')
+      : '<span class="chips-empty">' + (waiting ? '用下方鍵盤點' + esc(displayName(i)) + '蓋的牌' : '沒有蓋牌（脫手）') + '</span>';
+
+    $('#asLast7Wrap').hidden = waiting || !(count === 0 && state.settings.weiQi.on);
+    var last7 = $('#asLast7');
+    last7.checked = p.lastSeven;
+    last7.disabled = !editable;
+    $('#asClear').disabled = !editable || count === 0;
+  }
+
+  function renderDock() {
+    var used = usedCounts();
+    var p = state.round.players[view.active];
+    var editable = canEdit();
+    $$('#keys .key').forEach(function (k) {
+      var r = k.getAttribute('data-r');
+      k.disabled = !editable || p.covered.length >= P.HAND_SIZE || (used[r] || 0) >= P.PER_RANK;
+    });
+    $('#undoCard').disabled = !editable || p.covered.length === 0;
+    var next = (view.active + 1) % 4;
+    $('#nextText').textContent = '下一家：' + displayName(next);
+
+    var commit = $('#commitRound');
+    var sum = $('#sumText');
+    commit.hidden = !editable;
+    if (!result || totalCovered() === 0) {
+      sum.innerHTML = '<span class="muted">' + (editable ? '點牌輸入這家的蓋牌，再按「下一家」' : '等有人輸入蓋牌') + '</span>';
+      commit.disabled = true;
+      return;
+    }
+    var w = result.players[result.winner];
+    var kind = w.kind !== 'normal' ? '<span class="pill pill-kind">' + P.KIND_LABEL[w.kind] + ' ×' + fmtNum(result.winnerMult) + '</span>' : '';
+    sum.innerHTML = '<span class="who">' + esc(w.name) + ' 贏</span>' + kind + '<span class="amt">收 ' + money(w.net) + '</span>';
+    commit.disabled = false;
+  }
+
+  /* ---------- 結算明細 ---------- */
 
   function buildRoundForCalc() {
     return {
@@ -1113,8 +1174,11 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       return;
     }
     if (totalCovered() === 0) {
-      box.innerHTML = '<div class="panel-box waiting"><strong>等開牌</strong>' +
-        '<span>牌局結束後，翻開每家的蓋牌，在各家的牌面鍵盤點選。這裡會算出贏家和誰付誰多少。</span></div>';
+      box.innerHTML = '<div class="guide"><strong>每局這樣輸入</strong><ol>' +
+        '<li>翻開' + esc(displayName(view.active)) + '的蓋牌，用下方鍵盤一張一張點。</li>' +
+        '<li>按「下一家」換人；脫手的人沒有牌，直接跳過。</li>' +
+        '<li>四家輸入完，上方就是每個人的輸贏，按「記入，下一局」。</li>' +
+        '</ol></div>';
       return;
     }
     var r = result;
@@ -1133,30 +1197,30 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       '<div class="win-card">' +
         '<p class="eyebrow">本局贏家</p>' +
         '<p class="win-name">' + esc(w.name) + '</p>' +
-        kindHtml +
-        '<p class="win-why">' + esc(whyText(r)) + '</p>' +
-        '<p class="win-total">共收 <b>' + money(w.net) + '</b></p>' +
+        '<p class="win-total">共收<b>' + money(w.net) + '</b></p>' +
+        '<p class="win-meta">' + kindHtml + '<span class="win-why">' + esc(whyText(r)) + '</span></p>' +
       '</div>' +
       '<div class="panel-box">' +
         '<h3 class="sub">誰付多少</h3>' +
         '<ol class="transfers">' + transfers + '</ol>' +
-      '</div>' +
-      (canEdit()
-        ? '<div class="result-actions"><button type="button" class="btn primary" id="commitRound">記入累計帳，開下一局</button></div>'
-        : '');
+      '</div>';
   }
 
-  function recalc() {
+  function render() {
     var round = buildRoundForCalc();
     var errors = P.validateRound(round);
     result = errors.length ? null : P.settle(round, state.settings);
+    $('#roundNo').textContent = '第 ' + (state.ledger.length + 1) + ' 局';
     renderSettingsSummary();
-    renderPlayers();
-    updateSeats();
+    renderNames();
+    renderSeatTabs();
+    renderActiveSeat();
+    renderDock();
     renderResult(errors);
-    $('#clearRound').disabled = !canEdit();
+    $('#clearRound').disabled = !canEdit() || totalCovered() === 0;
     renderLedger();
     saveLocal();
+    measureDock();
   }
 
   function clearRound() {
@@ -1184,7 +1248,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     if (!ledger.length) {
       $('#ledgerMeta').textContent = '';
       body.innerHTML = '<div class="empty-state"><strong>還沒有記錄</strong>' +
-        '<span>在「本局」算好之後按「記入累計帳，開下一局」，每局輸贏會加總在這裡。</span></div>';
+        '<span>在「本局」輸入完按「記入，下一局」，每局輸贏會加總在這裡。</span></div>';
       return;
     }
     var totals = ledgerTotals();
@@ -1240,6 +1304,13 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     }, 0);
   }
 
+  function afterCommit(msg) {
+    view.active = 0;
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast(msg);
+  }
+
   function commitRound() {
     if (!result || !canEdit() || totalCovered() === 0) return;
     var entry = {
@@ -1249,24 +1320,23 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       nets: result.players.map(function (p) { return p.net; }),
       names: [0, 1, 2, 3].map(displayName)
     };
+    var no = state.ledger.length + 1;
     if (!db) {
       state.ledger.push(cleanEntry(entry));
       clearRound();
-      recalc();
-      toast('已記入第 ' + state.ledger.length + ' 局，蓋牌已清空');
+      afterCommit('第 ' + no + ' 局已記入，開始第 ' + (no + 1) + ' 局');
       return;
     }
     var n = Math.max(state.nextRound, maxLedgerNo() + 1);
     var btn = $('#commitRound');
-    if (btn) btn.disabled = true;
+    btn.disabled = true;
     setWithRetry(db.doc('ledger/r' + String(n).padStart(5, '0')), entry).then(function () {
       state.nextRound = n + 1;
       metaChanged(0);
       clearRound();
-      recalc();
-      toast('已記入累計帳，每支手機都會看到');
+      afterCommit('第 ' + no + ' 局已記入');
     }, function (e) {
-      if (btn) btn.disabled = false;
+      btn.disabled = false;
       onWriteError(e);
     });
   }
@@ -1276,7 +1346,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     if (!last) return;
     if (!db) {
       state.ledger.pop();
-      recalc();
+      render();
       toast('已刪除最後一局');
       return;
     }
@@ -1287,7 +1357,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
   function clearLedger() {
     if (!db) {
       state.ledger = [];
-      recalc();
+      render();
       toast('帳本已清空');
       return;
     }
@@ -1297,7 +1367,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     }, Promise.resolve()).then(function () { toast('帳本已清空'); }, onWriteError);
   }
 
-  /* ---------- 分頁 ---------- */
+  /* ---------- 分頁、鍵盤高度、設定面板 ---------- */
 
   function showTab(name) {
     if (['calc', 'ledger', 'rules'].indexOf(name) === -1) name = 'calc';
@@ -1305,6 +1375,57 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === name));
     });
     ['calc', 'ledger', 'rules'].forEach(function (t) { $('#tab-' + t).hidden = t !== name; });
+    $('#dock').hidden = name !== 'calc';
+    $('#app').classList.toggle('has-dock', name === 'calc');
+    measureDock();
+  }
+
+  function measureDock() {
+    var dock = $('#dock');
+    if (!dock.hidden) document.documentElement.style.setProperty('--dock-h', dock.offsetHeight + 'px');
+  }
+
+  function openSetup(focusName) {
+    var dlg = $('#setup');
+    if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); }
+    else dlg.setAttribute('open', '');
+    if (focusName != null && canEdit()) {
+      var input = $('#pname-' + focusName);
+      input.focus();
+      input.select();
+    }
+  }
+  function closeSetup() {
+    var dlg = $('#setup');
+    if (typeof dlg.close === 'function') dlg.close();
+    else dlg.removeAttribute('open');
+  }
+
+  /* ---------- 輸入動作 ---------- */
+
+  function addCard(r) {
+    if (!canEdit()) return;
+    var i = view.active;
+    var p = state.round.players[i];
+    var used = usedCounts();
+    if (p.covered.length >= P.HAND_SIZE || (used[r] || 0) >= P.PER_RANK) return;
+    p.covered.push(r);
+    p.lastSeven = false;
+    view.lastAdded = r;
+    seatChanged(i);
+  }
+
+  function undoCard() {
+    if (!canEdit()) return;
+    var i = view.active;
+    if (!state.round.players[i].covered.length) return;
+    state.round.players[i].covered.pop();
+    seatChanged(i);
+  }
+
+  function goSeat(i) {
+    view.active = ((i % 4) + 4) % 4;
+    render();
   }
 
   /* ---------- 事件 ---------- */
@@ -1315,7 +1436,60 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       if (b) showTab(b.getAttribute('data-tab'));
     });
 
-    $('.name-grid').addEventListener('input', function (e) {
+    $('#seatTabs').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-seat]');
+      if (b) goSeat(Number(b.getAttribute('data-seat')));
+    });
+
+    $('#keys').addEventListener('click', function (e) {
+      var k = e.target.closest('[data-r]');
+      if (k && !k.disabled) addCard(k.getAttribute('data-r'));
+    });
+    $('#undoCard').addEventListener('click', undoCard);
+    $('#nextSeat').addEventListener('click', function () { goSeat(view.active + 1); });
+
+    $('#asChips').addEventListener('click', function (e) {
+      var chip = e.target.closest('[data-chip]');
+      if (!chip || !canEdit()) return;
+      var p = state.round.players[view.active];
+      var at = p.covered.lastIndexOf(chip.getAttribute('data-chip'));
+      if (at !== -1) p.covered.splice(at, 1);
+      seatChanged(view.active);
+    });
+    $('#asFirst').addEventListener('click', function () {
+      if (!canEdit()) return;
+      state.round.firstIdx = view.active;
+      metaChanged(0);
+    });
+    $('#asLast7').addEventListener('change', function (e) {
+      if (!canEdit()) return;
+      state.round.players[view.active].lastSeven = e.target.checked;
+      seatChanged(view.active);
+    });
+    $('#asClear').addEventListener('click', function () {
+      if (!canEdit()) return;
+      var p = state.round.players[view.active];
+      p.covered = [];
+      p.lastSeven = false;
+      seatChanged(view.active);
+    });
+    $('#asName').addEventListener('click', function () { openSetup(view.active); });
+
+    $('#clearRound').addEventListener('click', function () {
+      if (!canEdit()) return;
+      clearRound();
+      view.active = 0;
+      render();
+      toast('本局蓋牌已清空');
+    });
+    $('#commitRound').addEventListener('click', commitRound);
+
+    $('#openSetup').addEventListener('click', function () { openSetup(null); });
+    $('#settingsChips').addEventListener('click', function () { openSetup(null); });
+    $('#closeSetup').addEventListener('click', closeSetup);
+    $('#setup').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSetup(); });
+
+    $('#namesFields').addEventListener('input', function (e) {
       if (!e.target.matches('[data-pname]') || !canEdit()) return;
       var i = Number(e.target.getAttribute('data-pname'));
       state.round.players[i].name = e.target.value.slice(0, NAME_MAX);
@@ -1326,61 +1500,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
           queueWrite('seats/' + i, seatDoc(i));
         }, 400);
       }
-      recalc();
-    });
-
-    $('.choices').addEventListener('change', function (e) {
-      var v = e.target.value;
-      view.mySeat = v === '' ? null : cleanFirst(v);
-      view.expanded = {};
-      saveView();
-      recalc();
-    });
-
-    $('#seats').addEventListener('click', function (e) {
-      var seatEl = e.target.closest('[data-seat]');
-      if (!seatEl) return;
-      var i = Number(seatEl.getAttribute('data-seat'));
-      var p = state.round.players[i];
-      if (e.target.closest('[data-toggle]')) {
-        view.expanded[i] = !view.expanded[i];
-        recalc();
-        return;
-      }
-      if (!canEdit()) return;
-      var key = e.target.closest('[data-r]');
-      var chip = e.target.closest('[data-chip]');
-      if (key && !key.disabled) {
-        p.covered.push(key.getAttribute('data-r'));
-        p.lastSeven = false;
-      } else if (chip) {
-        var at = p.covered.lastIndexOf(chip.getAttribute('data-chip'));
-        if (at !== -1) p.covered.splice(at, 1);
-      } else if (e.target.closest('[data-first]')) {
-        state.round.firstIdx = i;
-        metaChanged(0);
-        return;
-      } else if (e.target.closest('[data-clear]')) {
-        p.covered = [];
-        p.lastSeven = false;
-      } else {
-        return;
-      }
-      seatChanged(i);
-    });
-
-    $('#seats').addEventListener('change', function (e) {
-      if (!e.target.matches('[data-last7]') || !canEdit()) return;
-      var i = Number(e.target.closest('[data-seat]').getAttribute('data-seat'));
-      state.round.players[i].lastSeven = e.target.checked;
-      seatChanged(i);
-    });
-
-    $('#clearRound').addEventListener('click', function () {
-      if (!canEdit()) return;
-      clearRound();
-      recalc();
-      toast('本局蓋牌已清空');
+      render();
     });
 
     var form = $('#settingsFields');
@@ -1401,10 +1521,6 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       syncSettingsForm();
       metaChanged(0);
       toast('已恢復預設規則');
-    });
-
-    $('#result').addEventListener('click', function (e) {
-      if (e.target.closest('#commitRound')) commitRound();
     });
 
     $('#ledgerBody').addEventListener('click', function (e) {
@@ -1441,14 +1557,26 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         }
       }
     });
+
+    // 電腦上可以直接打字：A 2–6 8 9 0(=10) J Q K，退格退一張，→ 或 Enter 下一家
+    document.addEventListener('keydown', function (e) {
+      if (e.metaKey || e.ctrlKey || e.altKey || $('#dock').hidden || $('#setup').open) return;
+      if (e.target.closest('input, textarea, select, dialog')) return;
+      var k = e.key.toLowerCase();
+      if (KEYBOARD[k]) { e.preventDefault(); addCard(KEYBOARD[k]); }
+      else if (e.key === 'Backspace') { e.preventDefault(); undoCard(); }
+      else if (e.key === 'ArrowRight' || e.key === 'Enter') { if (e.target.closest('button')) return; e.preventDefault(); goSeat(view.active + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); goSeat(view.active - 1); }
+    });
+
+    window.addEventListener('resize', measureDock);
   }
 
   function start() {
-    loadView();
-    buildSeats();
+    buildStatic();
     bind();
     var hash = (location.hash || '').replace('#', '');
-    if (hash) showTab(hash);
+    showTab(hash || 'calc');
     connect();
   }
 
