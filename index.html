@@ -461,6 +461,19 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .tseat.is-payer { border-color: var(--pay); background: var(--pay-soft); }
 .tseat:disabled { cursor: not-allowed; }
 .dealer-row b { font-size: var(--step-0); }
+.seat-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.seat-summary { flex: 1; min-width: 0; font-size: var(--step--1); color: var(--muted); line-height: 1.5; }
+.seat-bar .btn { flex: none; padding: 4px 10px; }
+.seat-summary b { color: var(--ink); }
+.seating { display: grid; gap: 8px; }
+.seating h3 { font-size: var(--step-0); font-weight: 700; }
+.seat-choices { display: grid; gap: 6px; padding: 8px 10px; border-radius: 10px; background: var(--warn-soft); }
+.seat-choices .me-seats button { padding: 4px 12px; }
+.seat-choices .me-seats .where { font-size: 11px; color: var(--muted); font-weight: 500; }
+#play-mahjong.seating .hand-only { display: none !important; }
+.tseat.is-picking { box-shadow: 0 0 0 2px var(--felt), 0 0 0 5px var(--warn); }
+.tseat .empty { font-size: 12px; color: var(--muted); }
+.seat-done { height: 44px; font-size: var(--step-0); }
 #mjPickDealer[aria-pressed="true"] { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); font-weight: 700; }
 .preset-box { display: grid; gap: 6px; }
 .preset-box .method button { height: auto; min-height: 52px; padding: 6px 8px; display: grid; gap: 0; justify-items: center; line-height: 1.3; }
@@ -780,29 +793,39 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       </div>
       <button type="button" class="rule-line" id="mjChips" data-setup aria-label="目前規則，點一下調整"></button>
       <section class="step table-step" aria-labelledby="mjQ1">
-        <div class="me-row">
-          <span class="set-label" id="mjMeLabel">我坐</span>
-          <div class="me-seats" id="mjMe" role="radiogroup" aria-labelledby="mjMeLabel"></div>
+        <div class="seat-bar" id="mjSeatBar">
+          <span class="seat-summary" id="mjSeatSummary"></span>
+          <button type="button" class="btn" id="mjSeatEdit">重新抓位</button>
         </div>
-        <h3 id="mjQ1"><span class="n">1</span><span id="mjQ1Text">誰胡？點牌桌上的人</span></h3>
+        <div class="seating" id="mjSeating" hidden>
+          <h3>抓位：大家坐哪？</h3>
+          <div class="me-row" id="mjSeatMe"></div>
+          <div class="seat-choices" id="mjSeatChoices" hidden>
+            <span class="set-label" id="mjSeatChoicesLabel"></span>
+            <div class="me-seats" id="mjSeatChoicesList" role="radiogroup" aria-labelledby="mjSeatChoicesLabel"></div>
+          </div>
+          <p class="hint">點牌桌上的位置，再選坐在那裡的人；選到已經坐在別處的人，兩個人會對調。</p>
+        </div>
+        <h3 id="mjQ1" class="hand-only"><span class="n">1</span><span id="mjQ1Text">誰胡？點牌桌上的人</span></h3>
         <div class="mj-table" id="mjTable" role="group" aria-label="牌桌"></div>
-        <div id="mjStep2">
+        <button type="button" class="btn primary seat-done" id="mjSeatDone" hidden>抓位完成</button>
+        <div id="mjStep2" class="hand-only">
           <div class="method" id="mjMethod" role="group" aria-label="胡法">
             <button type="button" data-method="ziMo" aria-pressed="false">自摸</button>
             <button type="button" data-method="fangQiang" aria-pressed="false">放槍</button>
           </div>
         </div>
-        <button type="button" class="wide-toggle" id="mjDraw" aria-pressed="false">流局（沒人胡，莊家連莊）</button>
-        <div class="dealer-row">
+        <button type="button" class="wide-toggle hand-only" id="mjDraw" aria-pressed="false">流局（沒人胡，莊家連莊）</button>
+        <div class="dealer-row hand-only">
           <span class="set-label">莊家</span>
           <b id="mjDealerName"></b>
           <button type="button" class="btn" id="mjPickDealer" aria-pressed="false">換莊家</button>
           <span class="dealer-streak"><span class="set-label">連莊</span>
           <span class="stepper"><button type="button" id="mjStreakDown" aria-label="少連一次">−</button><output id="mjStreak">0</output><button type="button" id="mjStreakUp" aria-label="多連一次">+</button></span></span>
         </div>
-        <p class="hint" id="mjDealerHint"></p>
+        <p class="hint hand-only" id="mjDealerHint"></p>
       </section>
-      <section class="step" id="mjStep3" aria-labelledby="mjQ3">
+      <section class="step hand-only" id="mjStep3" aria-labelledby="mjQ3">
         <h3 id="mjQ3"><span class="n">2</span>幾台？<span class="aside">共 <b id="mjTaiSum">0</b> 台 <span class="cap-note" id="mjCapNote" hidden></span></span></h3>
         <div id="mjTai"></div>
         <div class="extra-row">
@@ -811,7 +834,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         </div>
         <p class="hint" id="mjTaiList"></p>
       </section>
-      <section class="detail" id="mjResult" aria-label="這將結算"></section>
+      <section class="detail hand-only" id="mjResult" aria-label="這將結算"></section>
     </section>
 
     <!-- 21 點 -->

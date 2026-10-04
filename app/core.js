@@ -88,7 +88,7 @@
         players: [emptyPaiqiSeat(), emptyPaiqiSeat(), emptyPaiqiSeat(), emptyPaiqiSeat()],
         nextRound: 1
       },
-      mahjong: { settings: MJ.normalizeSettings(), dealer: 0, streak: 0, hand: emptyHand(), nextRound: 1 },
+      mahjong: { settings: MJ.normalizeSettings(), seats: [0, 1, 2, 3], seatsAt: 0, dealer: 0, streak: 0, hand: emptyHand(), nextRound: 1 },
       blackjack: { settings: BJ.normalizeSettings(), banker: 0, bets: filled(null), results: filled(null), doubled: filled(false), nextRound: 1 },
       ledger: []
     };
@@ -105,6 +105,14 @@
       lastSeven: !!p.lastSeven
     };
   }
+  // 麻將抓位：東南西北各坐第幾位玩家，四個人不能重複
+  function cleanSeats(a) {
+    if (!Array.isArray(a) || a.length !== 4) return [0, 1, 2, 3];
+    var out = a.map(function (v) { return int(v, -1, -1, MAX_PLAYERS - 1); });
+    var ok = out.every(function (v, i) { return v >= 0 && out.indexOf(v) === i; });
+    return ok ? out : [0, 1, 2, 3];
+  }
+
   function cleanMahjong(d) {
     d = d || {};
     var h = d.hand || {};
@@ -113,6 +121,8 @@
     var settings = MJ.normalizeSettings(d.settings);
     return {
       settings: settings,
+      seats: cleanSeats(d.seats),
+      seatsAt: int(d.seatsAt, 0, 0),
       dealer: int(d.dealer, 0, 0, 3),
       streak: int(d.streak, 0, 0, 99),
       hand: {
@@ -210,11 +220,8 @@
     try { localStorage.setItem(VIEW_KEY, JSON.stringify({ game: T.view.game, lastGame: T.view.lastGame, mySeat: T.view.mySeat })); } catch (e) { /* 同上 */ }
   }
 
-  // 這支手機的人是第幾位玩家（只存在這支手機）。排七和麻將的前四位依序是東南西北；
-  // 沒選過、或選的是第 5 位以後（21 點）時，牌桌就照東家在下面排
+  // 這支手機的人是第幾位玩家（只存在這支手機）。排七的前四位依序是東南西北；麻將坐哪要抓位
   T.me = function () { return T.view.mySeat == null ? null : T.view.mySeat; };
-  T.hasMySeat = function () { return T.view.mySeat != null && T.view.mySeat < 4; };
-  T.mySeat = function () { return T.hasMySeat() ? T.view.mySeat : 0; };
   T.setMySeat = function (i) {
     T.view.mySeat = T.view.mySeat === i ? null : i; // 再點一次取消
     saveView();
@@ -227,19 +234,12 @@
   };
   // 相對於自己的位置：0 我、1 下家、2 對家、3 上家
   T.RELATION = ['我', '下家', '對家', '上家'];
-  T.relationOf = function (i) { return (i - T.mySeat() + 4) % 4; };
-  T.mySeatButtons = function () {
-    return T.SEAT_CHARS.map(function (c, i) {
-      return '<button type="button" role="radio" data-me="' + i + '" aria-checked="' + (T.hasMySeat() && T.mySeat() === i) + '">' +
-        '<span class="w">' + c + '</span>' + T.esc(T.name(i)) + '</button>';
-    }).join('');
-  };
 
   /* ---------- 共用牌桌（db） ----------
    * seats/0..3      排七每家的蓋牌，以及前四位玩家的名字
    * table/meta      排七規則、誰拿 ♠7、下一局編號
    * table/roster    第 5～8 位玩家的名字（21 點用）
-   * table/mahjong   麻將規則、莊家、連莊、這將的輸入
+   * table/mahjong   麻將規則、抓位（誰坐東南西北）、莊家、連莊、這將的輸入
    * table/blackjack 21 點規則、莊家、下注與結果
    * ledger/{id}     每局結果；id 依遊戲與局號，兩支手機同時記入會寫到同一份，不會重複記帳
    */
@@ -454,13 +454,13 @@
     var esc = T.esc;
     if (e.game === 'paiqi') {
       var k = e.kind && e.kind !== 'normal' && PaiQi.KIND_LABEL[e.kind] ? ' <span class="pill pill-kind">' + PaiQi.KIND_LABEL[e.kind] + '</span>' : '';
-      return esc(T.name(e.winner)) + k;
+      return esc(T.plainName(e.winner)) + k;
     }
     if (e.game === 'mahjong') {
       var how = e.kind === 'ziMo' ? '自摸' : '胡';
-      return esc(T.name(e.winner)) + ' <span class="pill pill-kind">' + how + (e.tai != null ? ' ' + e.tai + ' 台' : '') + '</span>';
+      return esc(T.plainName(e.winner)) + ' <span class="pill pill-kind">' + how + (e.tai != null ? ' ' + e.tai + ' 台' : '') + '</span>';
     }
-    return '莊 ' + esc(T.name(e.winner));
+    return '莊 ' + esc(T.plainName(e.winner));
   }
 
   function renderLedger() {
@@ -485,12 +485,12 @@
 
     var tiles = who.map(function (i) {
       return '<div class="total-tile">' +
-        '<span class="who"><span class="seat-badge" aria-hidden="true">' + T.badge(i) + '</span><span>' + T.esc(T.name(i)) + '</span></span>' +
+        '<span class="who"><span class="seat-badge" aria-hidden="true">' + (i + 1) + '</span><span>' + T.esc(T.plainName(i)) + '</span></span>' +
         '<span class="amt ' + T.signClass(totals[i]) + '">' + T.signedMoney(totals[i]) + '</span>' +
       '</div>';
     }).join('');
     var head = '<tr><th>#</th><th>' + (filter === 'all' ? '遊戲・' : '') + '結果</th>' +
-      who.map(function (i) { return '<th>' + T.esc(T.name(i)) + '</th>'; }).join('') + '</tr>';
+      who.map(function (i) { return '<th>' + T.esc(T.plainName(i)) + '</th>'; }).join('') + '</tr>';
     var rows = list.map(function (e, n) {
       var t = new Date(e.at);
       var hhmm = isNaN(t) ? '' : String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
@@ -520,7 +520,7 @@
     var list = ledgerFor(filter);
     var totals = totalsOf(list);
     var lines = ['牌桌累計（' + ($('#ledgerMeta').textContent || '0 局') + '）'];
-    activePlayers(list).forEach(function (i) { lines.push(T.name(i) + ' ' + T.signedMoney(totals[i])); });
+    activePlayers(list).forEach(function (i) { lines.push(T.plainName(i) + ' ' + T.signedMoney(totals[i])); });
     return lines.join('\n');
   }
 
@@ -584,10 +584,10 @@
     $('#nameGrid').innerHTML = html;
   }
 
-  // 從首頁打開時只是填玩家（1、2、3…）；在排七、麻將裡打開時前四位標東南西北
+  // 一般只是填玩家（1、2、3…）；排七照順序坐，所以在排七裡打開時前四位標東南西北
   function renderNameInputs() {
     var scope = T.view.setupScope;
-    var winds = scope === 'paiqi' || scope === 'mahjong';
+    var winds = scope === 'paiqi';
     var showAll = scope === 'blackjack' || scope === 'names' || T.state.blackjack.settings.count > 4;
     var shown = scope === 'names' ? Math.max(4, T.state.blackjack.settings.count) : MAX_PLAYERS;
     for (var i = 0; i < MAX_PLAYERS; i++) {
@@ -599,8 +599,9 @@
       $('[data-name-row="' + i + '"]').hidden = (i >= 4 && !showAll) || i >= shown;
     }
     $('#namesHint').textContent = scope === 'names'
-      ? '排七和麻將用前四位，21 點最多 8 位（在 21 點的規則裡加人數）。'
-      : winds ? '前四位依序坐東、南、西、北。' : '21 點超過四人時再填 5 到 8。';
+      ? '排七用前四位；麻將在牌桌上抓位；21 點最多 8 位（在 21 點的規則裡加人數）。'
+      : winds ? '前四位依序坐東、南、西、北。'
+      : scope === 'mahjong' ? '誰坐東南西北，在麻將頁的牌桌上抓位。' : '21 點超過四人時再填 5 到 8。';
   }
 
   function syncSettingsForms() {
@@ -642,8 +643,9 @@
       if (screen === 'ledger') T.view.ledgerFilter = game;
       saveView();
     }
+    var from = T.view.screen;
     T.view.screen = screen;
-    if (screen === 'play' && T.games[T.view.game].onShow) T.games[T.view.game].onShow();
+    if (screen === 'play' && T.games[T.view.game].onShow) T.games[T.view.game].onShow(from);
     T.render();
     window.scrollTo(0, 0);
   };

@@ -12,6 +12,11 @@
   var chipsKey = '';
   var editorKey = '';
   var pickDealer = false; // 按了「換莊家」，下一次點牌桌就是選莊家
+  var seatingOpen = false; // 這支手機正在抓位
+  var seatingFor = 0;      // 開始抓位時的 seatsAt；別支手機先按了完成（seatsAt 變了）就收起來
+  var seatSlot = null;     // 抓位時正在選哪一風坐誰
+  var seatStart = null;    // 從哪一風開始選，繞一圈回來就停
+  var RESEAT_AFTER = 3 * 60 * 60 * 1000; // 超過 3 小時沒抓位，從首頁進來就先抓位
 
   function mj() { return T.state.mahjong; }
   function hand() { return mj().hand; }
@@ -158,14 +163,111 @@
     T.toast('已新增「' + name + '」' + n + ' 台');
   }
 
+  /* ---------- 抓位 ----------
+   * 牌桌上的位置（東南西北）和玩家是分開的：seats[w] 是坐在第 w 風的玩家。
+   * 這將的誰胡、誰放槍、莊家都記位置；記入累計帳時才換成玩家。 */
+
+  function seats() { return mj().seats; }
+  function playerAt(w) { return seats()[w]; }
+  function seatName(w) { return T.plainName(playerAt(w)); }
+  // 我坐哪一風；還沒選我是誰、或我沒上桌時是 -1
+  function meWind() { var me = T.me(); return me == null ? -1 : seats().indexOf(me); }
+  function relOf(w) { var mw = meWind(); return mw < 0 ? '' : T.RELATION[(w - mw + 4) % 4]; }
+  function seating() {
+    var at = mj().seatsAt;
+    return T.canEdit() && (!at || (seatingOpen && at === seatingFor));
+  }
+
+  // 可以上桌的玩家：首頁列出的那些，加上已經坐著的
+  function players() {
+    var n = Math.max(4, T.state.blackjack.settings.count);
+    var list = [];
+    for (var p = 0; p < n; p++) list.push(p);
+    seats().forEach(function (p) { if (list.indexOf(p) === -1) list.push(p); });
+    return list.sort(function (a, b) { return a - b; });
+  }
+
+  // 讓玩家 p 坐第 w 風；他原本坐別的位置的話，和那裡的人對調
+  function assignSeat(w, p) {
+    var s = seats().slice();
+    var j = s.indexOf(p);
+    var old = s[w];
+    s[w] = p;
+    if (j !== -1 && j !== w) s[j] = old;
+    mj().seats = s;
+  }
+
+  // 選完一個位置，換下一風（跳過自己），繞一圈回到起點就停
+  function nextSlot(w) {
+    var mw = meWind();
+    for (var k = 1; k < 4; k++) {
+      var n = (w + k) % 4;
+      if (n === seatStart) return null;
+      if (n !== mw) return n;
+    }
+    return null;
+  }
+
+  function openSeating() {
+    seatingOpen = true;
+    seatingFor = mj().seatsAt;
+    seatSlot = null;
+    seatStart = null;
+    pickDealer = false;
+  }
+
+  function seatSummary() {
+    return T.SEAT_CHARS.map(function (c, w) {
+      return c + ' <b>' + esc(seatName(w)) + (w === meWind() ? '（我）' : '') + '</b>';
+    }).join('・');
+  }
+
+  function renderSeating() {
+    var sit = seating();
+    var m = mj();
+    $('#play-mahjong').classList.toggle('seating', sit);
+    $('#mjSeating').hidden = !sit;
+    $('#mjSeatDone').hidden = !sit;
+    $('#mjSeatBar').hidden = sit;
+    $('#mjSeatEdit').disabled = !T.canEdit();
+    $('#mjSeatSummary').innerHTML = (m.seatsAt ? '' : '還沒抓位：') + seatSummary();
+    if (!sit) return;
+
+    var me = T.me();
+    var mw = meWind();
+    if (me == null) {
+      $('#mjSeatMe').innerHTML = '<span class="set-label" id="mjSeatMeLabel">先選你是誰</span>' +
+        '<div class="me-seats" role="radiogroup" aria-labelledby="mjSeatMeLabel">' + players().map(function (p) {
+          return '<button type="button" role="radio" aria-checked="false" data-me="' + p + '">' + esc(T.plainName(p)) + '</button>';
+        }).join('') + '</div>';
+    } else {
+      $('#mjSeatMe').innerHTML = '<span class="set-label" id="mjSeatMeLabel"><b>' + esc(T.plainName(me)) + '</b>（我）抓到</span>' +
+        '<div class="me-seats" role="radiogroup" aria-labelledby="mjSeatMeLabel">' + T.SEAT_CHARS.map(function (c, w) {
+          return '<button type="button" role="radio" data-mywind="' + w + '" aria-checked="' + (mw === w) + '"><span class="w">' + c + '</span>' + c + '家</button>';
+        }).join('') + '</div>';
+    }
+
+    var slot = seatSlot;
+    $('#mjSeatChoices').hidden = slot == null;
+    if (slot == null) return;
+    var rel = relOf(slot);
+    $('#mjSeatChoicesLabel').textContent = T.SEAT_CHARS[slot] + '家' + (rel ? '（' + rel + '）' : '') + '坐誰？';
+    $('#mjSeatChoicesList').innerHTML = players().map(function (p) {
+      var at = seats().indexOf(p);
+      var where = at === slot ? '' : at === -1 ? '沒上桌' : T.SEAT_CHARS[at];
+      return '<button type="button" role="radio" data-sit="' + p + '" aria-checked="' + (at === slot) + '">' +
+        esc(T.plainName(p)) + (p === me ? '（我）' : '') + (where ? ' <span class="where">' + where + '</span>' : '') + '</button>';
+    }).join('');
+  }
+
   /* ---------- 畫面 ---------- */
 
   // 名字加上相對位置與莊家，例如「小華（下家・莊）」
-  function seatLabel(i) {
+  function seatLabel(w) {
     var parts = [];
-    if (T.hasMySeat()) parts.push(T.RELATION[T.relationOf(i)]);
-    if (i === mj().dealer) parts.push('莊');
-    return T.name(i) + (parts.length ? '（' + parts.join('・') + '）' : '');
+    if (relOf(w)) parts.push(relOf(w));
+    if (w === mj().dealer) parts.push('莊');
+    return seatName(w) + (parts.length ? '（' + parts.join('・') + '）' : '');
   }
 
   // 牌桌現在在等什麼
@@ -179,50 +281,63 @@
     return 'done';
   }
 
-  // 牌桌：自己坐下面，右邊下家、對面對家、左邊上家（東→南→西→北 逆時針輪）
+  // 牌桌：自己坐下面，右邊下家、對面對家、左邊上家（東→南→西→北 逆時針輪）；
+  // 不知道我坐哪時東家在下面
   function renderTable(r) {
     var m = mj();
     var h = hand();
-    var me = T.mySeat();
+    var mw = meWind();
+    var bottom = mw < 0 ? 0 : mw;
     var editable = T.canEdit();
-    var state = tableState();
+    var sit = seating();
+    var state = sit ? 'seating' : tableState();
     var POS = ['bottom', 'right', 'top', 'left'];
-    var ready = r && r.ready;
+    var ready = !sit && r && r.ready;
     var html = '';
     for (var k = 0; k < 4; k++) {
-      var i = (me + k) % 4;
-      var rel = T.hasMySeat() ? T.RELATION[k] : '';
+      var w = (bottom + k) % 4;
+      var rel = relOf(w);
       var tags = [];
-      if (i === m.dealer) tags.push('<span class="tg dealer">莊' + (m.streak ? ' 連' + m.streak : '') + '</span>');
-      if (i === h.winner) tags.push('<span class="tg win">' + (h.method === 'ziMo' ? '自摸' : '胡') + '</span>');
-      if (h.method === 'fangQiang' && i === h.discarder) tags.push('<span class="tg pay">放槍</span>');
-      var net = ready ? r.nets[i] : 0;
-      html += '<button type="button" class="tseat p-' + POS[k] + (i === h.winner ? ' is-winner' : '') + (ready && net < 0 ? ' is-payer' : '') + '"' +
-        ' data-tseat="' + i + '"' + (editable ? '' : ' disabled') +
-        ' aria-label="' + esc(T.SEAT_CHARS[i] + '家 ' + T.name(i) + (rel ? '，' + rel : '')) + '">' +
-        (rel ? '<span class="rel' + (k === 0 ? ' me' : '') + '">' + rel + '</span>' : '') +
-        '<span class="wind">' + T.SEAT_CHARS[i] + '</span>' +
-        '<span class="nm">' + esc(T.name(i)) + '</span>' +
+      if (!sit) {
+        if (w === m.dealer) tags.push('<span class="tg dealer">莊' + (m.streak ? ' 連' + m.streak : '') + '</span>');
+        if (w === h.winner) tags.push('<span class="tg win">' + (h.method === 'ziMo' ? '自摸' : '胡') + '</span>');
+        if (h.method === 'fangQiang' && w === h.discarder) tags.push('<span class="tg pay">放槍</span>');
+      }
+      var net = ready ? r.nets[w] : 0;
+      var cls = 'tseat p-' + POS[k] + (sit
+        ? (w === seatSlot ? ' is-picking' : '')
+        : (w === h.winner ? ' is-winner' : '') + (ready && net < 0 ? ' is-payer' : ''));
+      html += '<button type="button" class="' + cls + '"' +
+        ' data-tseat="' + w + '"' + (editable ? '' : ' disabled') +
+        (sit ? ' aria-pressed="' + (w === seatSlot) + '"' : '') +
+        ' aria-label="' + esc(T.SEAT_CHARS[w] + '家 ' + seatName(w) + (rel ? '，' + rel : '')) + '">' +
+        (rel ? '<span class="rel' + (w === mw ? ' me' : '') + '">' + rel + '</span>' : '') +
+        '<span class="wind">' + T.SEAT_CHARS[w] + '</span>' +
+        '<span class="nm">' + esc(seatName(w)) + '</span>' +
         '<span class="tags">' + tags.join('') + '</span>' +
         '<span class="amt ' + T.signClass(net) + '">' + (ready && net ? T.signedMoney(net) : '') + '</span>' +
       '</button>';
     }
     var main;
     var sub = '';
-    if (state === 'dealer') main = '點新的莊家';
-    else if (state === 'draw') { main = '流局'; sub = T.name(m.dealer) + '連莊'; }
+    if (state === 'seating') {
+      if (seatSlot != null) { main = T.SEAT_CHARS[seatSlot] + '家坐誰？'; sub = '在下面選'; }
+      else { main = '點位置換人'; sub = mw < 0 ? '或先選你抓到哪一風' : '好了按下面的完成'; }
+    }
+    else if (state === 'dealer') main = '點新的莊家';
+    else if (state === 'draw') { main = '流局'; sub = seatName(m.dealer) + '連莊'; }
     else if (state === 'winner') { main = '點誰胡'; sub = '沒人胡就按「流局」'; }
     else if (state === 'method') { main = '自摸還是放槍？'; sub = '點下面的按鈕'; }
     else if (state === 'discarder') main = '點誰放槍';
     else {
-      main = T.name(h.winner) + (h.method === 'ziMo' ? ' 自摸' : ' 胡');
+      main = seatName(h.winner) + (h.method === 'ziMo' ? ' 自摸' : ' 胡');
       sub = ready ? r.tai + ' 台' + (r.capped ? '・限 ' + r.settings.cap : '') : '';
     }
     html += '<div class="table-center" aria-live="polite"><span class="tc-main">' + esc(main) + '</span>' +
       (sub ? '<span class="tc-sub">' + esc(sub) + '</span>' : '') + '</div>';
     var table = $('#mjTable');
     table.innerHTML = html;
-    table.classList.toggle('expect', editable && (state === 'dealer' || state === 'winner' || state === 'discarder'));
+    table.classList.toggle('expect', editable && (state === 'seating' ? seatSlot == null : state === 'dealer' || state === 'winner' || state === 'discarder'));
     $('#mjQ1Text').textContent = state === 'discarder' ? '誰放槍？點牌桌上的人'
       : state === 'dealer' ? '換莊家：點牌桌上的人' : '誰胡？點牌桌上的人';
   }
@@ -261,9 +376,9 @@
       '<span class="sum-chip">' + (preset ? MJ.PRESETS[preset].name : '自訂規則') + (s.custom.length ? '＋自訂台型' : '') + '</span>';
     $('#mjClear').disabled = !editable;
 
-    // 我坐哪、莊家
-    $('#mjMe').innerHTML = T.mySeatButtons();
-    $('#mjDealerName').textContent = T.SEAT_CHARS[m.dealer] + ' ' + T.name(m.dealer);
+    // 抓位、莊家
+    renderSeating();
+    $('#mjDealerName').textContent = T.SEAT_CHARS[m.dealer] + ' ' + seatName(m.dealer);
     var pd = $('#mjPickDealer');
     pd.setAttribute('aria-pressed', String(pickDealer));
     pd.textContent = pickDealer ? '取消' : '換莊家';
@@ -271,7 +386,7 @@
     $('#mjStreak').textContent = m.streak;
     $('#mjStreakDown').disabled = !editable || m.streak === 0;
     $('#mjStreakUp').disabled = !editable;
-    $('#mjDealerHint').textContent = T.name(m.dealer) + '當莊' + (m.streak ? '，連 ' + m.streak : '') + '：' +
+    $('#mjDealerHint').textContent = seatName(m.dealer) + '當莊' + (m.streak ? '，連 ' + m.streak : '') + '：' +
       (dTai === 0
         ? (s.dealerNeedsStreak && !m.streak ? '還沒連莊，莊家不算台。' : '莊家不算台。')
         : '莊家胡牌或莊家付錢時，多算 ' + dTai + ' 台' +
@@ -333,7 +448,7 @@
     var m = mj();
     if (isDraw()) {
       box.innerHTML = '<div class="guide"><strong>流局</strong><ol><li>沒人胡，不用付錢。</li><li>按「記流局」後，' +
-        esc(T.name(m.dealer)) + '繼續當莊，變成連 ' + (m.streak + 1) + '。</li></ol></div>';
+        esc(seatName(m.dealer)) + '繼續當莊，變成連 ' + (m.streak + 1) + '。</li></ol></div>';
       return;
     }
     var r = settleNow();
@@ -352,9 +467,9 @@
     box.innerHTML =
       '<div class="win-card">' +
         '<p class="eyebrow">這將胡牌</p>' +
-        '<p class="win-name">' + esc(T.name(w)) + '</p>' +
+        '<p class="win-name">' + esc(seatName(w)) + '</p>' +
         '<p class="win-total">共收<b>' + T.money(r.nets[w]) + '</b></p>' +
-        '<p class="win-meta"><span class="win-kind">' + (r.method === 'ziMo' ? '自摸' : '胡 ' + esc(T.name(hand().discarder))) +
+        '<p class="win-meta"><span class="win-kind">' + (r.method === 'ziMo' ? '自摸' : '胡 ' + esc(seatName(hand().discarder))) +
         ' <b>' + r.tai + ' 台</b></span>' +
         (r.capped ? '<span class="win-why">限 ' + r.settings.cap + ' 台</span>' : '') +
         (w === m.dealer ? '<span class="win-why">莊家胡，每家多 ' + r.dealerTai + ' 台</span>' : '') + '</p>' +
@@ -367,8 +482,14 @@
     var commit = $('#commitBtn');
     var editable = T.canEdit();
     commit.hidden = !editable;
+    if (seating()) {
+      sum.innerHTML = '<span class="muted">先完成抓位，再輸入這將</span>';
+      commit.textContent = '記入，下一將';
+      commit.disabled = true;
+      return;
+    }
     if (isDraw()) {
-      sum.innerHTML = '<span class="who">流局</span><span class="muted">' + esc(T.name(mj().dealer)) + '連莊</span>';
+      sum.innerHTML = '<span class="who">流局</span><span class="muted">' + esc(seatName(mj().dealer)) + '連莊</span>';
       commit.textContent = '記流局';
       commit.disabled = false;
       return;
@@ -382,7 +503,7 @@
       commit.disabled = true;
       return;
     }
-    sum.innerHTML = '<span class="who">' + esc(T.name(r.winner)) + ' ' + (r.method === 'ziMo' ? '自摸' : '胡') + '</span>' +
+    sum.innerHTML = '<span class="who">' + esc(seatName(r.winner)) + ' ' + (r.method === 'ziMo' ? '自摸' : '胡') + '</span>' +
       '<span class="pill pill-kind">' + r.tai + ' 台' + (r.capped ? '・限 ' + r.settings.cap : '') + '</span>' +
       '<span class="amt">收 ' + T.money(r.nets[r.winner]) + '</span>';
     commit.disabled = false;
@@ -414,7 +535,7 @@
   function resetHand() { mj().hand = T.emptyHand(); }
 
   function commit() {
-    if (!T.canEdit()) return;
+    if (!T.canEdit() || seating()) return;
     var m = mj();
     if (isDraw()) {
       var nd = MJ.nextDealer(m.dealer, m.streak, -1);
@@ -424,13 +545,17 @@
       resetHand();
       change();
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      T.toast('流局，' + T.name(m.dealer) + '連莊（連 ' + m.streak + '）');
+      T.toast('流局，' + seatName(m.dealer) + '連莊（連 ' + m.streak + '）');
       return;
     }
     var r = settleNow();
     if (!r.ready) return;
     var no = m.nextRound;
-    T.commitEntry('mahjong', { winner: r.winner, kind: r.method, tai: r.tai, nets: r.nets }, function () {
+    // 累計帳記的是玩家，不是位置
+    var nets = [];
+    for (var p = 0; p < T.MAX_PLAYERS; p++) nets.push(0);
+    r.nets.forEach(function (n, w) { nets[playerAt(w)] = n; });
+    T.commitEntry('mahjong', { winner: playerAt(r.winner), kind: r.method, tai: r.tai, nets: nets }, function () {
       var cur = mj();
       var nd = MJ.nextDealer(cur.dealer, cur.streak, r.winner);
       var same = nd.dealer === cur.dealer;
@@ -439,11 +564,42 @@
       resetHand();
       change();
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      T.toast('第 ' + no + ' 將已記入，' + T.name(cur.dealer) + (same ? '連莊（連 ' + cur.streak + '）' : '當莊'));
+      T.toast('第 ' + no + ' 將已記入，' + seatName(cur.dealer) + (same ? '連莊（連 ' + cur.streak + '）' : '當莊'));
     });
   }
 
   function init() {
+    $('#mjSeatEdit').addEventListener('click', function () {
+      if (!T.canEdit()) return;
+      openSeating();
+      T.render();
+    });
+    $('#mjSeatDone').addEventListener('click', function () {
+      if (!T.canEdit()) return;
+      mj().seatsAt = Date.now();
+      seatingOpen = false;
+      seatSlot = null;
+      change();
+      var mw = meWind();
+      T.toast('抓位完成' + (mw < 0 ? '' : '，你坐' + T.SEAT_CHARS[mw] + '家'));
+    });
+    // 我抓到哪一風；選完接著問下家坐誰
+    $('#mjSeatMe').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-mywind]');
+      if (!b || !T.canEdit() || T.me() == null) return;
+      var w = Number(b.getAttribute('data-mywind'));
+      assignSeat(w, T.me());
+      seatStart = (w + 1) % 4;
+      seatSlot = seatStart;
+      change();
+    });
+    $('#mjSeatChoices').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-sit]');
+      if (!b || !T.canEdit() || seatSlot == null) return;
+      assignSeat(seatSlot, Number(b.getAttribute('data-sit')));
+      seatSlot = nextSlot(seatSlot);
+      change();
+    });
     $('#mjPickDealer').addEventListener('click', function () {
       if (!T.canEdit()) return;
       pickDealer = !pickDealer;
@@ -455,11 +611,17 @@
       if (!b || !T.canEdit()) return;
       var i = Number(b.getAttribute('data-tseat'));
       var m = mj();
+      if (seating()) {
+        seatSlot = seatSlot === i ? null : i;
+        seatStart = seatSlot;
+        T.render();
+        return;
+      }
       if (pickDealer) {
         pickDealer = false;
         if (i !== m.dealer) { m.dealer = i; m.streak = 0; }
         change();
-        T.toast(T.name(i) + '當莊');
+        T.toast(seatName(i) + '當莊');
         return;
       }
       var h = hand();
@@ -581,6 +743,10 @@
     commit: commit,
     syncSettings: syncSettings,
     resetSettings: function () { mj().settings = MJ.normalizeSettings(); T.changed(PATH); },
-    onShow: function () {}
+    // 從來沒抓過位就一直先抓位；從首頁進來而且很久沒抓位（新的一場）也先抓位，之前坐的位置會留著
+    onShow: function (from) {
+      var at = mj().seatsAt;
+      if (from === 'home' && T.canEdit() && at && Date.now() - at > RESEAT_AFTER) openSeating();
+    }
   };
 })();
