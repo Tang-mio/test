@@ -369,8 +369,12 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .home-box-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .home-box-head h3 { font-size: var(--step-0); font-weight: 700; }
 .name-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.name-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); font-weight: 700; font-size: var(--step--1); }
-.name-chip .seat-badge { width: 24px; height: 24px; border-radius: 999px; font-size: .85rem; }
+.player-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--line); font-weight: 700; font-size: var(--step--1); color: var(--ink);
+}
+.player-chip[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.player-chip .me-tag { font-size: 11px; padding: 0 6px; border-radius: 999px; background: var(--accent); color: var(--surface); line-height: 17px; }
 .mini-totals li { display: flex; justify-content: space-between; gap: 10px; font-size: var(--step--1); }
 .mini-totals li b { font-family: var(--font-num); font-weight: 600; }
 .mini-totals { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
@@ -721,12 +725,8 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
           <h3 id="homePlayers">玩家</h3>
           <button type="button" class="btn" id="homeNames">改名字</button>
         </div>
-        <div class="name-chips" id="homeNameChips"></div>
-        <div class="me-row">
-          <span class="set-label" id="homeMeLabel">我坐</span>
-          <div class="me-seats" id="homeMe" role="radiogroup" aria-labelledby="homeMeLabel"></div>
-        </div>
-        <p class="hint">選你坐哪一家，麻將的牌桌會轉成你坐在下面。只存在這支手機。</p>
+        <div class="name-chips" id="homeNameChips" role="radiogroup" aria-label="點自己的名字"></div>
+        <p class="hint">點自己的名字，標成「我」。</p>
       </section>
 
       <section class="home-box" aria-labelledby="homeTotals">

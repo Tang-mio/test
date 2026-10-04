@@ -203,20 +203,27 @@
       var v = JSON.parse(localStorage.getItem(VIEW_KEY) || 'null');
       if (v && GAMES[v.game]) T.view.game = v.game;
       if (v && v.lastGame && GAMES[v.lastGame]) T.view.lastGame = v.lastGame;
-      if (v && v.mySeat != null && v.mySeat >= 0 && v.mySeat < 4) T.view.mySeat = Math.floor(v.mySeat);
+      if (v && v.mySeat != null && v.mySeat >= 0 && v.mySeat < MAX_PLAYERS) T.view.mySeat = Math.floor(v.mySeat);
     } catch (e) { /* 沒有偏好就用預設 */ }
   }
   function saveView() {
     try { localStorage.setItem(VIEW_KEY, JSON.stringify({ game: T.view.game, lastGame: T.view.lastGame, mySeat: T.view.mySeat })); } catch (e) { /* 同上 */ }
   }
 
-  // 這支手機的人坐哪一家（只存在這支手機）；沒選過就當作東家
-  T.mySeat = function () { return T.view.mySeat == null ? 0 : T.view.mySeat; };
-  T.hasMySeat = function () { return T.view.mySeat != null; };
+  // 這支手機的人是第幾位玩家（只存在這支手機）。排七和麻將的前四位依序是東南西北；
+  // 沒選過、或選的是第 5 位以後（21 點）時，牌桌就照東家在下面排
+  T.me = function () { return T.view.mySeat == null ? null : T.view.mySeat; };
+  T.hasMySeat = function () { return T.view.mySeat != null && T.view.mySeat < 4; };
+  T.mySeat = function () { return T.hasMySeat() ? T.view.mySeat : 0; };
   T.setMySeat = function (i) {
-    T.view.mySeat = i;
+    T.view.mySeat = T.view.mySeat === i ? null : i; // 再點一次取消
     saveView();
     T.render();
+  };
+  // 不帶東南西北的名字（首頁用）
+  T.plainName = function (i) {
+    var n = (T.state.names[i] || '').trim();
+    return n || '玩家 ' + (i + 1);
   };
   // 相對於自己的位置：0 我、1 下家、2 對家、3 上家
   T.RELATION = ['我', '下家', '對家', '上家'];
@@ -540,14 +547,15 @@
       meta.textContent = n ? '已記 ' + n + ' ' + ROUND_WORD[g] : (T.view.lastGame === g ? '上次玩這個' : '');
       $('.game-card[data-game="' + g + '"]').classList.toggle('last', T.view.lastGame === g);
     });
-    var bjCount = T.state.blackjack.settings.count;
-    var shown = Math.max(4, bjCount);
+    // 玩家：只列名字，點自己的名字標成「我」
+    var shown = Math.max(4, T.state.blackjack.settings.count);
     var chips = [];
     for (var i = 0; i < shown; i++) {
-      chips.push('<span class="name-chip"><span class="seat-badge" aria-hidden="true">' + T.badge(i) + '</span>' + T.esc(T.name(i)) + '</span>');
+      var mine = T.me() === i;
+      chips.push('<button type="button" class="player-chip" role="radio" data-me="' + i + '" aria-checked="' + mine + '">' +
+        T.esc(T.plainName(i)) + (mine ? '<span class="me-tag">我</span>' : '') + '</button>');
     }
     $('#homeNameChips').innerHTML = chips.join('');
-    $('#homeMe').innerHTML = T.mySeatButtons();
     var all = T.state.ledger;
     var list = $('#homeTotalsList');
     if (!all.length) {
@@ -560,7 +568,7 @@
     list.innerHTML = activePlayers(all)
       .sort(function (a, b) { return totals[b] - totals[a]; })
       .map(function (i) {
-        return '<li><span>' + T.esc(T.name(i)) + '</span><b class="' + T.signClass(totals[i]) + '">' + T.signedMoney(totals[i]) + '</b></li>';
+        return '<li><span>' + T.esc(T.plainName(i)) + (T.me() === i ? '（我）' : '') + '</span><b class="' + T.signClass(totals[i]) + '">' + T.signedMoney(totals[i]) + '</b></li>';
       }).join('');
   }
 
@@ -569,20 +577,30 @@
   function buildNameGrid() {
     var html = '';
     for (var i = 0; i < MAX_PLAYERS; i++) {
-      html += '<label class="name-field" data-name-row="' + i + '"><span class="seat-badge" aria-hidden="true">' + T.badge(i) + '</span>' +
-        '<input id="pname-' + i + '" data-pname="' + i + '" maxlength="' + NAME_MAX + '" autocomplete="off" placeholder="' +
-        (i < 4 ? SEAT_CHARS[i] + '家' : '玩家 ' + (i + 1)) + '" aria-label="第 ' + (i + 1) + ' 位玩家名字"></label>';
+      html += '<label class="name-field" data-name-row="' + i + '"><span class="seat-badge" data-name-badge aria-hidden="true"></span>' +
+        '<input id="pname-' + i + '" data-pname="' + i + '" maxlength="' + NAME_MAX + '" autocomplete="off"' +
+        ' aria-label="第 ' + (i + 1) + ' 位玩家名字"></label>';
     }
     $('#nameGrid').innerHTML = html;
   }
 
+  // 從首頁打開時只是填玩家（1、2、3…）；在排七、麻將裡打開時前四位標東南西北
   function renderNameInputs() {
-    var showAll = T.view.setupScope === 'blackjack' || T.state.blackjack.settings.count > 4;
+    var scope = T.view.setupScope;
+    var winds = scope === 'paiqi' || scope === 'mahjong';
+    var showAll = scope === 'blackjack' || scope === 'names' || T.state.blackjack.settings.count > 4;
+    var shown = scope === 'names' ? Math.max(4, T.state.blackjack.settings.count) : MAX_PLAYERS;
     for (var i = 0; i < MAX_PLAYERS; i++) {
       var input = $('#pname-' + i);
       if (document.activeElement !== input && input.value !== T.state.names[i]) input.value = T.state.names[i];
-      $('[data-name-row="' + i + '"]').hidden = i >= 4 && !showAll;
+      var useWind = winds && i < 4;
+      $('[data-name-badge]', $('[data-name-row="' + i + '"]')).textContent = useWind ? SEAT_CHARS[i] : String(i + 1);
+      input.placeholder = useWind ? SEAT_CHARS[i] + '家' : '玩家 ' + (i + 1);
+      $('[data-name-row="' + i + '"]').hidden = (i >= 4 && !showAll) || i >= shown;
     }
+    $('#namesHint').textContent = scope === 'names'
+      ? '排七和麻將用前四位，21 點最多 8 位（在 21 點的規則裡加人數）。'
+      : winds ? '前四位依序坐東、南、西、北。' : '21 點超過四人時再填 5 到 8。';
   }
 
   function syncSettingsForms() {
