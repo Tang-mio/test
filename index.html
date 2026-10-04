@@ -230,12 +230,37 @@ p { margin: 0; }
 .calc { display: grid; gap: 16px; }
 .lead { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
 .lead .hint { max-width: 62ch; }
-.example-note {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
-  padding: 10px 14px; border-radius: 10px;
-  background: var(--warn-soft); color: var(--ink); font-size: var(--step--1);
+
+/* 玩家與同步 */
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.players { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 12px; }
+.players-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.players-head h2 { font-size: var(--step-0); font-weight: 700; }
+.sync-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.sync-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.sync-pill[data-mode="sync"] { background: var(--gain-soft); color: var(--gain); border-color: transparent; }
+.sync-pill[data-mode="readonly"], .sync-pill[data-mode="offline"] { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.sync-pill[data-mode="connecting"] .dot { animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: .2; } }
+.name-grid { display: grid; gap: 8px 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 760px) { .name-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.name-field { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.name-field input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 6px 10px; font-weight: 700; }
+.name-field input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+.name-field input:disabled { opacity: .7; }
+.me-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.choices { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.choices label {
+  position: relative; padding: 3px 12px; border: 1px solid var(--line); border-radius: 999px;
+  font-size: var(--step--1); background: var(--surface-2); cursor: pointer;
+  max-width: 10em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.example-note b { color: var(--warn); }
+.choices input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.choices label:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.choices label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.waiting { text-align: center; padding-block: 24px; justify-items: center; }
+.waiting strong { font-size: var(--step-1); font-family: var(--font-display); }
+.waiting span { color: var(--muted); font-size: var(--step--1); max-width: 30ch; }
 .calc-grid { display: grid; gap: 20px; align-items: start; }
 @media (min-width: 980px) { .calc-grid { grid-template-columns: minmax(0, 1fr) 340px; } }
 .seats { display: grid; gap: 14px; }
@@ -254,12 +279,9 @@ p { margin: 0; }
   background: var(--accent-soft); color: var(--accent);
   font-family: var(--font-display); font-weight: 700; font-size: 1.15rem;
 }
-.seat-name {
-  flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 6px;
-  background: transparent; padding: 3px 6px; font-weight: 700; font-size: var(--step-1);
-}
-.seat-name:hover { border-color: var(--line); }
-.seat-name:focus { outline: none; border-color: var(--accent); background: var(--surface-2); }
+.seat-title { flex: 1; min-width: 0; font-weight: 700; font-size: var(--step-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seat.mine { border-color: var(--accent); }
+.seat.mine.is-winner { border-color: var(--gain); }
 .seat-net { font-family: var(--font-num); font-weight: 600; font-size: var(--step-1); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pos { color: var(--gain); }
 .neg { color: var(--pay); }
@@ -278,6 +300,7 @@ p { margin: 0; }
 .pill-kind { background: var(--accent-soft); color: var(--accent); }
 .pill-bao { background: var(--warn-soft); color: var(--warn); }
 .pill-win { background: var(--gain-soft); color: var(--gain); }
+.pill-me { background: var(--accent); color: var(--surface); }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 44px; align-items: center; padding: 6px; border-radius: 8px; background: var(--surface-2); }
 .chips-empty { font-size: var(--step--1); color: var(--muted); padding-inline: 4px; }
@@ -287,7 +310,7 @@ p { margin: 0; }
   font-family: var(--font-num); font-weight: 600; font-size: 14px; letter-spacing: -0.03em;
   display: grid; place-items: center;
 }
-.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration: line-through; }
+button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration: line-through; }
 .last7 { display: flex; gap: 8px; align-items: center; font-size: var(--step--1); cursor: pointer; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); }
 .last7 input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
 .last7:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
@@ -394,7 +417,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition: none !important; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 </style>
 </head>
@@ -417,13 +440,37 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
 
   <main>
     <section id="tab-calc" class="calc" role="tabpanel" aria-labelledby="tab-btn-calc">
+      <section class="players" aria-labelledby="playersTitle">
+        <div class="players-head">
+          <h2 id="playersTitle">玩家</h2>
+          <span class="sync-pill" id="syncPill" data-mode="connecting"><span class="dot" aria-hidden="true"></span><span id="syncText">連線中…</span></span>
+        </div>
+        <div class="name-grid">
+          <label class="name-field"><span class="seat-badge" aria-hidden="true">東</span><input id="pname-0" data-pname="0" maxlength="10" autocomplete="off" placeholder="東家" aria-label="東家名字"></label>
+          <label class="name-field"><span class="seat-badge" aria-hidden="true">南</span><input id="pname-1" data-pname="1" maxlength="10" autocomplete="off" placeholder="南家" aria-label="南家名字"></label>
+          <label class="name-field"><span class="seat-badge" aria-hidden="true">西</span><input id="pname-2" data-pname="2" maxlength="10" autocomplete="off" placeholder="西家" aria-label="西家名字"></label>
+          <label class="name-field"><span class="seat-badge" aria-hidden="true">北</span><input id="pname-3" data-pname="3" maxlength="10" autocomplete="off" placeholder="北家" aria-label="北家名字"></label>
+        </div>
+        <div class="me-row">
+          <span class="set-label" id="meLabel">這支手機是</span>
+          <div class="choices" role="radiogroup" aria-labelledby="meLabel">
+            <label><input type="radio" name="me" id="me-0" value="0"><span data-me-name="0">東家</span></label>
+            <label><input type="radio" name="me" id="me-1" value="1"><span data-me-name="1">南家</span></label>
+            <label><input type="radio" name="me" id="me-2" value="2"><span data-me-name="2">西家</span></label>
+            <label><input type="radio" name="me" id="me-3" value="3"><span data-me-name="3">北家</span></label>
+            <label><input type="radio" name="me" id="me-none" value="">都不是</label>
+          </div>
+        </div>
+        <p class="hint" id="syncHint"></p>
+      </section>
+
       <details class="settings" id="settings">
         <summary>
           <span class="sum-label">規則設定</span>
           <span class="sum-chips" id="settingsChips"></span>
           <span class="sum-edit"><span class="when-closed">調整</span><span class="when-open">收起</span></span>
         </summary>
-        <div class="settings-body">
+        <fieldset class="settings-body" id="settingsFields">
           <div class="set-grid">
             <div class="set-row">
               <label class="set-label" for="rate">每點金額</label>
@@ -465,16 +512,12 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
             </div>
           </div>
           <div class="settings-foot"><button type="button" class="btn" id="resetSettings">恢復預設規則</button></div>
-        </div>
+        </fieldset>
       </details>
 
       <div class="lead">
         <p class="hint">依座位順序 東 → 南 → 西 → 北 輪流出牌。翻開每家的蓋牌，在牌面鍵盤上點選加入，點上方已加入的牌可以移除。7 一定能出、不會被蓋，所以鍵盤上沒有 7。</p>
         <button type="button" class="btn" id="clearRound">清空本局</button>
-      </div>
-      <div class="example-note" id="exampleNote" hidden>
-        <span><b>範例局</b>：東家脫手、北家爆點，先看看怎麼算。範例不會記入累計帳。</span>
-        <button type="button" class="btn" id="startFresh">清空，開始記這局</button>
       </div>
 
       <div class="calc-grid">
@@ -569,6 +612,15 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         </div>
       </section>
 
+      <section>
+        <h2>多支手機一起用</h2>
+        <ul>
+          <li>大家用自己的 Claude 帳號登入，打開同一個連結，就會看到同一局。蓋牌、名字、規則和累計帳都會即時同步。</li>
+          <li>在「這支手機是」選自己坐哪一家，自己那家會排在最前面，其他家收起來；要幫別人輸入就按「幫他輸入」。</li>
+          <li>要能輸入，需要這個頁面的編輯權限；只有檢視權限的人可以即時看，但不能改。</li>
+        </ul>
+      </section>
+
       <p class="note">各家規矩不太一樣。倍數、爆點門檻、付全額或付差額，都可以在「本局」頁上方的「規則設定」裡改，改完立刻重算。</p>
     </section>
   </main>
@@ -581,7 +633,9 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
   'use strict';
   var P = window.PaiQi;
   var SEATS = ['東', '南', '西', '北'];
-  var STORE_KEY = 'paiqi-calc-v1';
+  var LOCAL_KEY = 'paiqi-calc-v1';   // 單機模式的牌局、規則、累計帳
+  var VIEW_KEY = 'paiqi-view-v1';    // 這支手機自己的偏好（坐哪一家）
+  var NAME_MAX = 10;
   var RULE_KEYS = ['tuoShou', 'weiQi', 'shiSanGai', 'baoDian'];
   var KIND_DESC = {
     shiSanGai: '13 張全蓋，反敗為勝',
@@ -589,9 +643,20 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     tuoShou: '一張都沒蓋',
     normal: '蓋牌點數最少'
   };
+  var MODE_TEXT = {
+    connecting: ['連線中…', '正在連到共用的牌桌…'],
+    sync: ['多人同步', '大家打開同一個連結就會看到同一局，任何一支手機輸入的蓋牌、名字和規則都會即時同步。'],
+    readonly: ['同步・只能看', '你可以即時看到這一局，但沒有編輯權限，不能輸入。需要輸入的話，請建立這個頁面的人在分享選單給你編輯權限。'],
+    offline: ['連線中斷', '和共用牌桌的連線中斷了，重新整理頁面再試一次。'],
+    local: ['單機', '目前是單機模式，資料只存在這支手機。登入 Claude 後打開這個頁面，就能和其他手機同步同一局。']
+  };
 
-  var state;
-  var result;
+  var state = emptyState();
+  var view = { mode: 'local', mySeat: null, expanded: {} };
+  var result = null;
+  var db = null;
+  var nameTimers = {};
+  var metaTimer = null;
 
   function $(sel, el) { return (el || document).querySelector(sel); }
   function $$(sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); }
@@ -604,58 +669,219 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
   function money(x) { return '$' + fmtNum(Math.abs(x)); }
   function signedMoney(x) { return (x > 0 ? '+' : x < 0 ? '−' : '') + money(x); }
   function signClass(x) { return x > 0 ? 'pos' : x < 0 ? 'neg' : 'zero'; }
+  function canEdit() { return view.mode === 'local' || view.mode === 'sync'; }
 
-  function exampleRound() {
+  function emptySeat() { return { name: '', covered: [], lastSeven: false }; }
+  function emptyState() {
     return {
-      firstIdx: 0,
-      example: true,
-      players: [
-        { name: '東家', covered: [], lastSeven: false },
-        { name: '南家', covered: ['K', 'Q', '9'], lastSeven: false },
-        { name: '西家', covered: ['A', '3', '5', '2'], lastSeven: false },
-        { name: '北家', covered: ['K', 'K', 'J', '10', '8'], lastSeven: false }
-      ]
+      settings: P.normalizeSettings(),
+      round: { firstIdx: 0, players: [emptySeat(), emptySeat(), emptySeat(), emptySeat()] },
+      ledger: [],
+      nextRound: 1
     };
   }
 
-  function freshState() {
-    return { settings: P.normalizeSettings(), round: exampleRound(), ledger: [] };
-  }
-
-  function sanitize(raw) {
-    if (!raw || typeof raw !== 'object') return null;
-    var r = raw.round;
-    if (!r || !Array.isArray(r.players) || r.players.length !== 4) return null;
-    var first = Number(r.firstIdx);
+  function cleanSeat(p) {
+    p = p || {};
     return {
-      settings: P.normalizeSettings(raw.settings),
-      round: {
-        firstIdx: first >= 0 && first < 4 ? Math.floor(first) : 0,
-        example: !!r.example,
-        players: r.players.map(function (p, i) {
-          p = p || {};
-          return {
-            name: typeof p.name === 'string' ? p.name.slice(0, 12) : SEATS[i] + '家',
-            covered: Array.isArray(p.covered) ? p.covered.filter(function (c) { return P.RANKS.indexOf(c) !== -1; }).slice(0, P.HAND_SIZE) : [],
-            lastSeven: !!p.lastSeven
-          };
-        })
-      },
-      ledger: Array.isArray(raw.ledger) ? raw.ledger.filter(function (e) {
-        return e && Array.isArray(e.nets) && e.nets.length === 4;
-      }) : []
+      name: typeof p.name === 'string' ? p.name.slice(0, NAME_MAX) : '',
+      covered: Array.isArray(p.covered)
+        ? p.covered.filter(function (c) { return P.RANKS.indexOf(c) !== -1; }).slice(0, P.HAND_SIZE)
+        : [],
+      lastSeven: !!p.lastSeven
+    };
+  }
+  function cleanFirst(v) {
+    var n = Number(v);
+    return n >= 0 && n < 4 ? Math.floor(n) : 0;
+  }
+  function cleanEntry(e, id) {
+    if (!e || !Array.isArray(e.nets) || e.nets.length !== 4) return null;
+    var nets = e.nets.map(Number);
+    if (nets.some(function (n) { return !isFinite(n); })) return null;
+    return {
+      id: id || null,
+      at: Number(e.at) || 0,
+      winner: cleanFirst(e.winner),
+      kind: Object.prototype.hasOwnProperty.call(P.KIND_LABEL, e.kind) ? e.kind : 'normal',
+      nets: nets
     };
   }
 
-  function load() {
+  /* ---------- 本機儲存 ---------- */
+
+  function loadLocal() {
     try {
-      var raw = localStorage.getItem(STORE_KEY);
-      return raw ? sanitize(JSON.parse(raw)) : null;
+      var raw = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null');
+      if (!raw || !raw.round || !Array.isArray(raw.round.players) || raw.round.players.length !== 4) return null;
+      var s = emptyState();
+      s.settings = P.normalizeSettings(raw.settings);
+      s.round.firstIdx = cleanFirst(raw.round.firstIdx);
+      s.round.players = raw.round.players.map(function (p) {
+        var seat = cleanSeat(p);
+        if (raw.round.example) { seat.covered = []; seat.lastSeven = false; } // 舊版的範例局不留
+        return seat;
+      });
+      s.ledger = (Array.isArray(raw.ledger) ? raw.ledger : []).map(function (e) { return cleanEntry(e); }).filter(Boolean);
+      return s;
     } catch (e) { return null; }
   }
 
-  function save() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* 無痕視窗等情況存不了，畫面照常運作 */ }
+  function saveLocal() {
+    if (view.mode !== 'local') return;
+    try {
+      localStorage.setItem(LOCAL_KEY, JSON.stringify({ settings: state.settings, round: state.round, ledger: state.ledger }));
+    } catch (e) { /* 無痕視窗等情況存不了，畫面照常運作 */ }
+  }
+
+  function loadView() {
+    try {
+      var v = JSON.parse(localStorage.getItem(VIEW_KEY) || 'null');
+      if (v && v.mySeat !== null && v.mySeat !== undefined) view.mySeat = cleanFirst(v.mySeat);
+    } catch (e) { /* 沒有偏好就用預設 */ }
+  }
+
+  function saveView() {
+    try { localStorage.setItem(VIEW_KEY, JSON.stringify({ mySeat: view.mySeat })); } catch (e) { /* 同上 */ }
+  }
+
+  /* ---------- 共用牌桌（db） ----------
+   * seats/0..3   每家一份：名字、蓋牌、尾張七
+   * table/meta   規則、誰拿 ♠7、下一局編號
+   * ledger/rNNNNN 每局結果；兩支手機同時按記入，寫到同一份文件，不會重複記帳
+   */
+
+  var writers = {};
+
+  function setWithRetry(ref, data) {
+    return ref.set(data).catch(function (e) {
+      if (e && e.code && e.code !== 'unavailable') throw e;
+      return new Promise(function (ok) { setTimeout(ok, 400 + Math.random() * 800); })
+        .then(function () { return ref.set(data); });
+    });
+  }
+
+  // 同一份文件一次只送一個寫入；連續修改時只送最新的內容
+  function queueWrite(path, data) {
+    var w = writers[path] || (writers[path] = { busy: false, next: null });
+    w.next = data;
+    if (w.busy) return;
+    w.busy = true;
+    (function send() {
+      if (!w.next || !db) { w.busy = false; return; }
+      var body = w.next;
+      w.next = null;
+      setWithRetry(db.doc(path), body).then(send, function (e) {
+        w.busy = false;
+        w.next = null;
+        onWriteError(e);
+      });
+    })();
+  }
+  function hasUnsent(path) { var w = writers[path]; return !!(w && w.next); }
+
+  function seatDoc(i) {
+    var p = state.round.players[i];
+    return { name: p.name, covered: p.covered.slice(), lastSeven: p.lastSeven };
+  }
+  function metaDoc() {
+    return { settings: state.settings, firstIdx: state.round.firstIdx, nextRound: state.nextRound };
+  }
+
+  function seatChanged(i) {
+    if (db) queueWrite('seats/' + i, seatDoc(i));
+    recalc();
+  }
+  function metaChanged(delay) {
+    if (db) {
+      clearTimeout(metaTimer);
+      if (delay) {
+        metaTimer = setTimeout(function () { metaTimer = null; queueWrite('table/meta', metaDoc()); }, delay);
+      } else {
+        metaTimer = null;
+        queueWrite('table/meta', metaDoc());
+      }
+    }
+    recalc();
+  }
+
+  function onWriteError(e) {
+    var code = e && e.code;
+    if (code === 'invalid_argument' || code === 'not_granted') {
+      setMode('readonly');
+      toast('你沒有這個牌桌的編輯權限，只能觀看');
+    } else if (code === 'quota_exceeded') {
+      toast('共用牌桌的空間滿了，請到累計帳刪掉一些舊的局');
+    } else if (code === 'revoked' || code === 'capability_disabled' || code === 'capability_removed') {
+      setMode('offline');
+    } else {
+      toast('剛才的修改沒有同步成功，請再試一次');
+    }
+  }
+
+  function onSubError() { setMode('offline'); }
+
+  function subscribe() {
+    db.collection('seats').onSnapshot(function (snap) {
+      var got = {};
+      snap.docs.forEach(function (d) { if (d.exists && /^[0-3]$/.test(d.id)) got[d.id] = d.data(); });
+      for (var i = 0; i < 4; i++) {
+        if (hasUnsent('seats/' + i)) continue; // 自己還沒送出的修改優先
+        var seat = cleanSeat(got[i]);
+        if (nameTimers[i] || document.activeElement === $('#pname-' + i)) seat.name = state.round.players[i].name;
+        state.round.players[i] = seat;
+      }
+      recalc();
+    }, onSubError);
+
+    db.doc('table/meta').onSnapshot(function (d) {
+      if (metaTimer || hasUnsent('table/meta')) return;
+      var m = (d.exists && d.data()) || {};
+      state.settings = P.normalizeSettings(m.settings);
+      state.round.firstIdx = cleanFirst(m.firstIdx);
+      state.nextRound = Math.max(1, Math.floor(Number(m.nextRound)) || 1);
+      syncSettingsForm();
+      recalc();
+    }, onSubError);
+
+    db.collection('ledger').orderBy('at').onSnapshot(function (snap) {
+      state.ledger = snap.docs.map(function (d) { return d.exists ? cleanEntry(d.data(), d.id) : null; }).filter(Boolean);
+      recalc();
+    }, onSubError);
+  }
+
+  function connect() {
+    var c = window.claude;
+    if (!c || typeof c.use !== 'function') { goLocal(); return; }
+    setMode('connecting');
+    Promise.all([c.use('db'), c.use('user')]).then(function (got) {
+      if (!got[0]) { goLocal(); return; }
+      db = got[0];
+      var user = got[1];
+      return (user ? user.can('data.write') : Promise.resolve(null)).then(function (may) {
+        state = emptyState();
+        setMode(may === false ? 'readonly' : 'sync');
+        syncSettingsForm();
+        subscribe();
+      });
+    }).catch(goLocal);
+  }
+
+  function goLocal() {
+    db = null;
+    state = loadLocal() || emptyState();
+    setMode('local');
+    syncSettingsForm();
+  }
+
+  function setMode(mode) {
+    view.mode = mode;
+    var t = MODE_TEXT[mode];
+    $('#syncPill').setAttribute('data-mode', mode);
+    $('#syncText').textContent = t[0];
+    $('#syncHint').textContent = t[1];
+    $('#settingsFields').disabled = !canEdit();
+    recalc();
   }
 
   function displayName(i) {
@@ -675,13 +901,15 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
 
   function syncSettingsForm() {
     var s = state.settings;
-    $('#rate').value = s.rate;
+    var active = document.activeElement;
+    function put(el, v) { if (el !== active) el.value = v; }
+    put($('#rate'), s.rate);
     $('#mode-' + s.mode).checked = true;
     RULE_KEYS.forEach(function (k) {
       $('#on-' + k).checked = s[k].on;
-      $('#mult-' + k).value = s[k].mult;
+      put($('#mult-' + k), s[k].mult);
     });
-    $('#threshold-baoDian').value = s.baoDian.threshold;
+    put($('#threshold-baoDian'), s.baoDian.threshold);
   }
 
   function readSettingsForm() {
@@ -716,7 +944,19 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       : '輸家付和贏家的點數差；十三蓋的贏家以 0 點計。';
   }
 
-  /* ---------- 座位 ---------- */
+  /* ---------- 玩家與座位 ---------- */
+
+  function renderPlayers() {
+    var editable = canEdit();
+    for (var i = 0; i < 4; i++) {
+      var input = $('#pname-' + i);
+      input.disabled = !editable;
+      if (document.activeElement !== input && input.value !== state.round.players[i].name) input.value = state.round.players[i].name;
+      $('[data-me-name="' + i + '"]').textContent = SEATS[i] + ' ' + displayName(i);
+    }
+    var me = view.mySeat === null ? $('#me-none') : $('#me-' + view.mySeat);
+    me.checked = true;
+  }
 
   function keysHtml() {
     return P.RANKS.map(function (r) {
@@ -729,11 +969,12 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
 
   function buildSeats() {
     var keys = keysHtml();
-    $('#seats').innerHTML = state.round.players.map(function (p, i) {
-      return '<section class="seat" data-seat="' + i + '" aria-label="' + SEATS[i] + '位">' +
+    $('#seats').innerHTML = SEATS.map(function (seat, i) {
+      return '<section class="seat" data-seat="' + i + '" aria-label="' + seat + '家">' +
         '<header class="seat-head">' +
-          '<span class="seat-badge" aria-hidden="true">' + SEATS[i] + '</span>' +
-          '<input class="seat-name" id="name-' + i + '" maxlength="12" autocomplete="off" aria-label="' + SEATS[i] + '位玩家名稱" placeholder="' + SEATS[i] + '家">' +
+          '<span class="seat-badge" aria-hidden="true">' + seat + '</span>' +
+          '<span class="seat-title" data-title></span>' +
+          '<span class="pill pill-me" data-me hidden>你</span>' +
           '<span class="seat-net" data-net></span>' +
         '</header>' +
         '<div class="seat-meta">' +
@@ -742,11 +983,13 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         '</div>' +
         '<div class="chips" data-chips></div>' +
         '<label class="last7" data-last7-wrap hidden><input type="checkbox" id="last7-' + i + '" data-last7>最後一張打出的是 7（尾張七）</label>' +
-        '<div class="keys" role="group" aria-label="加入' + SEATS[i] + '位的蓋牌">' + keys + '</div>' +
-        '<div class="seat-foot"><button type="button" class="link-btn" data-clear>清空這家</button></div>' +
+        '<div class="keys" data-keys role="group" aria-label="加入' + seat + '家的蓋牌">' + keys + '</div>' +
+        '<div class="seat-foot">' +
+          '<button type="button" class="link-btn" data-toggle hidden></button>' +
+          '<button type="button" class="link-btn" data-clear>清空這家</button>' +
+        '</div>' +
       '</section>';
     }).join('');
-    state.round.players.forEach(function (p, i) { $('#name-' + i).value = p.name; });
   }
 
   function usedCounts() {
@@ -761,14 +1004,25 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     return covered.slice().sort(function (a, b) { return P.RANKS.indexOf(a) - P.RANKS.indexOf(b); });
   }
 
+  function totalCovered() {
+    return state.round.players.reduce(function (n, p) { return n + p.covered.length; }, 0);
+  }
+
   function updateSeats() {
     var used = usedCounts();
     var s = state.settings;
+    var editable = canEdit();
+    var waiting = totalCovered() === 0;
     state.round.players.forEach(function (p, i) {
       var el = $('[data-seat="' + i + '"]');
-      var info = result ? result.players[i] : null;
+      var info = result && !waiting ? result.players[i] : null;
       var count = p.covered.length;
-      var isWinner = result && result.winner === i;
+      var isWinner = !!(info && result.winner === i);
+      var mine = view.mySeat === i;
+      var compact = view.mySeat !== null && !mine && !view.expanded[i];
+
+      $('[data-title]', el).textContent = displayName(i);
+      $('[data-me]', el).hidden = !mine;
 
       var tags = [];
       if (isWinner) tags.push('<span class="pill pill-win">贏家</span>');
@@ -783,26 +1037,38 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
 
       $('[data-chips]', el).innerHTML = count
         ? sortedCovered(p.covered).map(function (r) {
-            return '<button type="button" class="chip" data-chip="' + r + '" aria-label="移除一張 ' + r + '">' + r + '</button>';
+            return editable
+              ? '<button type="button" class="chip" data-chip="' + r + '" aria-label="移除一張 ' + r + '">' + r + '</button>'
+              : '<span class="chip">' + r + '</span>';
           }).join('')
-        : '<span class="chips-empty">沒有蓋牌（脫手）</span>';
+        : '<span class="chips-empty">' + (waiting ? '還沒輸入蓋牌' : '沒有蓋牌（脫手）') + '</span>';
 
       var wrap = $('[data-last7-wrap]', el);
-      wrap.hidden = !(count === 0 && s.weiQi.on);
-      $('[data-last7]', el).checked = p.lastSeven;
+      wrap.hidden = compact || waiting || !(count === 0 && s.weiQi.on);
+      var last7 = $('[data-last7]', el);
+      last7.checked = p.lastSeven;
+      last7.disabled = !editable;
 
       var firstBtn = $('[data-first]', el);
       firstBtn.setAttribute('aria-pressed', String(state.round.firstIdx === i));
+      firstBtn.disabled = !editable;
 
+      $('[data-keys]', el).hidden = compact;
       $$('.key', el).forEach(function (k) {
         var r = k.getAttribute('data-r');
-        k.disabled = count >= P.HAND_SIZE || (used[r] || 0) >= P.PER_RANK;
+        k.disabled = !editable || count >= P.HAND_SIZE || (used[r] || 0) >= P.PER_RANK;
       });
 
-      el.classList.toggle('is-winner', !!isWinner);
+      var toggle = $('[data-toggle]', el);
+      toggle.hidden = view.mySeat === null || mine || !editable;
+      toggle.textContent = compact ? '幫' + displayName(i) + '輸入' : '收起';
+      var clear = $('[data-clear]', el);
+      clear.hidden = compact;
+      clear.disabled = !editable;
 
-      var nameInput = $('#name-' + i);
-      if (document.activeElement !== nameInput && nameInput.value !== p.name) nameInput.value = p.name;
+      el.classList.toggle('is-winner', isWinner);
+      el.classList.toggle('mine', mine);
+      el.style.order = mine ? '-1' : '';
     });
   }
 
@@ -843,7 +1109,12 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     if (errors.length) {
       box.innerHTML = '<div class="alert"><b>這局的牌對不起來</b>' +
         errors.map(function (e) { return '<span>' + esc(e) + '</span>'; }).join('') +
-        '<span>請在左邊移除多出來的牌。</span></div>';
+        '<span>請移除多出來的牌。</span></div>';
+      return;
+    }
+    if (totalCovered() === 0) {
+      box.innerHTML = '<div class="panel-box waiting"><strong>等開牌</strong>' +
+        '<span>牌局結束後，翻開每家的蓋牌，在各家的牌面鍵盤點選。這裡會算出贏家和誰付誰多少。</span></div>';
       return;
     }
     var r = result;
@@ -858,7 +1129,6 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         '<div class="t-formula">' + esc(formulaText(t, r)) + '</div>' +
       '</li>';
     }).join('');
-    var commitDisabled = state.round.example ? ' disabled title="範例局不會記入累計帳"' : '';
     box.innerHTML =
       '<div class="win-card">' +
         '<p class="eyebrow">本局贏家</p>' +
@@ -871,9 +1141,9 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         '<h3 class="sub">誰付多少</h3>' +
         '<ol class="transfers">' + transfers + '</ol>' +
       '</div>' +
-      '<div class="result-actions">' +
-        '<button type="button" class="btn primary" id="commitRound"' + commitDisabled + '>記入累計帳，開下一局</button>' +
-      '</div>';
+      (canEdit()
+        ? '<div class="result-actions"><button type="button" class="btn primary" id="commitRound">記入累計帳，開下一局</button></div>'
+        : '');
   }
 
   function recalc() {
@@ -881,23 +1151,31 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     var errors = P.validateRound(round);
     result = errors.length ? null : P.settle(round, state.settings);
     renderSettingsSummary();
+    renderPlayers();
     updateSeats();
     renderResult(errors);
-    $('#exampleNote').hidden = !state.round.example;
+    $('#clearRound').disabled = !canEdit();
     renderLedger();
-    save();
-  }
-
-  function leaveExample() {
-    if (state.round.example) state.round.example = false;
+    saveLocal();
   }
 
   function clearRound() {
-    state.round.example = false;
-    state.round.players.forEach(function (p) { p.covered = []; p.lastSeven = false; });
+    state.round.players.forEach(function (p, i) {
+      p.covered = [];
+      p.lastSeven = false;
+      if (db) queueWrite('seats/' + i, seatDoc(i));
+    });
   }
 
   /* ---------- 累計帳 ---------- */
+
+  function ledgerTotals() {
+    var totals = [0, 0, 0, 0];
+    state.ledger.forEach(function (e) {
+      e.nets.forEach(function (n, i) { totals[i] = Math.round((totals[i] + n) * 100) / 100; });
+    });
+    return totals;
+  }
 
   function renderLedger() {
     var ledger = state.ledger;
@@ -909,12 +1187,9 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         '<span>在「本局」算好之後按「記入累計帳，開下一局」，每局輸贏會加總在這裡。</span></div>';
       return;
     }
-    var totals = [0, 0, 0, 0];
+    var totals = ledgerTotals();
     var wins = [0, 0, 0, 0];
-    ledger.forEach(function (e) {
-      e.nets.forEach(function (n, i) { totals[i] = Math.round((totals[i] + n) * 100) / 100; });
-      wins[e.winner] = (wins[e.winner] || 0) + 1;
-    });
+    ledger.forEach(function (e) { wins[e.winner] += 1; });
     $('#ledgerMeta').textContent = '共 ' + ledger.length + ' 局';
 
     var tiles = totals.map(function (t, i) {
@@ -929,7 +1204,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     var rows = ledger.map(function (e, n) {
       var time = new Date(e.at);
       var hhmm = isNaN(time) ? '' : String(time.getHours()).padStart(2, '0') + ':' + String(time.getMinutes()).padStart(2, '0');
-      var kind = e.kind && e.kind !== 'normal' ? ' <span class="pill pill-kind">' + P.KIND_LABEL[e.kind] + '</span>' : '';
+      var kind = e.kind !== 'normal' ? ' <span class="pill pill-kind">' + P.KIND_LABEL[e.kind] + '</span>' : '';
       return '<tr><td class="num">' + (n + 1) + '<span class="time">' + hhmm + '</span></td>' +
         '<td>' + esc(displayName(e.winner)) + kind + '</td>' +
         e.nets.map(function (v) { return '<td class="num ' + signClass(v) + '">' + signedMoney(v) + '</td>'; }).join('') + '</tr>';
@@ -937,6 +1212,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     var foot = '<tr><td>合計</td><td></td>' + totals.map(function (t) {
       return '<td class="' + signClass(t) + '">' + signedMoney(t) + '</td>';
     }).join('') + '</tr>';
+    var editable = canEdit() ? '' : ' disabled';
 
     body.innerHTML =
       '<div class="ledger">' +
@@ -944,34 +1220,81 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         '<div class="table-wrap"><table><thead>' + head + '</thead><tbody>' + rows + '</tbody><tfoot>' + foot + '</tfoot></table></div>' +
         '<div class="ledger-actions">' +
           '<button type="button" class="btn primary" id="copyLedger">複製結算文字</button>' +
-          '<button type="button" class="btn" id="undoLedger">刪除最後一局</button>' +
-          '<button type="button" class="btn danger" id="clearLedger">清空帳本</button>' +
+          '<button type="button" class="btn" id="undoLedger"' + editable + '>刪除最後一局</button>' +
+          '<button type="button" class="btn danger" id="clearLedger"' + editable + '>清空帳本</button>' +
         '</div>' +
         '<textarea class="copy-fallback" id="copyFallback" readonly hidden aria-label="結算文字"></textarea>' +
       '</div>';
   }
 
   function ledgerText() {
-    var totals = [0, 0, 0, 0];
-    state.ledger.forEach(function (e) {
-      e.nets.forEach(function (n, i) { totals[i] = Math.round((totals[i] + n) * 100) / 100; });
-    });
     var lines = ['排七累計（共 ' + state.ledger.length + ' 局）'];
-    totals.forEach(function (t, i) { lines.push(displayName(i) + ' ' + signedMoney(t)); });
+    ledgerTotals().forEach(function (t, i) { lines.push(displayName(i) + ' ' + signedMoney(t)); });
     return lines.join('\n');
   }
 
+  function maxLedgerNo() {
+    return state.ledger.reduce(function (m, e) {
+      var k = /^r(\d+)$/.exec(e.id || '');
+      return k ? Math.max(m, Number(k[1])) : m;
+    }, 0);
+  }
+
   function commitRound() {
-    if (!result || state.round.example) return;
-    state.ledger.push({
+    if (!result || !canEdit() || totalCovered() === 0) return;
+    var entry = {
       at: Date.now(),
       winner: result.winner,
       kind: result.winnerKind,
-      nets: result.players.map(function (p) { return p.net; })
+      nets: result.players.map(function (p) { return p.net; }),
+      names: [0, 1, 2, 3].map(displayName)
+    };
+    if (!db) {
+      state.ledger.push(cleanEntry(entry));
+      clearRound();
+      recalc();
+      toast('已記入第 ' + state.ledger.length + ' 局，蓋牌已清空');
+      return;
+    }
+    var n = Math.max(state.nextRound, maxLedgerNo() + 1);
+    var btn = $('#commitRound');
+    if (btn) btn.disabled = true;
+    setWithRetry(db.doc('ledger/r' + String(n).padStart(5, '0')), entry).then(function () {
+      state.nextRound = n + 1;
+      metaChanged(0);
+      clearRound();
+      recalc();
+      toast('已記入累計帳，每支手機都會看到');
+    }, function (e) {
+      if (btn) btn.disabled = false;
+      onWriteError(e);
     });
-    clearRound();
-    recalc();
-    toast('已記入第 ' + state.ledger.length + ' 局，蓋牌已清空');
+  }
+
+  function undoLedger() {
+    var last = state.ledger[state.ledger.length - 1];
+    if (!last) return;
+    if (!db) {
+      state.ledger.pop();
+      recalc();
+      toast('已刪除最後一局');
+      return;
+    }
+    if (!last.id) return;
+    db.doc('ledger/' + last.id).delete().then(function () { toast('已刪除最後一局'); }, onWriteError);
+  }
+
+  function clearLedger() {
+    if (!db) {
+      state.ledger = [];
+      recalc();
+      toast('帳本已清空');
+      return;
+    }
+    var ids = state.ledger.map(function (e) { return e.id; }).filter(Boolean);
+    ids.reduce(function (chain, id) {
+      return chain.then(function () { return db.doc('ledger/' + id).delete(); });
+    }, Promise.resolve()).then(function () { toast('帳本已清空'); }, onWriteError);
   }
 
   /* ---------- 分頁 ---------- */
@@ -992,58 +1315,91 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       if (b) showTab(b.getAttribute('data-tab'));
     });
 
+    $('.name-grid').addEventListener('input', function (e) {
+      if (!e.target.matches('[data-pname]') || !canEdit()) return;
+      var i = Number(e.target.getAttribute('data-pname'));
+      state.round.players[i].name = e.target.value.slice(0, NAME_MAX);
+      if (db) {
+        clearTimeout(nameTimers[i]);
+        nameTimers[i] = setTimeout(function () {
+          nameTimers[i] = null;
+          queueWrite('seats/' + i, seatDoc(i));
+        }, 400);
+      }
+      recalc();
+    });
+
+    $('.choices').addEventListener('change', function (e) {
+      var v = e.target.value;
+      view.mySeat = v === '' ? null : cleanFirst(v);
+      view.expanded = {};
+      saveView();
+      recalc();
+    });
+
     $('#seats').addEventListener('click', function (e) {
       var seatEl = e.target.closest('[data-seat]');
       if (!seatEl) return;
       var i = Number(seatEl.getAttribute('data-seat'));
       var p = state.round.players[i];
+      if (e.target.closest('[data-toggle]')) {
+        view.expanded[i] = !view.expanded[i];
+        recalc();
+        return;
+      }
+      if (!canEdit()) return;
       var key = e.target.closest('[data-r]');
       var chip = e.target.closest('[data-chip]');
       if (key && !key.disabled) {
-        leaveExample();
         p.covered.push(key.getAttribute('data-r'));
         p.lastSeven = false;
       } else if (chip) {
-        leaveExample();
         var at = p.covered.lastIndexOf(chip.getAttribute('data-chip'));
         if (at !== -1) p.covered.splice(at, 1);
       } else if (e.target.closest('[data-first]')) {
         state.round.firstIdx = i;
+        metaChanged(0);
+        return;
       } else if (e.target.closest('[data-clear]')) {
-        leaveExample();
         p.covered = [];
         p.lastSeven = false;
       } else {
         return;
       }
-      recalc();
+      seatChanged(i);
     });
 
     $('#seats').addEventListener('change', function (e) {
-      if (!e.target.matches('[data-last7]')) return;
+      if (!e.target.matches('[data-last7]') || !canEdit()) return;
       var i = Number(e.target.closest('[data-seat]').getAttribute('data-seat'));
-      leaveExample();
       state.round.players[i].lastSeven = e.target.checked;
-      recalc();
+      seatChanged(i);
     });
 
-    $('#seats').addEventListener('input', function (e) {
-      if (!e.target.matches('.seat-name')) return;
-      var i = Number(e.target.closest('[data-seat]').getAttribute('data-seat'));
-      state.round.players[i].name = e.target.value.slice(0, 12);
+    $('#clearRound').addEventListener('click', function () {
+      if (!canEdit()) return;
+      clearRound();
       recalc();
+      toast('本局蓋牌已清空');
     });
 
-    $('#clearRound').addEventListener('click', function () { clearRound(); recalc(); toast('本局蓋牌已清空'); });
-    $('#startFresh').addEventListener('click', function () { clearRound(); recalc(); });
-
-    var form = $('.settings-body');
-    form.addEventListener('input', function () { readSettingsForm(); recalc(); });
-    form.addEventListener('change', function () { readSettingsForm(); syncSettingsForm(); recalc(); });
+    var form = $('#settingsFields');
+    form.addEventListener('input', function (e) {
+      if (!canEdit()) return;
+      readSettingsForm();
+      metaChanged(e.target.type === 'number' ? 400 : 0);
+    });
+    form.addEventListener('change', function () {
+      if (!canEdit()) return;
+      readSettingsForm();
+      syncSettingsForm();
+      metaChanged(0);
+    });
     $('#resetSettings').addEventListener('click', function () {
+      if (!canEdit()) return;
       state.settings = P.normalizeSettings();
       syncSettingsForm();
-      recalc();
+      metaChanged(0);
       toast('已恢復預設規則');
     });
 
@@ -1069,15 +1425,11 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
           fallback();
         }
       } else if (t.closest('#undoLedger')) {
-        state.ledger.pop();
-        recalc();
-        toast('已刪除最後一局');
+        undoLedger();
       } else if (t.closest('#clearLedger')) {
         var btn = t.closest('#clearLedger');
         if (btn.classList.contains('armed')) {
-          state.ledger = [];
-          recalc();
-          toast('帳本已清空');
+          clearLedger();
         } else {
           btn.classList.add('armed');
           btn.textContent = '再按一次確定清空';
@@ -1091,20 +1443,16 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     });
   }
 
-  function start(data) {
-    state = (data && sanitize(data.state)) || load() || freshState();
+  function start() {
+    loadView();
     buildSeats();
-    syncSettingsForm();
     bind();
-    recalc();
     var hash = (location.hash || '').replace('#', '');
     if (hash) showTab(hash);
+    connect();
   }
 
-  var hot = window.claude && window.claude.hot;
-  if (hot && typeof hot.snapshot === 'function') hot.snapshot(function () { return { state: state }; });
-  if (hot && typeof hot.ready === 'function') hot.ready(start);
-  else start((hot && hot.data) || {});
+  start();
 })();
 </script>
 </body>
