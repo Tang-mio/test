@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>排七計錢</title>
+<title>牌桌計錢</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap">
@@ -12,7 +12,7 @@
 @font-face { font-family: "Swei Meatball"; src: url("fonts/swei-meatball-regular.woff") format("woff"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Swei Meatball"; src: url("fonts/swei-meatball-bold.woff") format("woff"); font-weight: 700; font-display: swap; }
 
-/* 版面：手機優先的單欄。上方四家分頁看點數與輸贏，中間是正在輸入的那家，底部固定牌面鍵盤和本局結算 */
+/* 版面：手機優先的單欄。首頁選遊戲；遊戲頁上方是本局資料，底部固定結算列（排七另有牌面鍵盤） */
 :root {
   --bg: #ECEFF4;
   --surface: #FFFFFF;
@@ -34,6 +34,9 @@
   --shadow: 0 1px 2px rgba(22, 30, 48, 0.08);
   --dock-shadow: 0 -8px 24px rgba(22, 30, 48, 0.10);
   --scrim: rgba(14, 18, 26, 0.45);
+  --tile-face: #FBF8EF;
+  --tile-back: #2F7A57;
+  --tile-green: #1F7A4D;
 
   --font-display: "Swei Meatball", "Noto Serif TC", "Songti TC", "PMingLiU", serif;
   --font-body: "Swei Meatball", "Noto Serif TC", "Songti TC", "PMingLiU", serif;
@@ -70,6 +73,9 @@
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
     --dock-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
     --scrim: rgba(0, 0, 0, 0.6);
+    --tile-face: #ECE6D6;
+    --tile-back: #2A6B4D;
+    --tile-green: #1F7A4D;
     color-scheme: dark;
   }
 }
@@ -94,6 +100,9 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   --dock-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
   --scrim: rgba(0, 0, 0, 0.6);
+  --tile-face: #ECE6D6;
+  --tile-back: #2A6B4D;
+  --tile-green: #1F7A4D;
   color-scheme: dark;
 }
 
@@ -129,7 +138,15 @@ legend { padding: 0; }
 
 /* 標頭 */
 .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.top-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.back-btn {
+  border: 0; background: none; padding: 6px 6px 6px 0; color: var(--accent);
+  font-size: var(--step-0); font-weight: 700; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap;
+}
+.back-btn svg { width: 20px; height: 20px; }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand .sync-pill { margin-left: 2px; }
+.top.in-game .mark { display: none; }
 .mark {
   flex: none; width: 30px; height: 42px; border-radius: 5px;
   background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
@@ -154,6 +171,10 @@ legend { padding: 0; }
   .brand h1 { font-size: var(--step-1); }
   .mark { width: 26px; height: 36px; }
   .tabs button { padding: 5px 9px; }
+}
+@media (max-width: 420px) {
+  .top.in-game .tabs { width: 100%; }
+  .top.in-game .tabs button { flex: 1; justify-content: center; }
 }
 
 /* 本局標題列 */
@@ -300,6 +321,133 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .guide strong { font-family: var(--font-display); font-size: var(--step-1); }
 .guide ol { margin: 0; padding-left: 1.3em; display: grid; gap: 2px; color: var(--muted); font-size: var(--step--1); }
 .guide ol li::marker { font-family: var(--font-num); color: var(--accent); }
+
+/* 首頁 */
+.home { display: grid; gap: 18px; }
+.home-q { font-family: var(--font-display); font-size: var(--step-3); font-weight: 700; line-height: 1.2; }
+.games { display: grid; gap: 10px; }
+@media (min-width: 560px) { .games { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.game-card {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr); grid-template-rows: auto auto auto; column-gap: 14px; row-gap: 2px;
+  align-items: center; text-align: left; padding: 14px; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--surface); color: var(--ink); transition: border-color .15s, transform .1s;
+}
+.game-card:hover { border-color: var(--accent); }
+.game-card:active { transform: translateY(1px); }
+.game-card.last { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+@media (min-width: 560px) { .game-card { grid-template-columns: minmax(0, 1fr); justify-items: start; row-gap: 4px; } .game-card .g-art { grid-row: auto; margin-bottom: 6px; } }
+.g-art { grid-row: span 3; position: relative; width: 64px; height: 64px; }
+.g-name { font-family: var(--font-display); font-weight: 700; font-size: var(--step-2); line-height: 1.2; }
+.g-desc { font-size: var(--step--1); color: var(--muted); }
+.g-meta { font-size: 12px; font-weight: 700; color: var(--accent); }
+.art-card {
+  position: absolute; width: 38px; height: 52px; border-radius: 5px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
+  font-family: var(--font-num); font-weight: 600; color: var(--ink);
+}
+.art-card .i { position: absolute; top: 4px; left: 5px; font-size: 12px; line-height: 1; }
+.art-card .s { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 8px; font-size: 18px; }
+.art-card.red { color: var(--pay); }
+.art-tile {
+  position: absolute; width: 38px; height: 50px; border-radius: 6px;
+  background: var(--tile-face); border: 1px solid var(--line); box-shadow: 0 3px 0 var(--tile-back), var(--shadow);
+  display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1;
+}
+.art-tile.red { color: #C62839; }
+.art-tile.green { color: var(--tile-green); }
+.home-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 10px; }
+.home-box-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.home-box-head h3 { font-size: var(--step-0); font-weight: 700; }
+.name-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.name-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); font-weight: 700; font-size: var(--step--1); }
+.name-chip .seat-badge { width: 24px; height: 24px; border-radius: 999px; font-size: .85rem; }
+.mini-totals li { display: flex; justify-content: space-between; gap: 10px; font-size: var(--step--1); }
+.mini-totals li b { font-family: var(--font-num); font-weight: 600; }
+.mini-totals { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+
+/* 麻將 */
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 10px; min-width: 0; }
+.step h3 { font-size: var(--step-0); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.step h3 .n { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--surface); font-family: var(--font-num); font-size: 12px; }
+.step h3 .aside { margin-left: auto; font-size: var(--step--1); color: var(--muted); font-weight: 500; }
+.step h3 .aside b { font-family: var(--font-num); color: var(--ink); font-size: var(--step-1); }
+.step.off { opacity: .45; }
+.seat-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.sp {
+  border: 1px solid var(--line); border-radius: 10px; padding: 7px 4px; background: var(--surface-2);
+  display: grid; justify-items: center; gap: 0; min-width: 0; position: relative;
+}
+.sp .b { font-family: var(--font-display); font-weight: 700; color: var(--accent); }
+.sp .nm { font-weight: 700; font-size: var(--step--1); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp .tag { position: absolute; top: -7px; right: -4px; font-size: 10px; font-weight: 700; padding: 0 6px; border-radius: 999px; background: var(--ink); color: var(--surface); line-height: 16px; }
+.sp[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.sp:disabled { opacity: .35; cursor: not-allowed; }
+.wide-toggle {
+  border: 1px dashed var(--line); background: transparent; border-radius: 10px; padding: 8px; font-size: var(--step--1); color: var(--muted);
+}
+.wide-toggle[aria-pressed="true"] { border-style: solid; border-color: var(--warn); background: var(--warn-soft); color: var(--warn); font-weight: 700; }
+.method { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.method button { height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 700; }
+.method button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); color: var(--accent); }
+.dealer-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+.dealer-seats { display: flex; gap: 4px; }
+.dealer-seats button { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); font-family: var(--font-display); font-weight: 700; }
+.dealer-seats button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2); }
+.stepper button { width: 36px; height: 36px; border: 0; background: transparent; font-size: 18px; font-weight: 700; color: var(--ink); }
+.stepper button:disabled { opacity: .3; cursor: not-allowed; }
+.stepper output, .stepper input { min-width: 2.6em; width: 4.2em; text-align: center; font-family: var(--font-num); font-weight: 600; border: 0; background: transparent; padding: 0; font-variant-numeric: tabular-nums; }
+.stepper input:focus { outline: none; }
+.stepper input::-webkit-inner-spin-button, .stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.stepper input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.dealer-streak { display: inline-flex; align-items: center; gap: 8px; }
+.stepper:focus-within { border-color: var(--accent); }
+.tai-group { display: grid; gap: 6px; }
+.tai-group h4 { margin: 0; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .06em; }
+.tai-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tai-chip {
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; background: var(--surface-2);
+  font-size: var(--step--1); display: inline-flex; align-items: baseline; gap: 5px;
+}
+.tai-chip b { font-family: var(--font-num); font-size: 11px; color: var(--muted); font-weight: 600; }
+.tai-chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.tai-chip[aria-pressed="true"] b { color: var(--accent); }
+.tai-chip:disabled { opacity: .35; cursor: not-allowed; }
+.extra-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: var(--step--1); }
+
+/* 21 點 */
+.bj-list { display: grid; gap: 8px; }
+.bj-player { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }
+.bj-player.done { border-color: var(--line); }
+.bj-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bj-head .seat-badge { width: 28px; height: 28px; font-size: .95rem; }
+.bj-head .nm { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bj-head .net { font-family: var(--font-num); font-weight: 600; }
+.bj-bet { display: flex; align-items: center; gap: 8px; font-size: var(--step--1); color: var(--muted); flex-wrap: wrap; }
+.bj-results { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.res { height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 700; font-size: var(--step--1); }
+.res[aria-pressed="true"].good { background: var(--gain-soft); border-color: var(--gain); color: var(--gain); }
+.res[aria-pressed="true"].bad { background: var(--pay-soft); border-color: var(--pay); color: var(--pay); }
+.res[aria-pressed="true"].even { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.res:disabled { opacity: .35; cursor: not-allowed; }
+.dbl { display: flex; align-items: center; gap: 8px; font-size: var(--step--1); cursor: pointer; }
+.dbl input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+.banker-box { display: grid; gap: 8px; }
+.choices { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.choices label {
+  position: relative; padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px;
+  font-size: var(--step--1); background: var(--surface-2); cursor: pointer;
+  max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.choices input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.choices label:has(input:checked) { background: var(--ink); border-color: var(--ink); color: var(--surface); font-weight: 700; }
+.choices label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 篩選 */
+.filter { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: var(--step--1); color: var(--muted); }
+.filter button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); font-weight: 700; }
+.game-tag { font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); margin-right: 4px; }
 
 /* 底部鍵盤 */
 .dock {
@@ -454,174 +602,359 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
 </style>
 </head>
 <body>
-<div class="app has-dock" id="app">
-  <header class="top">
-    <div class="brand">
-      <div class="mark" aria-hidden="true"><span class="ix">7</span><span class="pip">♠</span></div>
-      <h1>排七計錢</h1>
+<div class="app" id="app">
+  <header class="top" id="top">
+    <div class="top-left">
+      <button type="button" class="back-btn" id="backHome" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>首頁
+      </button>
+      <div class="brand">
+        <div class="mark" aria-hidden="true"><span class="ix">7</span><span class="pip">♠</span></div>
+        <h1 id="appTitle">牌桌計錢</h1>
+        <span class="sync-pill" id="syncPill" data-mode="connecting"><span class="dot" aria-hidden="true"></span><span id="syncText">連線中…</span></span>
+      </div>
     </div>
-    <nav class="tabs" role="tablist" aria-label="頁面">
-      <button type="button" role="tab" id="tab-btn-calc" data-tab="calc" aria-controls="tab-calc" aria-selected="true">本局</button>
-      <button type="button" role="tab" id="tab-btn-ledger" data-tab="ledger" aria-controls="tab-ledger" aria-selected="false">累計帳 <span class="badge" id="ledgerBadge">0</span></button>
-      <button type="button" role="tab" id="tab-btn-rules" data-tab="rules" aria-controls="tab-rules" aria-selected="false">規則</button>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="頁面" hidden>
+      <button type="button" role="tab" data-screen="play" aria-selected="true">本局</button>
+      <button type="button" role="tab" data-screen="ledger" aria-selected="false">累計帳 <span class="badge" id="ledgerBadge">0</span></button>
+      <button type="button" role="tab" data-screen="rules" aria-selected="false">規則</button>
     </nav>
   </header>
 
   <main>
-    <section id="tab-calc" class="calc" role="tabpanel" aria-labelledby="tab-btn-calc">
-      <div class="round-bar">
-        <div class="round-title">
-          <b id="roundNo">第 1 局</b>
-          <span class="sync-pill" id="syncPill" data-mode="connecting"><span class="dot" aria-hidden="true"></span><span id="syncText">連線中…</span></span>
-        </div>
-        <div class="round-actions">
-          <button type="button" class="btn" id="clearRound">清空本局</button>
-          <button type="button" class="btn" id="openSetup" aria-haspopup="dialog">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            名字・規則
-          </button>
-        </div>
+    <!-- 首頁 -->
+    <section id="screen-home" class="home" aria-labelledby="homeQ">
+      <h2 class="home-q" id="homeQ">今天打什麼？</h2>
+      <div class="games">
+        <button type="button" class="game-card" data-game="paiqi">
+          <span class="g-art" aria-hidden="true"><span class="art-card" style="left:13px;top:6px"><span class="i">7</span><span class="s">♠</span></span></span>
+          <span class="g-name">排七</span>
+          <span class="g-desc">翻開蓋牌算點數，含脫手、尾張七、十三蓋、爆點</span>
+          <span class="g-meta" data-meta="paiqi"></span>
+        </button>
+        <button type="button" class="game-card" data-game="mahjong">
+          <span class="g-art" aria-hidden="true"><span class="art-tile green" style="left:4px;top:8px;transform:rotate(-8deg)">發</span><span class="art-tile red" style="left:22px;top:4px;transform:rotate(6deg)">中</span></span>
+          <span class="g-name">麻將</span>
+          <span class="g-desc">台灣十六張，底加台數，自摸、放槍、莊家連莊自動算</span>
+          <span class="g-meta" data-meta="mahjong"></span>
+        </button>
+        <button type="button" class="game-card" data-game="blackjack">
+          <span class="g-art" aria-hidden="true"><span class="art-card" style="left:6px;top:10px;transform:rotate(-10deg)"><span class="i">A</span><span class="s">♠</span></span><span class="art-card red" style="left:22px;top:4px;transform:rotate(8deg)"><span class="i">K</span><span class="s">♥</span></span></span>
+          <span class="g-name">21點</span>
+          <span class="g-desc">莊家對閒家，黑傑克、過五關、加倍、投降</span>
+          <span class="g-meta" data-meta="blackjack"></span>
+        </button>
       </div>
-      <button type="button" class="rule-line" id="settingsChips" aria-label="目前規則，點一下調整"></button>
 
-      <div class="seat-tabs" id="seatTabs" role="tablist" aria-label="選擇要輸入哪一家"></div>
-
-      <section class="active-seat" id="activeSeat" aria-live="polite">
-        <div class="as-head">
-          <span class="seat-badge" id="asBadge" aria-hidden="true">東</span>
-          <button type="button" class="as-name" id="asName" title="改名字">
-            <span id="asNameText">東家</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-          </button>
-          <button type="button" class="first-btn" id="asFirst" aria-pressed="false" title="這局拿到 ♠7、先出牌的人">♠7 先出</button>
+      <section class="home-box" aria-labelledby="homePlayers">
+        <div class="home-box-head">
+          <h3 id="homePlayers">玩家</h3>
+          <button type="button" class="btn" id="homeNames">改名字</button>
         </div>
-        <p class="tally" id="asTally"></p>
-        <div class="chips" id="asChips" aria-label="已蓋的牌，點一下可移除"></div>
-        <label class="last7" id="asLast7Wrap" hidden><input type="checkbox" id="asLast7">最後一張打出的是 7（尾張七）</label>
-        <div class="as-foot">
-          <span class="hint">點上面的牌可以移除</span>
-          <button type="button" class="link-btn" id="asClear">清空這家</button>
-        </div>
+        <div class="name-chips" id="homeNameChips"></div>
       </section>
 
-      <section class="detail" id="result" aria-label="本局結算"></section>
+      <section class="home-box" aria-labelledby="homeTotals">
+        <div class="home-box-head">
+          <h3 id="homeTotals">今晚累計</h3>
+          <button type="button" class="btn" id="homeLedger">看累計帳</button>
+        </div>
+        <ul class="mini-totals" id="homeTotalsList"></ul>
+      </section>
     </section>
 
-    <section id="tab-ledger" class="ledger" role="tabpanel" aria-labelledby="tab-btn-ledger" hidden>
+    <!-- 排七 -->
+    <section id="play-paiqi" class="calc" hidden>
+      <div class="round-bar">
+        <div class="round-title"><b id="pqRound">第 1 局</b></div>
+        <div class="round-actions">
+          <button type="button" class="btn" id="pqClear">清空本局</button>
+          <button type="button" class="btn" data-setup><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path></svg>名字・規則</button>
+        </div>
+      </div>
+      <button type="button" class="rule-line" id="pqChips" data-setup aria-label="目前規則，點一下調整"></button>
+      <div class="seat-tabs" id="pqTabs" role="tablist" aria-label="選擇要輸入哪一家"></div>
+      <section class="active-seat" aria-live="polite">
+        <div class="as-head">
+          <span class="seat-badge" id="pqBadge" aria-hidden="true">東</span>
+          <button type="button" class="as-name" id="pqName" title="改名字">
+            <span id="pqNameText">東家</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+          </button>
+          <button type="button" class="first-btn" id="pqFirst" aria-pressed="false" title="這局拿到 ♠7、先出牌的人">♠7 先出</button>
+        </div>
+        <p class="tally" id="pqTally"></p>
+        <div class="chips" id="pqChipsCovered" aria-label="已蓋的牌，點一下可移除"></div>
+        <label class="last7" id="pqLast7Wrap" hidden><input type="checkbox" id="pqLast7">最後一張打出的是 7（尾張七）</label>
+        <div class="as-foot">
+          <span class="hint">點上面的牌可以移除</span>
+          <button type="button" class="link-btn" id="pqClearSeat">清空這家</button>
+        </div>
+      </section>
+      <section class="detail" id="pqResult" aria-label="本局結算"></section>
+    </section>
+
+    <!-- 麻將 -->
+    <section id="play-mahjong" class="calc" hidden>
+      <div class="round-bar">
+        <div class="round-title"><b id="mjRound">第 1 將</b></div>
+        <div class="round-actions">
+          <button type="button" class="btn" id="mjClear">清空這將</button>
+          <button type="button" class="btn" data-setup><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path></svg>名字・規則</button>
+        </div>
+      </div>
+      <button type="button" class="rule-line" id="mjChips" data-setup aria-label="目前規則，點一下調整"></button>
+      <section class="step" aria-label="莊家">
+        <div class="dealer-row">
+          <span class="set-label">莊家</span>
+          <div class="dealer-seats" id="mjDealer" role="group" aria-label="選莊家"></div>
+          <span class="dealer-streak"><span class="set-label">連莊</span>
+          <span class="stepper"><button type="button" id="mjStreakDown" aria-label="少連一次">−</button><output id="mjStreak">0</output><button type="button" id="mjStreakUp" aria-label="多連一次">+</button></span></span>
+        </div>
+        <p class="hint" id="mjDealerHint"></p>
+      </section>
+      <section class="step" aria-labelledby="mjQ1">
+        <h3 id="mjQ1"><span class="n">1</span>誰胡？</h3>
+        <div class="seat-pick" id="mjWinner" role="group" aria-label="誰胡"></div>
+        <button type="button" class="wide-toggle" id="mjDraw" aria-pressed="false">流局（沒人胡，莊家連莊）</button>
+      </section>
+      <section class="step" id="mjStep2" aria-labelledby="mjQ2">
+        <h3 id="mjQ2"><span class="n">2</span>怎麼胡？</h3>
+        <div class="method" id="mjMethod" role="group" aria-label="胡法">
+          <button type="button" data-method="ziMo" aria-pressed="false">自摸</button>
+          <button type="button" data-method="fangQiang" aria-pressed="false">放槍</button>
+        </div>
+        <div id="mjDiscWrap" hidden>
+          <p class="hint">誰放槍？</p>
+          <div class="seat-pick" id="mjDiscarder" role="group" aria-label="誰放槍"></div>
+        </div>
+      </section>
+      <section class="step" id="mjStep3" aria-labelledby="mjQ3">
+        <h3 id="mjQ3"><span class="n">3</span>幾台？<span class="aside">共 <b id="mjTaiSum">0</b> 台</span></h3>
+        <div id="mjTai"></div>
+        <div class="extra-row">
+          <span>表上沒有的台數</span>
+          <span class="stepper"><button type="button" id="mjExtraDown" aria-label="少一台">−</button><output id="mjExtra">0</output><button type="button" id="mjExtraUp" aria-label="多一台">+</button></span>
+        </div>
+        <p class="hint" id="mjTaiList"></p>
+      </section>
+      <section class="detail" id="mjResult" aria-label="這將結算"></section>
+    </section>
+
+    <!-- 21 點 -->
+    <section id="play-blackjack" class="calc" hidden>
+      <div class="round-bar">
+        <div class="round-title"><b id="bjRound">第 1 局</b></div>
+        <div class="round-actions">
+          <button type="button" class="btn" id="bjClear">清空結果</button>
+          <button type="button" class="btn" data-setup><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path></svg>名字・規則</button>
+        </div>
+      </div>
+      <button type="button" class="rule-line" id="bjChips" data-setup aria-label="目前規則，點一下調整"></button>
+      <section class="step banker-box" aria-labelledby="bjBankerLabel">
+        <h3 id="bjBankerLabel">莊家</h3>
+        <div class="choices" id="bjBanker" role="radiogroup" aria-labelledby="bjBankerLabel"></div>
+      </section>
+      <div class="bj-list" id="bjPlayers"></div>
+      <section class="detail" id="bjResult" aria-label="這局結算"></section>
+    </section>
+
+    <!-- 累計帳 -->
+    <section id="screen-ledger" class="ledger" hidden>
       <div class="section-head">
         <h2>累計帳</h2>
         <p class="hint" id="ledgerMeta"></p>
       </div>
+      <div class="filter" id="ledgerFilter" role="group" aria-label="看哪個遊戲">
+        <button type="button" data-filter="all" aria-pressed="true">全部</button>
+        <button type="button" data-filter="paiqi" aria-pressed="false">排七</button>
+        <button type="button" data-filter="mahjong" aria-pressed="false">麻將</button>
+        <button type="button" data-filter="blackjack" aria-pressed="false">21點</button>
+      </div>
       <div id="ledgerBody"></div>
     </section>
 
-    <section id="tab-rules" class="rules" role="tabpanel" aria-labelledby="tab-btn-rules" hidden>
-      <section>
-        <h2>怎麼玩</h2>
-        <ul>
-          <li>一副牌 52 張，四人各拿 13 張。拿到 ♠7 的人先出，第一張一定要出 ♠7。</li>
-          <li>依座位順序（東 → 南 → 西 → 北）輪流，每次出一張：任何花色的 7 隨時可以出，開一條新的龍；或接在桌上同花色那條龍的頭尾，7 往上接 8、9…K，往下接 6、5…A。</li>
-          <li>有牌能出就一定要出，不能故意留著。</li>
-          <li>真的沒牌能出，才從手上挑一張牌面朝下蓋起來，這輪就算過。</li>
-          <li>手上有 7 一定能出，所以 7 永遠不會被蓋，鍵盤上也沒有 7。</li>
-        </ul>
-      </section>
+    <!-- 規則 -->
+    <section id="screen-rules" class="rules" hidden>
+      <div class="filter" id="rulesFilter" role="group" aria-label="看哪個遊戲的規則">
+        <button type="button" data-rules="paiqi" aria-pressed="true">排七</button>
+        <button type="button" data-rules="mahjong" aria-pressed="false">麻將</button>
+        <button type="button" data-rules="blackjack" aria-pressed="false">21點</button>
+      </div>
 
-      <section>
-        <h2>算點數</h2>
-        <p>所有牌出完或蓋完，這局結束。各家翻開蓋牌加總：A 算 1 點，2 到 10 照牌面，J 算 11、Q 算 12、K 算 13。點數越少越好。</p>
-      </section>
-
-      <section>
-        <h2>誰贏</h2>
-        <p>由上往下比，前一項分出勝負就不看後面：</p>
-        <ol>
-          <li><b>十三蓋</b>：13 張全部蓋掉，一張都沒出過，直接反敗為勝。</li>
-          <li><b>尾張七</b>：一張都沒蓋，而且最後打出的一張是 7。</li>
-          <li><b>脫手</b>：一張都沒蓋。</li>
-          <li>蓋牌點數少。</li>
-          <li>蓋牌張數少。</li>
-          <li>出牌順序早：從拿 ♠7 的人開始數，先輪到的人贏。</li>
-        </ol>
-      </section>
-
-      <section>
-        <h2>特殊牌型與倍數</h2>
-        <dl class="special">
-          <div class="special-item">
-            <dt>脫手 <span class="x">×2</span></dt>
-            <dd><p>贏家整局一張都沒蓋，三家付的錢都乘 2。</p></dd>
+      <article id="rules-paiqi" class="rules">
+        <section>
+          <h2>怎麼玩</h2>
+          <ul>
+            <li>一副牌 52 張，四人各拿 13 張。拿到 ♠7 的人先出，第一張一定要出 ♠7。</li>
+            <li>依座位順序（東 → 南 → 西 → 北）輪流，每次出一張：任何花色的 7 隨時可以出，開一條新的龍；或接在桌上同花色那條龍的頭尾，7 往上接 8、9…K，往下接 6、5…A。</li>
+            <li>有牌能出就一定要出，不能故意留著。</li>
+            <li>真的沒牌能出，才從手上挑一張牌面朝下蓋起來，這輪就算過。</li>
+            <li>手上有 7 一定能出，所以 7 永遠不會被蓋，鍵盤上也沒有 7。</li>
+          </ul>
+        </section>
+        <section>
+          <h2>算點數</h2>
+          <p>所有牌出完或蓋完，這局結束。各家翻開蓋牌加總：A 算 1 點，2 到 10 照牌面，J 算 11、Q 算 12、K 算 13。點數越少越好。</p>
+        </section>
+        <section>
+          <h2>誰贏</h2>
+          <p>由上往下比，前一項分出勝負就不看後面：</p>
+          <ol>
+            <li><b>十三蓋</b>：13 張全部蓋掉，一張都沒出過，直接反敗為勝。</li>
+            <li><b>尾張七</b>：一張都沒蓋，而且最後打出的一張是 7。</li>
+            <li><b>脫手</b>：一張都沒蓋。</li>
+            <li>蓋牌點數少。</li>
+            <li>蓋牌張數少。</li>
+            <li>出牌順序早：從拿 ♠7 的人開始數，先輪到的人贏。</li>
+          </ol>
+        </section>
+        <section>
+          <h2>特殊牌型與倍數</h2>
+          <dl class="special">
+            <div class="special-item"><dt>脫手 <span class="x">×2</span></dt><dd><p>贏家整局一張都沒蓋，三家付的錢都乘 2。</p></dd></div>
+            <div class="special-item"><dt>尾張七 <span class="x">×4</span></dt><dd><p>贏家脫手，而且最後打出的一張是 7。改成乘 4，不再另外乘脫手的 2。</p></dd></div>
+            <div class="special-item"><dt>十三蓋 <span class="x">×5</span></dt><dd><p>13 張全蓋。點數雖然最多，但算贏家，三家付的錢乘 5。</p><p class="hint">選「付差額」時，十三蓋的人以 0 點計算。</p></dd></div>
+            <div class="special-item"><dt>爆點 <span class="x bao">×2</span></dt><dd><p>輸家蓋牌超過 40 點（41 點起），這位輸家自己付的錢再乘 2。</p><p class="hint">會和贏家的倍數相乘：贏家脫手、你又爆點，就是乘 4。</p></dd></div>
+          </dl>
+        </section>
+        <section>
+          <h2>怎麼算錢</h2>
+          <p>只有贏家收錢，三位輸家各自付給贏家。</p>
+          <div class="formula-box">
+            <span>付全額：付的錢 = 自己的點數 × 倍數 × 每點金額</span>
+            <span>付差額：付的錢 =（自己的點數 − 贏家的點數）× 倍數 × 每點金額</span>
+            <span>倍　數 = 贏家牌型的倍數 × 自己爆點的倍數（沒有就是 1）</span>
           </div>
-          <div class="special-item">
-            <dt>尾張七 <span class="x">×4</span></dt>
-            <dd><p>贏家脫手，而且最後打出的一張是 7。改成乘 4，不再另外乘脫手的 2。</p></dd>
+        </section>
+        <section>
+          <h2>算一次看看</h2>
+          <p>每點 $1、付全額。東家脫手；南家蓋 K Q 9 共 34 點；西家蓋 A 3 5 2 共 11 點；北家蓋 K K J 10 8 共 55 點，超過 40 點爆點。</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>輸家</th><th>算式</th><th>付給東家</th></tr></thead>
+              <tbody>
+                <tr><td>南家</td><td class="num">34 × 脫手 2</td><td class="num">$68</td></tr>
+                <tr><td>西家</td><td class="num">11 × 脫手 2</td><td class="num">$22</td></tr>
+                <tr><td>北家</td><td class="num">55 × 脫手 2 × 爆點 2</td><td class="num">$220</td></tr>
+              </tbody>
+              <tfoot><tr><td>東家共收</td><td></td><td>$310</td></tr></tfoot>
+            </table>
           </div>
-          <div class="special-item">
-            <dt>十三蓋 <span class="x">×5</span></dt>
-            <dd><p>13 張全蓋。點數雖然最多，但算贏家，三家付的錢乘 5。</p><p class="hint">選「付差額」時，十三蓋的人以 0 點計算。</p></dd>
-          </div>
-          <div class="special-item">
-            <dt>爆點 <span class="x bao">×2</span></dt>
-            <dd><p>輸家蓋牌超過 40 點（41 點起），這位輸家自己付的錢再乘 2。</p><p class="hint">會和贏家的倍數相乘：贏家脫手、你又爆點，就是乘 4。</p></dd>
-          </div>
-        </dl>
-      </section>
+        </section>
+      </article>
 
-      <section>
-        <h2>怎麼算錢</h2>
-        <p>只有贏家收錢，三位輸家各自付給贏家。</p>
-        <div class="formula-box">
-          <span>付全額：付的錢 = 自己的點數 × 倍數 × 每點金額</span>
-          <span>付差額：付的錢 =（自己的點數 − 贏家的點數）× 倍數 × 每點金額</span>
-          <span>倍　數 = 贏家牌型的倍數 × 自己爆點的倍數（沒有就是 1）</span>
-        </div>
-      </section>
+      <article id="rules-mahjong" class="rules" hidden>
+        <section>
+          <h2>怎麼算錢</h2>
+          <p>台灣十六張麻將。胡牌的人向付錢的人收「底 + 台數 × 每台」，例如打「50 / 20」就是底 $50、每台 $20。</p>
+          <ul>
+            <li><b>自摸</b>：其他三家都要付。</li>
+            <li><b>放槍</b>：只有打出那張牌的人付。</li>
+          </ul>
+          <div class="formula-box">
+            <span>每人付 = 底 + 台數 × 每台</span>
+            <span>莊家台 = 1 台 + 連莊次數 × 2（連 N 拉 N）</span>
+          </div>
+        </section>
+        <section>
+          <h2>莊家與連莊</h2>
+          <ul>
+            <li>莊家胡牌，或莊家付錢（莊家放槍、閒家自摸時莊家那份），都要多算莊家台：莊家 1 台，每連莊一次再加 2 台。連 2 拉 2 時多 5 台。</li>
+            <li>兩個閒家之間的支付不算莊家台。</li>
+            <li>莊家胡或流局：莊家連莊。閒家胡：換下一家（東 → 南 → 西 → 北）當莊，連莊歸零。記完一將會自動換。</li>
+          </ul>
+        </section>
+        <section>
+          <h2>台數表</h2>
+          <p>依常見的台灣十六張算法。自摸 1 台；門清加自摸合計 3 台（門清自摸）。各家規矩不同的台型，可以用「表上沒有的台數」直接加減。</p>
+          <div class="table-wrap"><table id="mjTaiTable"><thead><tr><th>台型</th><th>說明</th><th>台數</th></tr></thead><tbody></tbody></table></div>
+        </section>
+        <section>
+          <h2>算一次看看</h2>
+          <p>底 $50、每台 $20。東家當莊，連 1。南家自摸，牌型 3 台（含自摸）。</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>誰付</th><th>算式</th><th>付給南家</th></tr></thead>
+              <tbody>
+                <tr><td>東家（莊）</td><td class="num">50 + (3 + 莊家台 3) × 20</td><td class="num">$170</td></tr>
+                <tr><td>西家</td><td class="num">50 + 3 × 20</td><td class="num">$110</td></tr>
+                <tr><td>北家</td><td class="num">50 + 3 × 20</td><td class="num">$110</td></tr>
+              </tbody>
+              <tfoot><tr><td>南家共收</td><td></td><td>$390</td></tr></tfoot>
+            </table>
+          </div>
+        </section>
+      </article>
 
-      <section>
-        <h2>算一次看看</h2>
-        <p>每點 $1、付全額。東家脫手；南家蓋 K Q 9 共 34 點；西家蓋 A 3 5 2 共 11 點；北家蓋 K K J 10 8 共 55 點，超過 40 點爆點。</p>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>輸家</th><th>算式</th><th>付給東家</th></tr></thead>
-            <tbody>
-              <tr><td>南家</td><td class="num">34 × 脫手 2</td><td class="num">$68</td></tr>
-              <tr><td>西家</td><td class="num">11 × 脫手 2</td><td class="num">$22</td></tr>
-              <tr><td>北家</td><td class="num">55 × 脫手 2 × 爆點 2</td><td class="num">$220</td></tr>
-            </tbody>
-            <tfoot><tr><td>東家共收</td><td></td><td>$310</td></tr></tfoot>
-          </table>
-        </div>
-      </section>
+      <article id="rules-blackjack" class="rules" hidden>
+        <section>
+          <h2>怎麼玩</h2>
+          <ul>
+            <li>一人當莊家，其他人是閒家，每位閒家先下注。</li>
+            <li>點數加總越接近 21 越好，超過 21 就「爆牌」。A 算 1 或 11，J、Q、K 都算 10。</li>
+            <li>每位閒家各自和莊家比，跟其他閒家無關。</li>
+          </ul>
+        </section>
+        <section>
+          <h2>怎麼算錢</h2>
+          <dl class="special">
+            <div class="special-item"><dt>贏 <span class="x">×1</span></dt><dd><p>比莊家接近 21，或莊家爆牌。莊家照下注金額賠。</p></dd></div>
+            <div class="special-item"><dt>輸 <span class="x bao">×1</span></dt><dd><p>比莊家小，或自己爆牌。莊家收走下注。</p></dd></div>
+            <div class="special-item"><dt>平手 <span class="x">0</span></dt><dd><p>點數一樣，不輸不贏。</p></dd></div>
+            <div class="special-item"><dt>黑傑克 <span class="x">×1.5</span></dt><dd><p>頭兩張就是 A 加 10、J、Q 或 K，莊家賠 1.5 倍。</p></dd></div>
+            <div class="special-item"><dt>過五關 <span class="x">×2</span></dt><dd><p>拿到五張牌還沒爆，莊家賠 2 倍。</p></dd></div>
+            <div class="special-item"><dt>投降 <span class="x bao">×½</span></dt><dd><p>看完頭兩張就放棄，輸一半下注。</p></dd></div>
+          </dl>
+          <p>勾「加倍」代表下注變兩倍，贏、輸、平手、過五關都照兩倍算；黑傑克和投降不受影響。莊家的輸贏，是所有閒家輸贏加起來的相反數。</p>
+          <p class="hint">黑傑克與過五關的倍數可以在「名字・規則」裡改。</p>
+        </section>
+        <section>
+          <h2>算一次看看</h2>
+          <p>莊家東家，每人下注 $100。南家黑傑克，西家加倍後贏，北家爆牌。</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>閒家</th><th>算式</th><th>輸贏</th></tr></thead>
+              <tbody>
+                <tr><td>南家</td><td class="num">100 × 黑傑克 1.5</td><td class="num">+$150</td></tr>
+                <tr><td>西家</td><td class="num">100 × 加倍贏 2</td><td class="num">+$200</td></tr>
+                <tr><td>北家</td><td class="num">100 × 輸 1</td><td class="num">−$100</td></tr>
+              </tbody>
+              <tfoot><tr><td>東家（莊）</td><td></td><td>−$250</td></tr></tfoot>
+            </table>
+          </div>
+        </section>
+      </article>
 
       <section>
         <h2>大家一起用</h2>
         <ul>
-          <li>最簡單：一支手機記帳。每局結束到「累計帳」按「複製結算文字」，貼到群組，大家都看得到。</li>
+          <li>最簡單：一支手機記帳。到「累計帳」按「複製結算文字」，貼到群組，大家都看得到。</li>
           <li>有 Claude 帳號的人登入後打開同一個連結，會看到同一局，即時同步。要能輸入，需要這個頁面的編輯權限；只有檢視權限的人可以看，不能改。</li>
         </ul>
       </section>
-
-      <p class="note">各家規矩不太一樣。倍數、爆點門檻、付全額或付差額，都可以在「本局 → 名字・規則」裡改，改完立刻重算。</p>
     </section>
   </main>
 </div>
 
-<div class="dock" id="dock">
+<div class="dock" id="dock" hidden>
   <div class="dock-inner">
     <div class="summary">
       <div class="sum-text" id="sumText" aria-live="polite"></div>
-      <button type="button" class="btn primary" id="commitRound">記入，下一局</button>
+      <button type="button" class="btn primary" id="commitBtn">記入</button>
     </div>
-    <div class="keys" id="keys" role="group" aria-label="點牌加入蓋牌"></div>
-    <div class="dock-actions">
-      <button type="button" class="undo-btn" id="undoCard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"></path><path d="m18 9-6 6"></path><path d="m12 9 6 6"></path></svg>
-        退一張
-      </button>
-      <button type="button" class="next-btn" id="nextSeat">
-        <span id="nextText">下一家</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
-      </button>
+    <div id="pqDock">
+      <div class="keys" id="pqKeys" role="group" aria-label="點牌加入蓋牌"></div>
+      <div class="dock-actions">
+        <button type="button" class="undo-btn" id="pqUndo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"></path><path d="m18 9-6 6"></path><path d="m12 9 6 6"></path></svg>
+          退一張
+        </button>
+        <button type="button" class="next-btn" id="pqNext">
+          <span id="pqNextText">下一家</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -634,16 +967,12 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
   <div class="sheet-body">
     <fieldset class="sec" id="namesFields">
       <legend class="set-label">玩家名字</legend>
-      <div class="name-grid">
-        <label class="name-field"><span class="seat-badge" aria-hidden="true">東</span><input id="pname-0" data-pname="0" maxlength="10" autocomplete="off" placeholder="東家" aria-label="東家名字"></label>
-        <label class="name-field"><span class="seat-badge" aria-hidden="true">南</span><input id="pname-1" data-pname="1" maxlength="10" autocomplete="off" placeholder="南家" aria-label="南家名字"></label>
-        <label class="name-field"><span class="seat-badge" aria-hidden="true">西</span><input id="pname-2" data-pname="2" maxlength="10" autocomplete="off" placeholder="西家" aria-label="西家名字"></label>
-        <label class="name-field"><span class="seat-badge" aria-hidden="true">北</span><input id="pname-3" data-pname="3" maxlength="10" autocomplete="off" placeholder="北家" aria-label="北家名字"></label>
-      </div>
+      <div class="name-grid" id="nameGrid"></div>
+      <p class="hint" id="namesHint">排七和麻將用前四位（東、南、西、北）；21 點超過四人時再填 5 到 8。</p>
     </fieldset>
 
-    <fieldset class="sec" id="settingsFields">
-      <legend class="set-label">計錢規則</legend>
+    <fieldset class="sec" id="set-paiqi" hidden>
+      <legend class="set-label">排七計錢規則</legend>
       <div class="set-grid">
         <div class="set-row">
           <label class="hint" for="rate">每點金額（可填小數）</label>
@@ -685,6 +1014,43 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
       </div>
     </fieldset>
 
+    <fieldset class="sec" id="set-mahjong" hidden>
+      <legend class="set-label">麻將計錢規則</legend>
+      <div class="set-grid">
+        <div class="set-row">
+          <label class="hint" for="mjBase">底</label>
+          <span class="field"><span>$</span><input id="mjBase" type="number" min="0" step="10" inputmode="numeric"></span>
+        </div>
+        <div class="set-row">
+          <label class="hint" for="mjPerTai">每台</label>
+          <span class="field"><span>$</span><input id="mjPerTai" type="number" min="0" step="10" inputmode="numeric"></span>
+        </div>
+      </div>
+      <p class="hint">常見的打法寫成「底 / 台」，例如 50 / 20、100 / 20、30 / 10。</p>
+    </fieldset>
+
+    <fieldset class="sec" id="set-blackjack" hidden>
+      <legend class="set-label">21 點規則</legend>
+      <div class="set-grid">
+        <div class="set-row">
+          <span class="hint" id="bjCountLabel">人數（含莊家）</span>
+          <span class="stepper" aria-labelledby="bjCountLabel"><button type="button" id="bjCountDown" aria-label="少一人">−</button><output id="bjCount">4</output><button type="button" id="bjCountUp" aria-label="多一人">+</button></span>
+        </div>
+        <div class="set-row">
+          <label class="hint" for="bjBet">預設下注</label>
+          <span class="field"><span>$</span><input id="bjBet" type="number" min="0" step="10" inputmode="numeric"></span>
+        </div>
+        <div class="set-row">
+          <label class="hint" for="bjMultBj">黑傑克賠</label>
+          <span class="field small"><span>×</span><input id="bjMultBj" type="number" min="1" step="0.5" inputmode="decimal"></span>
+        </div>
+        <div class="set-row">
+          <label class="hint" for="bjMultFive">過五關賠</label>
+          <span class="field small"><span>×</span><input id="bjMultFive" type="number" min="1" step="0.5" inputmode="decimal"></span>
+        </div>
+      </div>
+    </fieldset>
+
     <div class="sheet-foot">
       <p class="hint" id="syncHint"></p>
       <button type="button" class="btn" id="resetSettings">恢復預設規則</button>
@@ -695,897 +1061,12 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="paiqi.js"></script>
-<script>
-(function () {
-  'use strict';
-  var P = window.PaiQi;
-  var SEATS = ['東', '南', '西', '北'];
-  var LOCAL_KEY = 'paiqi-calc-v1';   // 單機模式的牌局、規則、累計帳
-  var NAME_MAX = 10;
-  var RULE_KEYS = ['tuoShou', 'weiQi', 'shiSanGai', 'baoDian'];
-  var KIND_DESC = {
-    shiSanGai: '13 張全蓋，反敗為勝',
-    weiQi: '脫手，最後一張打出 7',
-    tuoShou: '一張都沒蓋',
-    normal: '蓋牌點數最少'
-  };
-  var KIND_SHORT = { shiSanGai: '十三蓋', weiQi: '尾七', tuoShou: '脫手', normal: '' };
-  var MODE_TEXT = {
-    connecting: ['連線中…', '正在連到共用的牌桌…'],
-    sync: ['已同步', '資料存在共用牌桌。有 Claude 帳號的人登入後打開同一個連結，會看到同一局。'],
-    readonly: ['只能看', '你可以即時看到這一局，但沒有編輯權限，不能輸入。'],
-    offline: ['連線中斷', '和共用牌桌的連線中斷了，重新整理頁面再試一次。'],
-    local: ['單機', '資料只存在這支手機。']
-  };
-  var KEYBOARD = { a: 'A', 1: 'A', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 8: '8', 9: '9', 0: '10', t: '10', j: 'J', q: 'Q', k: 'K' };
-
-  var state = emptyState();
-  var view = { mode: 'local', active: 0, lastAdded: null };
-  var result = null;
-  var db = null;
-  var nameTimers = {};
-  var metaTimer = null;
-
-  function $(sel, el) { return (el || document).querySelector(sel); }
-  function $$(sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); }
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-  function fmtNum(x) { return Number(x).toLocaleString('zh-TW', { maximumFractionDigits: 2 }); }
-  function money(x) { return '$' + fmtNum(Math.abs(x)); }
-  function signedMoney(x) { return (x > 0 ? '+' : x < 0 ? '−' : '') + money(x); }
-  function signClass(x) { return x > 0 ? 'pos' : x < 0 ? 'neg' : 'zero'; }
-  function canEdit() { return view.mode === 'local' || view.mode === 'sync'; }
-
-  function emptySeat() { return { name: '', covered: [], lastSeven: false }; }
-  function emptyState() {
-    return {
-      settings: P.normalizeSettings(),
-      round: { firstIdx: 0, players: [emptySeat(), emptySeat(), emptySeat(), emptySeat()] },
-      ledger: [],
-      nextRound: 1
-    };
-  }
-
-  function cleanSeat(p) {
-    p = p || {};
-    return {
-      name: typeof p.name === 'string' ? p.name.slice(0, NAME_MAX) : '',
-      covered: Array.isArray(p.covered)
-        ? p.covered.filter(function (c) { return P.RANKS.indexOf(c) !== -1; }).slice(0, P.HAND_SIZE)
-        : [],
-      lastSeven: !!p.lastSeven
-    };
-  }
-  function cleanSeatIdx(v) {
-    var n = Number(v);
-    return n >= 0 && n < 4 ? Math.floor(n) : 0;
-  }
-  function cleanEntry(e, id) {
-    if (!e || !Array.isArray(e.nets) || e.nets.length !== 4) return null;
-    var nets = e.nets.map(Number);
-    if (nets.some(function (n) { return !isFinite(n); })) return null;
-    return {
-      id: id || null,
-      at: Number(e.at) || 0,
-      winner: cleanSeatIdx(e.winner),
-      kind: Object.prototype.hasOwnProperty.call(P.KIND_LABEL, e.kind) ? e.kind : 'normal',
-      nets: nets
-    };
-  }
-
-  /* ---------- 本機儲存 ---------- */
-
-  function loadLocal() {
-    try {
-      var raw = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null');
-      if (!raw || !raw.round || !Array.isArray(raw.round.players) || raw.round.players.length !== 4) return null;
-      var s = emptyState();
-      s.settings = P.normalizeSettings(raw.settings);
-      s.round.firstIdx = cleanSeatIdx(raw.round.firstIdx);
-      s.round.players = raw.round.players.map(function (p) {
-        var seat = cleanSeat(p);
-        if (raw.round.example) { seat.covered = []; seat.lastSeven = false; } // 舊版的範例局不留
-        return seat;
-      });
-      s.ledger = (Array.isArray(raw.ledger) ? raw.ledger : []).map(function (e) { return cleanEntry(e); }).filter(Boolean);
-      return s;
-    } catch (e) { return null; }
-  }
-
-  function saveLocal() {
-    if (view.mode !== 'local') return;
-    try {
-      localStorage.setItem(LOCAL_KEY, JSON.stringify({ settings: state.settings, round: state.round, ledger: state.ledger }));
-    } catch (e) { /* 無痕視窗等情況存不了，畫面照常運作 */ }
-  }
-
-  /* ---------- 共用牌桌（db） ----------
-   * seats/0..3    每家一份：名字、蓋牌、尾張七
-   * table/meta    規則、誰拿 ♠7、下一局編號
-   * ledger/rNNNNN 每局結果；兩支手機同時按記入，寫到同一份文件，不會重複記帳
-   */
-
-  var writers = {};
-
-  function setWithRetry(ref, data) {
-    return ref.set(data).catch(function (e) {
-      if (e && e.code && e.code !== 'unavailable') throw e;
-      return new Promise(function (ok) { setTimeout(ok, 400 + Math.random() * 800); })
-        .then(function () { return ref.set(data); });
-    });
-  }
-
-  // 同一份文件一次只送一個寫入；連續修改時只送最新的內容
-  function queueWrite(path, data) {
-    var w = writers[path] || (writers[path] = { busy: false, next: null });
-    w.next = data;
-    if (w.busy) return;
-    w.busy = true;
-    (function send() {
-      if (!w.next || !db) { w.busy = false; return; }
-      var body = w.next;
-      w.next = null;
-      setWithRetry(db.doc(path), body).then(send, function (e) {
-        w.busy = false;
-        w.next = null;
-        onWriteError(e);
-      });
-    })();
-  }
-  function hasUnsent(path) { var w = writers[path]; return !!(w && w.next); }
-
-  function seatDoc(i) {
-    var p = state.round.players[i];
-    return { name: p.name, covered: p.covered.slice(), lastSeven: p.lastSeven };
-  }
-  function metaDoc() {
-    return { settings: state.settings, firstIdx: state.round.firstIdx, nextRound: state.nextRound };
-  }
-
-  function seatChanged(i) {
-    if (db) queueWrite('seats/' + i, seatDoc(i));
-    render();
-  }
-  function metaChanged(delay) {
-    if (db) {
-      clearTimeout(metaTimer);
-      if (delay) {
-        metaTimer = setTimeout(function () { metaTimer = null; queueWrite('table/meta', metaDoc()); }, delay);
-      } else {
-        metaTimer = null;
-        queueWrite('table/meta', metaDoc());
-      }
-    }
-    render();
-  }
-
-  function onWriteError(e) {
-    var code = e && e.code;
-    if (code === 'invalid_argument' || code === 'not_granted') {
-      setMode('readonly');
-      toast('你沒有這個牌桌的編輯權限，只能觀看');
-    } else if (code === 'quota_exceeded') {
-      toast('共用牌桌的空間滿了，請到累計帳刪掉一些舊的局');
-    } else if (code === 'revoked' || code === 'capability_disabled' || code === 'capability_removed') {
-      setMode('offline');
-    } else {
-      toast('剛才的修改沒有同步成功，請再試一次');
-    }
-  }
-
-  function onSubError() { setMode('offline'); }
-
-  function subscribe() {
-    db.collection('seats').onSnapshot(function (snap) {
-      var got = {};
-      snap.docs.forEach(function (d) { if (d.exists && /^[0-3]$/.test(d.id)) got[d.id] = d.data(); });
-      for (var i = 0; i < 4; i++) {
-        if (hasUnsent('seats/' + i)) continue; // 自己還沒送出的修改優先
-        var seat = cleanSeat(got[i]);
-        if (nameTimers[i] || document.activeElement === $('#pname-' + i)) seat.name = state.round.players[i].name;
-        state.round.players[i] = seat;
-      }
-      render();
-    }, onSubError);
-
-    db.doc('table/meta').onSnapshot(function (d) {
-      if (metaTimer || hasUnsent('table/meta')) return;
-      var m = (d.exists && d.data()) || {};
-      state.settings = P.normalizeSettings(m.settings);
-      state.round.firstIdx = cleanSeatIdx(m.firstIdx);
-      state.nextRound = Math.max(1, Math.floor(Number(m.nextRound)) || 1);
-      syncSettingsForm();
-      render();
-    }, onSubError);
-
-    db.collection('ledger').orderBy('at').onSnapshot(function (snap) {
-      state.ledger = snap.docs.map(function (d) { return d.exists ? cleanEntry(d.data(), d.id) : null; }).filter(Boolean);
-      render();
-    }, onSubError);
-  }
-
-  function connect() {
-    var c = window.claude;
-    if (!c || typeof c.use !== 'function') { goLocal(); return; }
-    setMode('connecting');
-    Promise.all([c.use('db'), c.use('user')]).then(function (got) {
-      if (!got[0]) { goLocal(); return; }
-      db = got[0];
-      var user = got[1];
-      return (user ? user.can('data.write') : Promise.resolve(null)).then(function (may) {
-        state = emptyState();
-        setMode(may === false ? 'readonly' : 'sync');
-        syncSettingsForm();
-        subscribe();
-      });
-    }).catch(goLocal);
-  }
-
-  function goLocal() {
-    db = null;
-    state = loadLocal() || emptyState();
-    setMode('local');
-    syncSettingsForm();
-  }
-
-  function setMode(mode) {
-    view.mode = mode;
-    var t = MODE_TEXT[mode];
-    $('#syncPill').setAttribute('data-mode', mode);
-    $('#syncText').textContent = t[0];
-    $('#syncHint').textContent = t[1];
-    $('#settingsFields').disabled = !canEdit();
-    $('#namesFields').disabled = !canEdit();
-    render();
-  }
-
-  function displayName(i) {
-    var n = state.round.players[i].name.trim();
-    return n || SEATS[i] + '家';
-  }
-
-  function toast(msg) {
-    var t = $('#toast');
-    t.textContent = msg;
-    t.classList.toggle('no-dock', $('#dock').hidden);
-    t.classList.add('show');
-    clearTimeout(toast.timer);
-    toast.timer = setTimeout(function () { t.classList.remove('show'); }, 2600);
-  }
-
-  /* ---------- 規則設定 ---------- */
-
-  function syncSettingsForm() {
-    var s = state.settings;
-    var active = document.activeElement;
-    function put(el, v) { if (el !== active) el.value = v; }
-    put($('#rate'), s.rate);
-    $('#mode-' + s.mode).checked = true;
-    RULE_KEYS.forEach(function (k) {
-      $('#on-' + k).checked = s[k].on;
-      put($('#mult-' + k), s[k].mult);
-    });
-    put($('#threshold-baoDian'), s.baoDian.threshold);
-  }
-
-  function readSettingsForm() {
-    var raw = {
-      rate: $('#rate').value === '' ? state.settings.rate : $('#rate').value,
-      mode: $('#mode-diff').checked ? 'diff' : 'full'
-    };
-    RULE_KEYS.forEach(function (k) {
-      var m = $('#mult-' + k).value;
-      raw[k] = { on: $('#on-' + k).checked, mult: m === '' ? state.settings[k].mult : m };
-    });
-    var th = $('#threshold-baoDian').value;
-    raw.baoDian.threshold = th === '' ? state.settings.baoDian.threshold : th;
-    state.settings = P.normalizeSettings(raw);
-  }
-
-  function renderSettingsSummary() {
-    var s = state.settings;
-    var chips = [
-      '<span class="sum-chip">每點 <b>' + money(s.rate) + '</b></span>',
-      '<span class="sum-chip">' + (s.mode === 'full' ? '付全額' : '付差額') + '</span>'
-    ];
-    var labels = { tuoShou: '脫手', weiQi: '尾張七', shiSanGai: '十三蓋', baoDian: '爆點' };
-    RULE_KEYS.forEach(function (k) {
-      var r = s[k];
-      var extra = k === 'baoDian' ? ' &gt;' + fmtNum(r.threshold) : '';
-      chips.push('<span class="sum-chip' + (r.on ? '' : ' off') + '">' + labels[k] + extra + ' <b>×' + fmtNum(r.mult) + '</b></span>');
-    });
-    $('#settingsChips').innerHTML = chips.join('');
-    $('#modeHint').textContent = s.mode === 'full'
-      ? '輸家付自己蓋牌的點數。'
-      : '輸家付和贏家的點數差；十三蓋的贏家以 0 點計。';
-  }
-
-  function renderNames() {
-    for (var i = 0; i < 4; i++) {
-      var input = $('#pname-' + i);
-      if (document.activeElement !== input && input.value !== state.round.players[i].name) input.value = state.round.players[i].name;
-    }
-  }
-
-  /* ---------- 輸入區 ---------- */
-
-  function buildStatic() {
-    $('#seatTabs').innerHTML = SEATS.map(function (seat, i) {
-      return '<button type="button" class="seat-tab" role="tab" data-seat="' + i + '" aria-selected="false">' +
-        '<span class="st-top"><span class="st-badge">' + seat + '</span><span class="st-name" data-name></span></span>' +
-        '<span class="st-pts" data-pts></span>' +
-        '<span class="st-net" data-net></span>' +
-        '<span class="st-tags" data-tags></span>' +
-      '</button>';
-    }).join('');
-    $('#keys').innerHTML = P.RANKS.map(function (r) {
-      var pts = P.RANK_POINTS[r];
-      var showPts = r === 'A' || pts > 10;
-      return '<button type="button" class="key" data-r="' + r + '" aria-label="蓋 ' + r + '（' + pts + ' 點）">' +
-        '<span class="r">' + r + '</span>' + (showPts ? '<span class="p">' + pts + '</span>' : '') + '</button>';
-    }).join('');
-  }
-
-  function usedCounts() {
-    var used = {};
-    state.round.players.forEach(function (p) {
-      p.covered.forEach(function (r) { used[r] = (used[r] || 0) + 1; });
-    });
-    return used;
-  }
-
-  function sortedCovered(covered) {
-    return covered.slice().sort(function (a, b) { return P.RANKS.indexOf(a) - P.RANKS.indexOf(b); });
-  }
-
-  function totalCovered() {
-    return state.round.players.reduce(function (n, p) { return n + p.covered.length; }, 0);
-  }
-
-  function seatInfo(i) {
-    return result && totalCovered() > 0 ? result.players[i] : null;
-  }
-
-  function renderSeatTabs() {
-    state.round.players.forEach(function (p, i) {
-      var el = $('#seatTabs [data-seat="' + i + '"]');
-      var info = seatInfo(i);
-      el.setAttribute('aria-selected', String(view.active === i));
-      $('[data-name]', el).textContent = displayName(i);
-      $('[data-pts]', el).innerHTML = '<b>' + p.covered.length + '</b>張 <b>' + P.sumPoints(p.covered) + '</b>點';
-      var net = info ? info.net : 0;
-      var netEl = $('[data-net]', el);
-      netEl.textContent = info ? signedMoney(net) : '—';
-      netEl.className = 'st-net ' + signClass(net);
-      var tags = [];
-      if (info && result.winner === i) tags.push('<span class="st-tag win">贏</span>');
-      if (info && info.kind !== 'normal') tags.push('<span class="st-tag kind">' + KIND_SHORT[info.kind] + '</span>');
-      if (info && info.baoDian) tags.push('<span class="st-tag bao">爆</span>');
-      if (state.round.firstIdx === i) tags.push('<span class="st-tag first">♠7</span>');
-      $('[data-tags]', el).innerHTML = tags.join('');
-    });
-  }
-
-  function renderActiveSeat() {
-    var i = view.active;
-    var p = state.round.players[i];
-    var info = seatInfo(i);
-    var editable = canEdit();
-    var count = p.covered.length;
-    var waiting = totalCovered() === 0;
-
-    $('#asBadge').textContent = SEATS[i];
-    $('#asNameText').textContent = displayName(i);
-    $('#asName').disabled = !editable;
-
-    var first = $('#asFirst');
-    first.setAttribute('aria-pressed', String(state.round.firstIdx === i));
-    first.disabled = !editable;
-
-    var tags = [];
-    if (info && result.winner === i) tags.push('<span class="pill pill-win">贏家</span>');
-    if (info && info.kind !== 'normal') tags.push('<span class="pill pill-kind">' + P.KIND_LABEL[info.kind] + '</span>');
-    if (info && info.baoDian) tags.push('<span class="pill pill-bao">爆點</span>');
-    var net = info ? '<span class="net ' + signClass(info.net) + '">' + signedMoney(info.net) + '</span>' : '';
-    $('#asTally').innerHTML = '蓋 <b>' + count + '</b> 張 · <b>' + P.sumPoints(p.covered) + '</b> 點 ' + tags.join('') + net;
-
-    var lastAdded = view.lastAdded;
-    view.lastAdded = null;
-    $('#asChips').innerHTML = count
-      ? sortedCovered(p.covered).map(function (r) {
-          var isNew = lastAdded === r;
-          if (isNew) lastAdded = null;
-          return editable
-            ? '<button type="button" class="chip' + (isNew ? ' new' : '') + '" data-chip="' + r + '" aria-label="移除一張 ' + r + '">' + r + '</button>'
-            : '<span class="chip">' + r + '</span>';
-        }).join('')
-      : '<span class="chips-empty">' + (waiting ? '用下方鍵盤點' + esc(displayName(i)) + '蓋的牌' : '沒有蓋牌（脫手）') + '</span>';
-
-    $('#asLast7Wrap').hidden = waiting || !(count === 0 && state.settings.weiQi.on);
-    var last7 = $('#asLast7');
-    last7.checked = p.lastSeven;
-    last7.disabled = !editable;
-    $('#asClear').disabled = !editable || count === 0;
-  }
-
-  function renderDock() {
-    var used = usedCounts();
-    var p = state.round.players[view.active];
-    var editable = canEdit();
-    $$('#keys .key').forEach(function (k) {
-      var r = k.getAttribute('data-r');
-      k.disabled = !editable || p.covered.length >= P.HAND_SIZE || (used[r] || 0) >= P.PER_RANK;
-    });
-    $('#undoCard').disabled = !editable || p.covered.length === 0;
-    var next = (view.active + 1) % 4;
-    $('#nextText').textContent = '下一家：' + displayName(next);
-
-    var commit = $('#commitRound');
-    var sum = $('#sumText');
-    commit.hidden = !editable;
-    if (!result || totalCovered() === 0) {
-      sum.innerHTML = '<span class="muted">' + (editable ? '點牌輸入這家的蓋牌，再按「下一家」' : '等有人輸入蓋牌') + '</span>';
-      commit.disabled = true;
-      return;
-    }
-    var w = result.players[result.winner];
-    var kind = w.kind !== 'normal' ? '<span class="pill pill-kind">' + P.KIND_LABEL[w.kind] + ' ×' + fmtNum(result.winnerMult) + '</span>' : '';
-    sum.innerHTML = '<span class="who">' + esc(w.name) + ' 贏</span>' + kind + '<span class="amt">收 ' + money(w.net) + '</span>';
-    commit.disabled = false;
-  }
-
-  /* ---------- 結算明細 ---------- */
-
-  function buildRoundForCalc() {
-    return {
-      firstIdx: state.round.firstIdx,
-      players: state.round.players.map(function (p, i) {
-        return { name: displayName(i), covered: p.covered, lastSeven: p.lastSeven };
-      })
-    };
-  }
-
-  function whyText(r) {
-    var w = r.players[r.winner];
-    var ru = r.runnerUp != null ? r.players[r.runnerUp] : null;
-    if (r.decidedBy === 'kind') return KIND_DESC[w.kind];
-    if (r.decidedBy === 'points') return KIND_DESC[w.kind] + '（' + w.points + ' 點）';
-    var order = '出牌順序較早（' + displayName(state.round.firstIdx) + '拿 ♠7 先出）';
-    if (w.kind !== 'normal') return '和' + ru.name + '都是' + P.KIND_LABEL[w.kind] + '，' + order;
-    if (r.decidedBy === 'count') return '和' + ru.name + '同為 ' + w.points + ' 點，蓋的張數較少';
-    return '和' + ru.name + '點數、張數都一樣，' + order;
-  }
-
-  function formulaText(t, r) {
-    var from = r.players[t.from];
-    var parts = [];
-    if (r.settings.mode === 'full') parts.push(from.points + ' 點');
-    else parts.push('(' + from.points + ' − ' + r.winnerPoints + ') 點');
-    t.factors.forEach(function (f) { parts.push(f.label + ' ' + fmtNum(f.x)); });
-    parts.push('每點 ' + money(t.rate));
-    return parts.join(' × ');
-  }
-
-  function renderResult(errors) {
-    var box = $('#result');
-    if (errors.length) {
-      box.innerHTML = '<div class="alert"><b>這局的牌對不起來</b>' +
-        errors.map(function (e) { return '<span>' + esc(e) + '</span>'; }).join('') +
-        '<span>請移除多出來的牌。</span></div>';
-      return;
-    }
-    if (totalCovered() === 0) {
-      box.innerHTML = '<div class="guide"><strong>每局這樣輸入</strong><ol>' +
-        '<li>翻開' + esc(displayName(view.active)) + '的蓋牌，用下方鍵盤一張一張點。</li>' +
-        '<li>按「下一家」換人；脫手的人沒有牌，直接跳過。</li>' +
-        '<li>四家輸入完，上方就是每個人的輸贏，按「記入，下一局」。</li>' +
-        '</ol></div>';
-      return;
-    }
-    var r = result;
-    var w = r.players[r.winner];
-    var kindHtml = w.kind !== 'normal'
-      ? '<span class="win-kind">' + P.KIND_LABEL[w.kind] + ' <b>×' + fmtNum(r.winnerMult) + '</b></span>'
-      : '';
-    var transfers = r.transfers.map(function (t) {
-      return '<li>' +
-        '<div class="t-line"><span class="t-who">' + esc(r.players[t.from].name) + '<span class="arrow">付</span>' + esc(w.name) + '</span>' +
-        '<span class="t-amt ' + (t.amount > 0 ? 'neg' : 'zero') + '">' + money(t.amount) + '</span></div>' +
-        '<div class="t-formula">' + esc(formulaText(t, r)) + '</div>' +
-      '</li>';
-    }).join('');
-    box.innerHTML =
-      '<div class="win-card">' +
-        '<p class="eyebrow">本局贏家</p>' +
-        '<p class="win-name">' + esc(w.name) + '</p>' +
-        '<p class="win-total">共收<b>' + money(w.net) + '</b></p>' +
-        '<p class="win-meta">' + kindHtml + '<span class="win-why">' + esc(whyText(r)) + '</span></p>' +
-      '</div>' +
-      '<div class="panel-box">' +
-        '<h3 class="sub">誰付多少</h3>' +
-        '<ol class="transfers">' + transfers + '</ol>' +
-      '</div>';
-  }
-
-  function render() {
-    var round = buildRoundForCalc();
-    var errors = P.validateRound(round);
-    result = errors.length ? null : P.settle(round, state.settings);
-    $('#roundNo').textContent = '第 ' + (state.ledger.length + 1) + ' 局';
-    renderSettingsSummary();
-    renderNames();
-    renderSeatTabs();
-    renderActiveSeat();
-    renderDock();
-    renderResult(errors);
-    $('#clearRound').disabled = !canEdit() || totalCovered() === 0;
-    renderLedger();
-    saveLocal();
-    measureDock();
-  }
-
-  function clearRound() {
-    state.round.players.forEach(function (p, i) {
-      p.covered = [];
-      p.lastSeven = false;
-      if (db) queueWrite('seats/' + i, seatDoc(i));
-    });
-  }
-
-  /* ---------- 累計帳 ---------- */
-
-  function ledgerTotals() {
-    var totals = [0, 0, 0, 0];
-    state.ledger.forEach(function (e) {
-      e.nets.forEach(function (n, i) { totals[i] = Math.round((totals[i] + n) * 100) / 100; });
-    });
-    return totals;
-  }
-
-  function renderLedger() {
-    var ledger = state.ledger;
-    $('#ledgerBadge').textContent = ledger.length;
-    var body = $('#ledgerBody');
-    if (!ledger.length) {
-      $('#ledgerMeta').textContent = '';
-      body.innerHTML = '<div class="empty-state"><strong>還沒有記錄</strong>' +
-        '<span>在「本局」輸入完按「記入，下一局」，每局輸贏會加總在這裡。</span></div>';
-      return;
-    }
-    var totals = ledgerTotals();
-    var wins = [0, 0, 0, 0];
-    ledger.forEach(function (e) { wins[e.winner] += 1; });
-    $('#ledgerMeta').textContent = '共 ' + ledger.length + ' 局';
-
-    var tiles = totals.map(function (t, i) {
-      return '<div class="total-tile">' +
-        '<span class="who"><span class="seat-badge" aria-hidden="true">' + SEATS[i] + '</span><span>' + esc(displayName(i)) + '</span></span>' +
-        '<span class="amt ' + signClass(t) + '">' + signedMoney(t) + '</span>' +
-        '<span class="meta">贏 ' + wins[i] + ' 局</span>' +
-      '</div>';
-    }).join('');
-
-    var head = '<tr><th>局</th><th>贏家</th>' + SEATS.map(function (s, i) { return '<th>' + esc(displayName(i)) + '</th>'; }).join('') + '</tr>';
-    var rows = ledger.map(function (e, n) {
-      var time = new Date(e.at);
-      var hhmm = isNaN(time) ? '' : String(time.getHours()).padStart(2, '0') + ':' + String(time.getMinutes()).padStart(2, '0');
-      var kind = e.kind !== 'normal' ? ' <span class="pill pill-kind">' + P.KIND_LABEL[e.kind] + '</span>' : '';
-      return '<tr><td class="num">' + (n + 1) + '<span class="time">' + hhmm + '</span></td>' +
-        '<td>' + esc(displayName(e.winner)) + kind + '</td>' +
-        e.nets.map(function (v) { return '<td class="num ' + signClass(v) + '">' + signedMoney(v) + '</td>'; }).join('') + '</tr>';
-    }).reverse().join('');
-    var foot = '<tr><td>合計</td><td></td>' + totals.map(function (t) {
-      return '<td class="' + signClass(t) + '">' + signedMoney(t) + '</td>';
-    }).join('') + '</tr>';
-    var editable = canEdit() ? '' : ' disabled';
-
-    body.innerHTML =
-      '<div class="ledger">' +
-        '<div class="totals">' + tiles + '</div>' +
-        '<div class="table-wrap"><table><thead>' + head + '</thead><tbody>' + rows + '</tbody><tfoot>' + foot + '</tfoot></table></div>' +
-        '<div class="ledger-actions">' +
-          '<button type="button" class="btn primary" id="copyLedger">複製結算文字</button>' +
-          '<button type="button" class="btn" id="undoLedger"' + editable + '>刪除最後一局</button>' +
-          '<button type="button" class="btn danger" id="clearLedger"' + editable + '>清空帳本</button>' +
-        '</div>' +
-        '<textarea class="copy-fallback" id="copyFallback" readonly hidden aria-label="結算文字"></textarea>' +
-      '</div>';
-  }
-
-  function ledgerText() {
-    var lines = ['排七累計（共 ' + state.ledger.length + ' 局）'];
-    ledgerTotals().forEach(function (t, i) { lines.push(displayName(i) + ' ' + signedMoney(t)); });
-    return lines.join('\n');
-  }
-
-  function maxLedgerNo() {
-    return state.ledger.reduce(function (m, e) {
-      var k = /^r(\d+)$/.exec(e.id || '');
-      return k ? Math.max(m, Number(k[1])) : m;
-    }, 0);
-  }
-
-  function afterCommit(msg) {
-    view.active = 0;
-    render();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    toast(msg);
-  }
-
-  function commitRound() {
-    if (!result || !canEdit() || totalCovered() === 0) return;
-    var entry = {
-      at: Date.now(),
-      winner: result.winner,
-      kind: result.winnerKind,
-      nets: result.players.map(function (p) { return p.net; }),
-      names: [0, 1, 2, 3].map(displayName)
-    };
-    var no = state.ledger.length + 1;
-    if (!db) {
-      state.ledger.push(cleanEntry(entry));
-      clearRound();
-      afterCommit('第 ' + no + ' 局已記入，開始第 ' + (no + 1) + ' 局');
-      return;
-    }
-    var n = Math.max(state.nextRound, maxLedgerNo() + 1);
-    var btn = $('#commitRound');
-    btn.disabled = true;
-    setWithRetry(db.doc('ledger/r' + String(n).padStart(5, '0')), entry).then(function () {
-      state.nextRound = n + 1;
-      metaChanged(0);
-      clearRound();
-      afterCommit('第 ' + no + ' 局已記入');
-    }, function (e) {
-      btn.disabled = false;
-      onWriteError(e);
-    });
-  }
-
-  function undoLedger() {
-    var last = state.ledger[state.ledger.length - 1];
-    if (!last) return;
-    if (!db) {
-      state.ledger.pop();
-      render();
-      toast('已刪除最後一局');
-      return;
-    }
-    if (!last.id) return;
-    db.doc('ledger/' + last.id).delete().then(function () { toast('已刪除最後一局'); }, onWriteError);
-  }
-
-  function clearLedger() {
-    if (!db) {
-      state.ledger = [];
-      render();
-      toast('帳本已清空');
-      return;
-    }
-    var ids = state.ledger.map(function (e) { return e.id; }).filter(Boolean);
-    ids.reduce(function (chain, id) {
-      return chain.then(function () { return db.doc('ledger/' + id).delete(); });
-    }, Promise.resolve()).then(function () { toast('帳本已清空'); }, onWriteError);
-  }
-
-  /* ---------- 分頁、鍵盤高度、設定面板 ---------- */
-
-  function showTab(name) {
-    if (['calc', 'ledger', 'rules'].indexOf(name) === -1) name = 'calc';
-    $$('.tabs [role="tab"]').forEach(function (b) {
-      b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === name));
-    });
-    ['calc', 'ledger', 'rules'].forEach(function (t) { $('#tab-' + t).hidden = t !== name; });
-    $('#dock').hidden = name !== 'calc';
-    $('#app').classList.toggle('has-dock', name === 'calc');
-    measureDock();
-  }
-
-  function measureDock() {
-    var dock = $('#dock');
-    if (!dock.hidden) document.documentElement.style.setProperty('--dock-h', dock.offsetHeight + 'px');
-  }
-
-  function openSetup(focusName) {
-    var dlg = $('#setup');
-    if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); }
-    else dlg.setAttribute('open', '');
-    if (focusName != null && canEdit()) {
-      var input = $('#pname-' + focusName);
-      input.focus();
-      input.select();
-    }
-  }
-  function closeSetup() {
-    var dlg = $('#setup');
-    if (typeof dlg.close === 'function') dlg.close();
-    else dlg.removeAttribute('open');
-  }
-
-  /* ---------- 輸入動作 ---------- */
-
-  function addCard(r) {
-    if (!canEdit()) return;
-    var i = view.active;
-    var p = state.round.players[i];
-    var used = usedCounts();
-    if (p.covered.length >= P.HAND_SIZE || (used[r] || 0) >= P.PER_RANK) return;
-    p.covered.push(r);
-    p.lastSeven = false;
-    view.lastAdded = r;
-    seatChanged(i);
-  }
-
-  function undoCard() {
-    if (!canEdit()) return;
-    var i = view.active;
-    if (!state.round.players[i].covered.length) return;
-    state.round.players[i].covered.pop();
-    seatChanged(i);
-  }
-
-  function goSeat(i) {
-    view.active = ((i % 4) + 4) % 4;
-    render();
-  }
-
-  /* ---------- 事件 ---------- */
-
-  function bind() {
-    $('.tabs').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-tab]');
-      if (b) showTab(b.getAttribute('data-tab'));
-    });
-
-    $('#seatTabs').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-seat]');
-      if (b) goSeat(Number(b.getAttribute('data-seat')));
-    });
-
-    $('#keys').addEventListener('click', function (e) {
-      var k = e.target.closest('[data-r]');
-      if (k && !k.disabled) addCard(k.getAttribute('data-r'));
-    });
-    $('#undoCard').addEventListener('click', undoCard);
-    $('#nextSeat').addEventListener('click', function () { goSeat(view.active + 1); });
-
-    $('#asChips').addEventListener('click', function (e) {
-      var chip = e.target.closest('[data-chip]');
-      if (!chip || !canEdit()) return;
-      var p = state.round.players[view.active];
-      var at = p.covered.lastIndexOf(chip.getAttribute('data-chip'));
-      if (at !== -1) p.covered.splice(at, 1);
-      seatChanged(view.active);
-    });
-    $('#asFirst').addEventListener('click', function () {
-      if (!canEdit()) return;
-      state.round.firstIdx = view.active;
-      metaChanged(0);
-    });
-    $('#asLast7').addEventListener('change', function (e) {
-      if (!canEdit()) return;
-      state.round.players[view.active].lastSeven = e.target.checked;
-      seatChanged(view.active);
-    });
-    $('#asClear').addEventListener('click', function () {
-      if (!canEdit()) return;
-      var p = state.round.players[view.active];
-      p.covered = [];
-      p.lastSeven = false;
-      seatChanged(view.active);
-    });
-    $('#asName').addEventListener('click', function () { openSetup(view.active); });
-
-    $('#clearRound').addEventListener('click', function () {
-      if (!canEdit()) return;
-      clearRound();
-      view.active = 0;
-      render();
-      toast('本局蓋牌已清空');
-    });
-    $('#commitRound').addEventListener('click', commitRound);
-
-    $('#openSetup').addEventListener('click', function () { openSetup(null); });
-    $('#settingsChips').addEventListener('click', function () { openSetup(null); });
-    $('#closeSetup').addEventListener('click', closeSetup);
-    $('#setup').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSetup(); });
-
-    $('#namesFields').addEventListener('input', function (e) {
-      if (!e.target.matches('[data-pname]') || !canEdit()) return;
-      var i = Number(e.target.getAttribute('data-pname'));
-      state.round.players[i].name = e.target.value.slice(0, NAME_MAX);
-      if (db) {
-        clearTimeout(nameTimers[i]);
-        nameTimers[i] = setTimeout(function () {
-          nameTimers[i] = null;
-          queueWrite('seats/' + i, seatDoc(i));
-        }, 400);
-      }
-      render();
-    });
-
-    var form = $('#settingsFields');
-    form.addEventListener('input', function (e) {
-      if (!canEdit()) return;
-      readSettingsForm();
-      metaChanged(e.target.type === 'number' ? 400 : 0);
-    });
-    form.addEventListener('change', function () {
-      if (!canEdit()) return;
-      readSettingsForm();
-      syncSettingsForm();
-      metaChanged(0);
-    });
-    $('#resetSettings').addEventListener('click', function () {
-      if (!canEdit()) return;
-      state.settings = P.normalizeSettings();
-      syncSettingsForm();
-      metaChanged(0);
-      toast('已恢復預設規則');
-    });
-
-    $('#ledgerBody').addEventListener('click', function (e) {
-      var t = e.target;
-      if (t.closest('#copyLedger')) {
-        var text = ledgerText();
-        var fallback = function () {
-          var ta = $('#copyFallback');
-          ta.value = text;
-          ta.hidden = false;
-          ta.focus();
-          ta.select();
-          toast('請長按或 Ctrl+C 複製選取的文字');
-        };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(function () { toast('已複製，可以貼到群組'); }, fallback);
-        } else {
-          fallback();
-        }
-      } else if (t.closest('#undoLedger')) {
-        undoLedger();
-      } else if (t.closest('#clearLedger')) {
-        var btn = t.closest('#clearLedger');
-        if (btn.classList.contains('armed')) {
-          clearLedger();
-        } else {
-          btn.classList.add('armed');
-          btn.textContent = '再按一次確定清空';
-          setTimeout(function () {
-            if (!btn.isConnected) return;
-            btn.classList.remove('armed');
-            btn.textContent = '清空帳本';
-          }, 4000);
-        }
-      }
-    });
-
-    // 電腦上可以直接打字：A 2–6 8 9 0(=10) J Q K，退格退一張，→ 或 Enter 下一家
-    document.addEventListener('keydown', function (e) {
-      if (e.metaKey || e.ctrlKey || e.altKey || $('#dock').hidden || $('#setup').open) return;
-      if (e.target.closest('input, textarea, select, dialog')) return;
-      var k = e.key.toLowerCase();
-      if (KEYBOARD[k]) { e.preventDefault(); addCard(KEYBOARD[k]); }
-      else if (e.key === 'Backspace') { e.preventDefault(); undoCard(); }
-      else if (e.key === 'ArrowRight' || e.key === 'Enter') { if (e.target.closest('button')) return; e.preventDefault(); goSeat(view.active + 1); }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); goSeat(view.active - 1); }
-    });
-
-    window.addEventListener('resize', measureDock);
-  }
-
-  function start() {
-    buildStatic();
-    bind();
-    var hash = (location.hash || '').replace('#', '');
-    showTab(hash || 'calc');
-    connect();
-  }
-
-  start();
-})();
-</script>
+<script src="mahjong.js"></script>
+<script src="blackjack.js"></script>
+<script src="app/core.js"></script>
+<script src="app/paiqi-ui.js"></script>
+<script src="app/mahjong-ui.js"></script>
+<script src="app/blackjack-ui.js"></script>
+<script>TableApp.start();</script>
 </body>
 </html>

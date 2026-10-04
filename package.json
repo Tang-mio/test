@@ -1,8 +1,8 @@
 {
-  "name": "paiqi-calculator",
+  "name": "paitable-calculator",
   "version": "1.0.0",
   "private": true,
-  "description": "排七計錢計算機：脫手、尾張七、十三蓋、爆點",
+  "description": "牌桌計錢：排七、麻將、21 點的計錢工具",
   "scripts": {
     "test": "node --test"
   }

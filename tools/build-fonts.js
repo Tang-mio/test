@@ -1,5 +1,5 @@
 // 產生頁面用的獅尾肉丸子集字型
-// 收錄：頁面與計分程式裡出現的所有字、ASCII、Big5 常用字（5401 字，讓玩家名字也能用同一套字體）
+// 收錄：頁面與各個程式檔裡出現的所有字、ASCII、Big5 常用字（5401 字，讓玩家名字也能用同一套字體）
 // 用法：node tools/build-fonts.js <獅尾肉丸 TTF 所在資料夾>
 //   字型下載：https://github.com/max32002/swei-meatball（CJK TC/SweiMeatballCJKtc-Regular.ttf、-Bold.ttf）
 'use strict';
@@ -32,9 +32,9 @@ function big5Common() {
 
 let ascii = '';
 for (let c = 0x20; c < 0x7F; c++) ascii += String.fromCharCode(c);
-const text = ascii + big5Common() +
-  fs.readFileSync(path.join(root, 'index.html'), 'utf8') +
-  fs.readFileSync(path.join(root, 'paiqi.js'), 'utf8');
+const sources = ['index.html', 'paiqi.js', 'mahjong.js', 'blackjack.js']
+  .concat(fs.readdirSync(path.join(root, 'app')).filter(f => f.endsWith('.js')).map(f => 'app/' + f));
+const text = ascii + big5Common() + sources.map(f => fs.readFileSync(path.join(root, f), 'utf8')).join('');
 
 for (const [weight, file] of [['regular', 'Regular'], ['bold', 'Bold']]) {
   const src = path.join(srcDir, `SweiMeatballCJKtc-${file}.ttf`);

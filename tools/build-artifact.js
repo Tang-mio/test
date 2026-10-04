@@ -1,4 +1,4 @@
-// 把 index.html 打包成單一檔案：內嵌 paiqi.js 與字型（data URI），拿掉外層 html/head/body 標籤
+// 把 index.html 打包成單一檔案：內嵌所有本地 JS 與字型（data URI），拿掉外層 html/head/body 標籤
 // 用法：node tools/build-artifact.js <輸出檔>
 'use strict';
 const fs = require('fs');
@@ -23,12 +23,12 @@ html = html
   .replace(/<meta charset="utf-8">\n/, '')
   .replace(/<meta name="viewport"[^>]*>\n/, '');
 
-html = html.replace('<script src="paiqi.js"></script>', () =>
-  '<script>\n' + fs.readFileSync(path.join(root, 'paiqi.js'), 'utf8') + '</script>');
+html = html.replace(/<script src="([\w./-]+\.js)"><\/script>/g, (m, file) =>
+  '<script>\n' + fs.readFileSync(path.join(root, file), 'utf8').replace(/<\/script/gi, '<\\/script') + '</script>');
 
 html = html.replace(/url\("(fonts\/[^"]+\.woff)"\)/g, (m, file) =>
   'url(data:font/woff;base64,' + fs.readFileSync(path.join(root, file)).toString('base64') + ')');
 
-if (/src="paiqi\.js"|url\("fonts\//.test(html)) throw new Error('還有沒內嵌的外部檔案');
+if (/<script src="|url\("fonts\//.test(html)) throw new Error('還有沒內嵌的外部檔案');
 fs.writeFileSync(outFile, html);
 console.log(`${outFile}：${(Buffer.byteLength(html) / 1024 / 1024).toFixed(2)} MB`);
