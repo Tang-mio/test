@@ -167,3 +167,34 @@ test('預設不用的台型（風牌刻子）要打開才出現；選了會清�
   assert.deepEqual(MJ.togglePick({ quanFeng: 1, menFeng: 1 }, 'jianFeng', 'ziMo', s), { jianFeng: 1 });
   assert.deepEqual(MJ.togglePick({ jianFeng: 2 }, 'quanFeng', 'ziMo', s), { quanFeng: 1 });
 });
+
+test('一將四圈：莊家輪一輪回到起莊換下一圈，北風圈打完進下一將', () => {
+  let p = { jiang: 1, wind: 0, startDealer: 0, dealer: 0, streak: 0, hands: 0 };
+  const names = [];
+  for (let i = 0; i < 16; i++) {
+    names.push(MJ.roundName(p.wind, p.dealer, p.startDealer));
+    p = MJ.advance(p, (p.dealer + 1) % 4); // 每把都是下家胡，莊家下莊
+  }
+  assert.deepEqual(names.slice(0, 5), ['東風東', '東風南', '東風西', '東風北', '南風東']);
+  assert.equal(names[15], '北風北');
+  assert.deepEqual(p, { jiang: 2, wind: 0, startDealer: 0, dealer: 0, streak: 0, hands: 0, newWind: true, newJiang: true });
+});
+
+test('連莊和流局不換圈，只多算一把', () => {
+  let p = { jiang: 1, wind: 3, startDealer: 0, dealer: 3, streak: 0, hands: 12 };
+  p = MJ.advance(p, 3); // 莊家胡，連莊
+  assert.deepEqual([p.wind, p.dealer, p.streak, p.hands, p.newWind], [3, 3, 1, 13, false]);
+  p = MJ.advance(p, -1); // 流局，連莊
+  assert.deepEqual([p.wind, p.dealer, p.streak, p.hands, p.newJiang], [3, 3, 2, 14, false]);
+  p = MJ.advance(p, 1); // 閒家胡，北風北打完
+  assert.deepEqual([p.jiang, p.wind, p.dealer, p.streak, p.hands, p.newJiang], [2, 0, 0, 0, 0, true]);
+});
+
+test('起莊不是東家時，圈照起莊算', () => {
+  let p = { jiang: 1, wind: 0, startDealer: 2, dealer: 2, streak: 0, hands: 0 };
+  assert.equal(MJ.roundName(p.wind, p.dealer, p.startDealer), '東風東');
+  for (let i = 0; i < 3; i++) p = MJ.advance(p, p.dealer === 3 ? 0 : 3);
+  assert.deepEqual([p.wind, p.dealer, MJ.roundName(p.wind, p.dealer, p.startDealer)], [0, 1, '東風北']);
+  p = MJ.advance(p, 0);
+  assert.deepEqual([p.wind, p.dealer, p.newWind, MJ.roundName(p.wind, p.dealer, p.startDealer)], [1, 2, true, '南風東']);
+});

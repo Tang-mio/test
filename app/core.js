@@ -17,7 +17,7 @@
   var OLD_LOCAL_KEY = 'paiqi-calc-v1';
   var VIEW_KEY = 'paitable-view';
   var GAMES = { paiqi: '排七', mahjong: '麻將', blackjack: '21點' };
-  var ROUND_WORD = { paiqi: '局', mahjong: '將', blackjack: '局' };
+  var ROUND_WORD = { paiqi: '局', mahjong: '把', blackjack: '局' };
   var ID_PREFIX = { paiqi: 'r', mahjong: 'm', blackjack: 'b' };
   var MODE_TEXT = {
     connecting: ['連線中…', '正在連到共用的牌桌…'],
@@ -88,7 +88,10 @@
         players: [emptyPaiqiSeat(), emptyPaiqiSeat(), emptyPaiqiSeat(), emptyPaiqiSeat()],
         nextRound: 1
       },
-      mahjong: { settings: MJ.normalizeSettings(), seats: [0, 1, 2, 3], seatsAt: 0, dealer: 0, streak: 0, hand: emptyHand(), nextRound: 1 },
+      mahjong: {
+        settings: MJ.normalizeSettings(), seats: [0, 1, 2, 3], seatsAt: 0,
+        jiang: 1, wind: 0, startDealer: 0, hands: 0, dealer: 0, streak: 0, hand: emptyHand(), nextRound: 1
+      },
       blackjack: { settings: BJ.normalizeSettings(), banker: 0, bets: filled(null), results: filled(null), doubled: filled(false), nextRound: 1 },
       ledger: []
     };
@@ -123,6 +126,10 @@
       settings: settings,
       seats: cleanSeats(d.seats),
       seatsAt: int(d.seatsAt, 0, 0),
+      jiang: int(d.jiang, 1, 1, 999),
+      wind: int(d.wind, 0, 0, 3),
+      startDealer: int(d.startDealer, 0, 0, 3),
+      hands: int(d.hands, 0, 0),
       dealer: int(d.dealer, 0, 0, 3),
       streak: int(d.streak, 0, 0, 99),
       hand: {
@@ -239,7 +246,7 @@
    * seats/0..3      排七每家的蓋牌，以及前四位玩家的名字
    * table/meta      排七規則、誰拿 ♠7、下一局編號
    * table/roster    第 5～8 位玩家的名字（21 點用）
-   * table/mahjong   麻將規則、抓位（誰坐東南西北）、莊家、連莊、這將的輸入
+   * table/mahjong   麻將規則、抓位（誰坐東南西北）、第幾將和圈風、莊家、連莊、這把的輸入
    * table/blackjack 21 點規則、莊家、下注與結果
    * ledger/{id}     每局結果；id 依遊戲與局號，兩支手機同時記入會寫到同一份，不會重複記帳
    */
@@ -508,7 +515,7 @@
         '<div class="table-wrap"><table><thead>' + head + '</thead><tbody>' + rows + '</tbody><tfoot>' + foot + '</tfoot></table></div>' +
         '<div class="ledger-actions">' +
           '<button type="button" class="btn primary" id="copyLedger">複製結算文字</button>' +
-          '<button type="button" class="btn" id="undoLedger"' + dis + '>刪除最後一' + (filter === 'mahjong' ? '將' : '局') + '</button>' +
+          '<button type="button" class="btn" id="undoLedger"' + dis + '>刪除最後一' + (filter === 'mahjong' ? '把' : '局') + '</button>' +
           '<button type="button" class="btn danger" id="clearLedger"' + dis + '>清空' + (label ? label + '的帳' : '全部') + '</button>' +
         '</div>' +
         '<textarea class="copy-fallback" id="copyFallback" readonly hidden aria-label="結算文字"></textarea>' +

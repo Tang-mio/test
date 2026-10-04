@@ -1,4 +1,4 @@
-/* 麻將畫面：莊家與連莊、誰胡、怎麼胡、幾台、結算；以及規則面板裡的台數表 */
+/* 麻將畫面：抓位、第幾將和圈風、莊家與連莊、誰胡、怎麼胡、幾台、結算；以及規則面板裡的台數表和牌局進度 */
 (function () {
   'use strict';
   var T = window.TableApp;
@@ -55,6 +55,7 @@
     $('#mjCapDealer').checked = s.capIncludesDealer;
     $('#mjFlowers').checked = s.flowers;
     $('#mjDealerNeedsStreak').checked = s.dealerNeedsStreak;
+    syncProgress();
     var preset = MJ.matchPreset(s);
     $$('#mjPresets [data-preset]').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.getAttribute('data-preset') === preset));
@@ -73,6 +74,28 @@
     next.flowers = $('#mjFlowers').checked;
     next.dealerNeedsStreak = $('#mjDealerNeedsStreak').checked;
     mj().settings = MJ.normalizeSettings(next);
+  }
+
+  // 牌局進度：第幾將、圈風、起莊（開始記帳時已經打到一半，可以在這裡改）
+  function windRadios(box, name) {
+    if (box.children.length) return;
+    box.innerHTML = T.SEAT_CHARS.map(function (c, w) {
+      return '<label><input type="radio" name="' + name + '" value="' + w + '">' + c + '</label>';
+    }).join('');
+  }
+  function syncProgress() {
+    var m = mj();
+    var editable = T.canEdit();
+    if ($('#mjJiang') !== document.activeElement) $('#mjJiang').value = m.jiang;
+    $('#mjJiang').disabled = !editable;
+    [['#mjWindPick', 'mjWind', m.wind], ['#mjStartPick', 'mjStart', m.startDealer]].forEach(function (f) {
+      var box = $(f[0]);
+      windRadios(box, f[1]);
+      $$('input', box).forEach(function (r) {
+        r.checked = Number(r.value) === f[2];
+        r.disabled = !editable;
+      });
+    });
   }
 
   // 台數表：每種台型一列，可以改台數、開關；自訂台型可以刪除
@@ -165,7 +188,7 @@
 
   /* ---------- 抓位 ----------
    * 牌桌上的位置（東南西北）和玩家是分開的：seats[w] 是坐在第 w 風的玩家。
-   * 這將的誰胡、誰放槍、莊家都記位置；記入累計帳時才換成玩家。 */
+   * 這把的誰胡、誰放槍、莊家都記位置；記入累計帳時才換成玩家。 */
 
   function seats() { return mj().seats; }
   function playerAt(w) { return seats()[w]; }
@@ -232,6 +255,16 @@
     $('#mjSeatEdit').disabled = !T.canEdit();
     $('#mjSeatSummary').innerHTML = (m.seatsAt ? '' : '還沒抓位：') + seatSummary();
     if (!sit) return;
+
+    var fresh = m.wind === 0 && m.hands === 0; // 這將還沒開始打
+    $('#mjSeatTitle').textContent = fresh && m.jiang > 1 ? '第 ' + m.jiang + ' 將：重新抓位' : '抓位：大家坐哪？';
+    $('#mjSeatStart').hidden = !fresh;
+    if (fresh) {
+      $('#mjSeatStartList').innerHTML = T.SEAT_CHARS.map(function (c, w) {
+        return '<button type="button" role="radio" data-start="' + w + '" aria-checked="' + (m.startDealer === w && m.dealer === w) + '">' +
+          '<span class="w">' + c + '</span>' + esc(seatName(w)) + '</button>';
+      }).join('');
+    }
 
     var me = T.me();
     var mw = meWind();
@@ -366,7 +399,8 @@
     var byId = {};
     pats.forEach(function (p) { byId[p.id] = p; });
 
-    $('#mjRound').textContent = '第 ' + m.nextRound + ' 將';
+    $('#mjRound').textContent = MJ.roundName(m.wind, m.dealer, m.startDealer);
+    $('#mjRoundSub').textContent = '第 ' + m.jiang + ' 將';
     var preset = MJ.matchPreset(s);
     $('#mjChips').innerHTML = '<span class="sum-chip">底 <b>' + T.money(s.base) + '</b></span>' +
       '<span class="sum-chip">每台 <b>' + T.money(s.perTai) + '</b></span>' +
@@ -452,7 +486,7 @@
     }
     var r = settleNow();
     if (!r.ready) {
-      box.innerHTML = '<div class="guide"><strong>每將這樣輸入</strong><ol>' +
+      box.innerHTML = '<div class="guide"><strong>每把這樣輸入</strong><ol>' +
         '<li>確認莊家和連莊次數。</li><li>點誰胡；沒人胡就按「流局」。</li>' +
         '<li>選自摸或放槍，放槍要再點是誰打的。</li><li>點選牌型算台數，下方就會算出誰付多少。</li></ol></div>';
       return;
@@ -465,7 +499,7 @@
     }).join('');
     box.innerHTML =
       '<div class="win-card">' +
-        '<p class="eyebrow">這將胡牌</p>' +
+        '<p class="eyebrow">這把胡牌</p>' +
         '<p class="win-name">' + esc(seatName(w)) + '</p>' +
         '<p class="win-total">共收<b>' + T.money(r.nets[w]) + '</b></p>' +
         '<p class="win-meta"><span class="win-kind">' + (r.method === 'ziMo' ? '自摸' : '胡 ' + esc(seatName(hand().discarder))) +
@@ -482,8 +516,8 @@
     var editable = T.canEdit();
     commit.hidden = !editable;
     if (seating()) {
-      sum.innerHTML = '<span class="muted">先完成抓位，再輸入這將</span>';
-      commit.textContent = '記入，下一將';
+      sum.innerHTML = '<span class="muted">先完成抓位，再輸入這把</span>';
+      commit.textContent = '記入，下一把';
       commit.disabled = true;
       return;
     }
@@ -494,7 +528,7 @@
       return;
     }
     var r = settleNow();
-    commit.textContent = '記入，下一將';
+    commit.textContent = '記入，下一把';
     if (!r.ready) {
       var h = hand();
       var tip = h.winner == null ? '點誰胡' : !h.method ? '選自摸或放槍' : '點是誰放槍';
@@ -533,37 +567,43 @@
 
   function resetHand() { mj().hand = T.emptyHand(); }
 
+  // 這把打完：換莊或連莊，莊家輪一輪就換圈，北風圈打完進下一將並重新抓位；回傳要顯示的訊息
+  function finishHand(m, winner) {
+    var p = MJ.advance(m, winner);
+    ['jiang', 'wind', 'dealer', 'streak', 'hands'].forEach(function (k) { m[k] = p[k]; });
+    resetHand();
+    if (p.newJiang) {
+      m.seatsAt = 0;
+      seatingOpen = false;
+      return '第 ' + (p.jiang - 1) + ' 將打完了！重新抓位，開始第 ' + p.jiang + ' 將';
+    }
+    var who = seatName(m.dealer);
+    if (p.newWind) return '進入' + T.SEAT_CHARS[m.wind] + '風圈，' + who + '當莊';
+    return m.streak ? who + '連莊（連 ' + m.streak + '）' : who + '當莊';
+  }
+
   function commit() {
     if (!T.canEdit() || seating()) return;
     var m = mj();
     if (isDraw()) {
-      var nd = MJ.nextDealer(m.dealer, m.streak, -1);
-      m.dealer = nd.dealer;
-      m.streak = nd.streak;
       m.nextRound += 1;
-      resetHand();
+      var msg = finishHand(m, -1);
       change();
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      T.toast('流局，' + seatName(m.dealer) + '連莊（連 ' + m.streak + '）');
+      T.toast('流局，' + msg);
       return;
     }
     var r = settleNow();
     if (!r.ready) return;
-    var no = m.nextRound;
     // 累計帳記的是玩家，不是位置
     var nets = [];
     for (var p = 0; p < T.MAX_PLAYERS; p++) nets.push(0);
     r.nets.forEach(function (n, w) { nets[playerAt(w)] = n; });
     T.commitEntry('mahjong', { winner: playerAt(r.winner), kind: r.method, tai: r.tai, nets: nets }, function () {
-      var cur = mj();
-      var nd = MJ.nextDealer(cur.dealer, cur.streak, r.winner);
-      var same = nd.dealer === cur.dealer;
-      cur.dealer = nd.dealer;
-      cur.streak = nd.streak;
-      resetHand();
+      var msg = finishHand(mj(), r.winner);
       change();
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      T.toast('第 ' + no + ' 將已記入，' + seatName(cur.dealer) + (same ? '連莊（連 ' + cur.streak + '）' : '當莊'));
+      T.toast('已記入，' + msg);
     });
   }
 
@@ -590,6 +630,15 @@
       assignSeat(w, T.me());
       seatStart = (w + 1) % 4;
       seatSlot = seatStart;
+      change();
+    });
+    // 這將誰起莊：同時是現在的莊家
+    $('#mjSeatStart').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-start]');
+      if (!b || !T.canEdit()) return;
+      var m = mj();
+      m.dealer = m.startDealer = Number(b.getAttribute('data-start'));
+      m.streak = 0;
       change();
     });
     $('#mjSeatChoices').addEventListener('click', function (e) {
@@ -668,18 +717,18 @@
       if (!T.canEdit()) return;
       resetHand();
       change();
-      T.toast('這將的輸入已清空');
+      T.toast('這把的輸入已清空');
     });
 
     // 規則面板：一般欄位
     var form = $('#set-mahjong');
     form.addEventListener('input', function (e) {
-      if (!T.canEdit() || e.target.closest('#mjTaiEditor')) return;
+      if (!T.canEdit() || e.target.closest('#mjTaiEditor, #mjProgress')) return;
       readSettings();
       T.changed(PATH, 400);
     });
     form.addEventListener('change', function (e) {
-      if (!T.canEdit() || e.target.closest('#mjTaiEditor')) return;
+      if (!T.canEdit() || e.target.closest('#mjTaiEditor, #mjProgress')) return;
       readSettings();
       syncSettings();
       T.changed(PATH);
@@ -720,6 +769,21 @@
       if (c) T.toast('已刪除「' + c.name + '」');
     });
     $('#mjAddCustom').addEventListener('click', function () { if (T.canEdit()) addCustom(); });
+
+    // 規則面板：牌局進度
+    $('#mjJiang').addEventListener('input', function (e) {
+      if (!T.canEdit() || e.target.value === '') return;
+      mj().jiang = Math.max(1, Math.min(999, Math.round(Number(e.target.value)) || 1));
+      T.changed(PATH, 400);
+    });
+    $('#mjJiang').addEventListener('change', function () { syncProgress(); });
+    $('#mjProgress').addEventListener('change', function (e) {
+      if (!T.canEdit() || e.target.type !== 'radio') return;
+      var w = Number(e.target.value);
+      if (e.target.name === 'mjWind') mj().wind = w;
+      else mj().startDealer = w;
+      T.changed(PATH);
+    });
     $('#mjPresets').addEventListener('click', function (e) {
       var b = e.target.closest('[data-preset]');
       if (!b || !T.canEdit()) return;

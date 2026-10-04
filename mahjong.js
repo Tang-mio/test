@@ -13,6 +13,7 @@
   'use strict';
 
   var SEATS = 4;
+  var WIND_NAMES = ['東', '南', '西', '北'];
 
   /*
    * 常見台型。max > 1 的可以算好幾次（例如兩組三元牌刻子）。
@@ -326,6 +327,34 @@
     return { dealer: (dealer + 1) % SEATS, streak: 0 };
   }
 
+  /* 一將四圈：東風、南風、西風、北風圈。莊家從起莊輪一輪、回到起莊就換下一圈，連莊和流局不算；
+   * 北風圈最後一位莊家下莊，這將就打完，下一將從起莊重新開始。
+   * p = { jiang 第幾將, wind 圈風 0–3, startDealer 起莊位置, dealer, streak, hands 這將打了幾把 }
+   * winner 是胡牌的位置，流局給 -1 */
+  function advance(p, winner) {
+    var nd = nextDealer(p.dealer, p.streak, winner);
+    var out = {
+      jiang: p.jiang, wind: p.wind, startDealer: p.startDealer, dealer: nd.dealer, streak: nd.streak,
+      hands: p.hands + 1, newWind: false, newJiang: false
+    };
+    if (nd.dealer !== p.dealer && nd.dealer === p.startDealer) {
+      out.wind += 1;
+      out.newWind = true;
+      if (out.wind >= SEATS) {
+        out.jiang += 1;
+        out.wind = 0;
+        out.hands = 0;
+        out.newJiang = true;
+      }
+    }
+    return out;
+  }
+
+  // 例如「東風南」：東風圈，莊家是從起莊數來第二位（起莊算東）
+  function roundName(wind, dealer, startDealer) {
+    return WIND_NAMES[wind] + '風' + WIND_NAMES[(dealer - startDealer + SEATS) % SEATS];
+  }
+
   return {
     PATTERNS: PATTERNS,
     GROUP_NAMES: GROUP_NAMES,
@@ -342,6 +371,8 @@
     countTai: countTai,
     dealerTai: dealerTai,
     settle: settle,
-    nextDealer: nextDealer
+    nextDealer: nextDealer,
+    advance: advance,
+    roundName: roundName
   };
 });

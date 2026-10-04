@@ -191,6 +191,8 @@ legend { padding: 0; }
 .round-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .round-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .round-title b { font-family: var(--font-display); font-size: var(--step-1); }
+.mj-round { display: grid; gap: 0; line-height: 1.25; }
+.round-sub { font-size: var(--step--2); color: var(--muted); font-weight: 600; }
 .round-actions { display: flex; gap: 6px; }
 .sync-pill { display: inline-flex; align-items: center; gap: 5px; font-size: var(--step--2); font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); white-space: nowrap; }
 .sync-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -478,7 +480,7 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .tseat.is-picking { box-shadow: 0 0 0 2px var(--felt), 0 0 0 4px var(--warn); }
 .seat-done { height: 44px; font-size: var(--step-0); }
 #mjPickDealer[aria-pressed="true"] { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); font-weight: 700; }
-.preset-box { display: grid; gap: 6px; }
+.preset-box, .progress-box { display: grid; gap: 6px; }
 .preset-box .method button { height: auto; min-height: 52px; padding: 6px 8px; display: grid; gap: 0; justify-items: center; line-height: 1.3; }
 .preset-box .method button small { font-size: 11px; font-weight: 500; color: var(--muted); }
 .preset-box .method button[aria-pressed="true"] small { color: var(--accent); }
@@ -788,9 +790,9 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     <!-- 麻將 -->
     <section id="play-mahjong" class="calc" hidden>
       <div class="round-bar">
-        <div class="round-title"><b id="mjRound">第 1 將</b></div>
+        <div class="round-title mj-round"><b id="mjRound">東風東</b><span class="round-sub" id="mjRoundSub">第 1 將・第 1 把</span></div>
         <div class="round-actions">
-          <button type="button" class="btn" id="mjClear">清空這將</button>
+          <button type="button" class="btn" id="mjClear">清空這把</button>
           <button type="button" class="btn" data-setup><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path></svg>名字・規則</button>
         </div>
       </div>
@@ -801,11 +803,15 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
           <button type="button" class="btn" id="mjSeatEdit">重新抓位</button>
         </div>
         <div class="seating" id="mjSeating" hidden>
-          <h3>抓位：大家坐哪？</h3>
+          <h3 id="mjSeatTitle">抓位：大家坐哪？</h3>
           <div class="me-row" id="mjSeatMe"></div>
           <div class="seat-choices" id="mjSeatChoices" hidden>
             <span class="set-label" id="mjSeatChoicesLabel"></span>
             <div class="me-seats" id="mjSeatChoicesList" role="radiogroup" aria-labelledby="mjSeatChoicesLabel"></div>
+          </div>
+          <div class="me-row" id="mjSeatStart" hidden>
+            <span class="set-label" id="mjSeatStartLabel">誰起莊（這將第一個當莊）</span>
+            <div class="me-seats" id="mjSeatStartList" role="radiogroup" aria-labelledby="mjSeatStartLabel"></div>
           </div>
           <p class="hint">點牌桌上的位置，再選坐在那裡的人；選到已經坐在別處的人，兩個人會對調。</p>
         </div>
@@ -837,7 +843,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         </div>
         <p class="hint" id="mjTaiList"></p>
       </section>
-      <section class="detail hand-only" id="mjResult" aria-label="這將結算"></section>
+      <section class="detail hand-only" id="mjResult" aria-label="這把結算"></section>
     </section>
 
     <!-- 21 點 -->
@@ -961,7 +967,17 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
           <ul>
             <li>莊家胡牌，或莊家付錢（莊家放槍、閒家自摸時莊家那份），都要多算莊家台：預設莊家 1 台，每連莊一次再加 2 台（連 N 拉 N），連 2 拉 2 時多 5 台。</li>
             <li>兩個閒家之間的支付不算莊家台。</li>
-            <li>莊家胡或流局：莊家連莊。閒家胡：換下一家（東 → 南 → 西 → 北）當莊，連莊歸零。記完一將會自動換。</li>
+            <li>莊家胡或流局：莊家連莊。閒家胡：換下一家（東 → 南 → 西 → 北）當莊，連莊歸零。記完一把會自動換。</li>
+          </ul>
+        </section>
+        <section>
+          <h2>將、圈、把</h2>
+          <ul>
+            <li><b>一把</b>：一手牌，從洗牌到有人胡或流局。</li>
+            <li><b>一圈</b>：莊家從起莊輪一輪、回到起莊。連莊和流局會多打幾把，但不算新的一圈，所以一圈至少 4 把。</li>
+            <li><b>一將</b>：四圈，依序是東風圈、南風圈、西風圈、北風圈，至少 16 把。</li>
+            <li>標題的「東風南」是東風圈、第二位莊家（起莊算東）。北風北的莊家下莊，這將就打完了，會進下一將並重新抓位。</li>
+            <li>一次打幾將各家自己約，例如「一局打四將」。</li>
           </ul>
         </section>
         <section>
@@ -1090,7 +1106,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
     <fieldset class="sec" id="namesFields">
       <legend class="set-label">玩家名字</legend>
       <div class="name-grid" id="nameGrid"></div>
-      <p class="hint" id="namesHint">排七和麻將用前四位（東、南、西、北）；21 點超過四人時再填 5 到 8。</p>
+      <p class="hint" id="namesHint">排七用前四位；麻將在牌桌上抓位；21 點超過四人時再填 5 到 8。</p>
     </fieldset>
 
     <fieldset class="sec" id="set-paiqi" hidden>
@@ -1204,6 +1220,27 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
           <button type="button" class="btn" id="mjAddCustom">新增</button>
         </div>
       </details>
+      <div class="progress-box" id="mjProgress">
+        <span class="set-label">牌局進度</span>
+        <div class="rule-list">
+          <div class="rule-row">
+            <label class="name" for="mjJiang">第幾將</label>
+            <span class="hint">北風圈打完會自動進下一將</span>
+            <span class="ctrl"><span class="field small"><input id="mjJiang" type="number" min="1" step="1" inputmode="numeric"><span>將</span></span></span>
+          </div>
+          <div class="rule-row">
+            <span class="name" id="mjWindLabel">圈風</span>
+            <span class="hint">莊家輪一輪、回到起莊就換下一圈</span>
+            <span class="ctrl"><span class="seg" id="mjWindPick" role="radiogroup" aria-labelledby="mjWindLabel"></span></span>
+          </div>
+          <div class="rule-row">
+            <span class="name" id="mjStartLabel">起莊</span>
+            <span class="hint">這將第一個當莊的位置</span>
+            <span class="ctrl"><span class="seg" id="mjStartPick" role="radiogroup" aria-labelledby="mjStartLabel"></span></span>
+          </div>
+        </div>
+        <span class="hint">開始記帳時已經打到一半，就在這裡改成現在的進度；莊家在麻將頁按「換莊家」改。</span>
+      </div>
     </fieldset>
 
     <fieldset class="sec" id="set-blackjack" hidden>
