@@ -1,0 +1,1111 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>排七計錢</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* 版面：上方是規則設定，左邊四個座位（東南西北）點選蓋牌，右邊即時結算；窄螢幕時上下堆疊 */
+:root {
+  --bg: #ECEFF4;
+  --surface: #FFFFFF;
+  --surface-2: #F4F6F9;
+  --line: #D3D9E3;
+  --ink: #161E30;
+  --muted: #5A6477;
+  --accent: #27468F;
+  --accent-soft: #E0E7F6;
+  --back: #213E86;
+  --back-ink: #FFFFFF;
+  --back-weave: rgba(255, 255, 255, 0.07);
+  --pay: #BF2537;
+  --pay-soft: #FBE5E7;
+  --gain: #17734D;
+  --gain-soft: #DDF1E6;
+  --warn: #9A5500;
+  --warn-soft: #FBEED8;
+  --shadow: 0 1px 2px rgba(22, 30, 48, 0.08);
+
+  --font-display: "LXGW WenKai TC", "Kaiti TC", "BiauKai", "DFKai-SB", serif;
+  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --step--1: 0.8125rem;
+  --step-0: 0.9375rem;
+  --step-1: 1.125rem;
+  --step-2: 1.375rem;
+  --step-3: 1.875rem;
+  --step-4: 2.375rem;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E121A;
+    --surface: #171D29;
+    --surface-2: #1E2533;
+    --line: #2C3546;
+    --ink: #E6E9F0;
+    --muted: #98A1B4;
+    --accent: #93AAEA;
+    --accent-soft: #222D47;
+    --back: #2A3F79;
+    --back-ink: #F2F5FC;
+    --back-weave: rgba(255, 255, 255, 0.06);
+    --pay: #F27482;
+    --pay-soft: #3A1D23;
+    --gain: #5BCB95;
+    --gain-soft: #142F26;
+    --warn: #F0B65C;
+    --warn-soft: #382A14;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E121A;
+  --surface: #171D29;
+  --surface-2: #1E2533;
+  --line: #2C3546;
+  --ink: #E6E9F0;
+  --muted: #98A1B4;
+  --accent: #93AAEA;
+  --accent-soft: #222D47;
+  --back: #2A3F79;
+  --back-ink: #F2F5FC;
+  --back-weave: rgba(255, 255, 255, 0.06);
+  --pay: #F27482;
+  --pay-soft: #3A1D23;
+  --gain: #5BCB95;
+  --gain-soft: #142F26;
+  --warn: #F0B65C;
+  --warn-soft: #382A14;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.6;
+}
+[hidden] { display: none !important; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+
+.app {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-inline: 16px;
+  padding-block: 20px 48px;
+  display: grid;
+  gap: 20px;
+}
+@media (min-width: 720px) { .app { padding-inline: 24px; } }
+
+/* 標頭 */
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.mark {
+  flex: none;
+  width: 40px; height: 56px;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  position: relative;
+  font-family: var(--font-num);
+  color: var(--ink);
+}
+.mark span { position: absolute; font-weight: 600; line-height: 1; }
+.mark .ix { top: 5px; left: 6px; font-size: 14px; }
+.mark .pip { inset: 0; display: grid; place-items: center; padding-top: 10px; font-size: 20px; }
+.brand h1 { font-family: var(--font-display); font-weight: 700; font-size: var(--step-3); line-height: 1.15; letter-spacing: 0.04em; }
+.brand p { color: var(--muted); font-size: var(--step--1); }
+
+.tabs { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+.tabs button {
+  border: 0; background: transparent; border-radius: 999px;
+  padding: 6px 16px; font-size: var(--step--1); font-weight: 500; color: var(--muted);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
+.tabs .badge { font-family: var(--font-num); font-size: 11px; min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--surface-2); color: var(--muted); text-align: center; }
+.tabs button[aria-selected="true"] .badge { background: var(--surface); color: var(--accent); }
+@media (max-width: 560px) {
+  .tabs { width: 100%; }
+  .tabs button { flex: 1; justify-content: center; }
+}
+
+/* 規則設定 */
+.settings { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.settings > summary {
+  list-style: none; cursor: pointer;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 12px 16px;
+}
+.settings > summary::-webkit-details-marker { display: none; }
+.settings .sum-label { font-weight: 700; font-size: var(--step--1); }
+.sum-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
+.sum-chip { font-size: 12px; padding: 1px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); white-space: nowrap; }
+.sum-chip.off { color: var(--muted); text-decoration: line-through; }
+.sum-chip b { font-family: var(--font-num); font-weight: 600; }
+.sum-edit { font-size: var(--step--1); color: var(--accent); font-weight: 500; }
+.sum-edit .when-open, .settings[open] .sum-edit .when-closed { display: none; }
+.settings[open] .sum-edit .when-open { display: inline; }
+.settings-body { border-top: 1px solid var(--line); padding: 16px; display: grid; gap: 14px; }
+.set-grid { display: grid; gap: 14px 28px; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); }
+.set-row { display: grid; gap: 6px; align-content: start; }
+.set-label { font-size: var(--step--1); font-weight: 700; }
+.hint { color: var(--muted); font-size: var(--step--1); }
+.field {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
+  padding: 2px 8px; font-family: var(--font-num); color: var(--muted);
+}
+.field input {
+  width: 4.5em; border: 0; background: transparent; padding: 4px 0;
+  font-family: var(--font-num); font-weight: 600; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.field input:focus { outline: none; }
+.field:focus-within { border-color: var(--accent); }
+.field.small input { width: 3em; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; width: fit-content; }
+.seg label { position: relative; padding: 5px 14px; font-size: var(--step--1); cursor: pointer; background: var(--surface-2); }
+.seg label + label { border-left: 1px solid var(--line); }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg label:has(input:checked) { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: -2px; }
+.rule-list { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.rule-row {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 12px;
+  padding: 10px 12px; background: var(--surface);
+}
+.rule-row + .rule-row { border-top: 1px solid var(--line); }
+.rule-row .name { font-weight: 700; font-size: var(--step--1); display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.rule-row .ctrl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 520px) {
+  .rule-row { grid-template-columns: 1fr auto; }
+  .rule-row .hint { grid-column: 1 / -1; grid-row: 2; }
+}
+.switch {
+  appearance: none; -webkit-appearance: none; margin: 0;
+  width: 34px; height: 20px; border-radius: 999px; flex: none;
+  background: var(--line); position: relative; cursor: pointer; transition: background .15s;
+}
+.switch::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--surface); box-shadow: var(--shadow); transition: transform .15s;
+}
+.switch:checked { background: var(--accent); }
+.switch:checked::after { transform: translateX(14px); }
+.rule-row:has(.switch:not(:checked)) .field { opacity: .45; }
+.settings-foot { display: flex; justify-content: flex-end; }
+
+.btn {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 8px; padding: 7px 14px; font-size: var(--step--1); font-weight: 500;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--pay); }
+.btn.danger.armed { background: var(--pay); color: var(--surface); border-color: var(--pay); }
+.btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+.link-btn { border: 0; background: none; padding: 2px 4px; color: var(--muted); font-size: var(--step--1); text-decoration: underline; text-underline-offset: 3px; }
+.link-btn:hover { color: var(--pay); }
+
+/* 本局 */
+.calc { display: grid; gap: 16px; }
+.lead { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.lead .hint { max-width: 62ch; }
+.example-note {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
+  padding: 10px 14px; border-radius: 10px;
+  background: var(--warn-soft); color: var(--ink); font-size: var(--step--1);
+}
+.example-note b { color: var(--warn); }
+.calc-grid { display: grid; gap: 20px; align-items: start; }
+@media (min-width: 980px) { .calc-grid { grid-template-columns: minmax(0, 1fr) 340px; } }
+.seats { display: grid; gap: 14px; }
+@media (min-width: 640px) { .seats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.seat {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px; display: grid; gap: 12px; align-content: start; min-width: 0;
+  transition: border-color .2s, box-shadow .2s;
+}
+.seat.is-winner { border-color: var(--gain); box-shadow: 0 0 0 1px var(--gain); }
+.seat-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.seat-badge {
+  flex: none; width: 34px; height: 34px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent);
+  font-family: var(--font-display); font-weight: 700; font-size: 1.15rem;
+}
+.seat-name {
+  flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 6px;
+  background: transparent; padding: 3px 6px; font-weight: 700; font-size: var(--step-1);
+}
+.seat-name:hover { border-color: var(--line); }
+.seat-name:focus { outline: none; border-color: var(--accent); background: var(--surface-2); }
+.seat-net { font-family: var(--font-num); font-weight: 600; font-size: var(--step-1); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pos { color: var(--gain); }
+.neg { color: var(--pay); }
+.zero { color: var(--muted); }
+
+.seat-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.tally { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: var(--step--1); color: var(--muted); }
+.tally b { font-family: var(--font-num); font-weight: 600; color: var(--ink); font-size: var(--step-0); font-variant-numeric: tabular-nums; }
+.first-btn {
+  border: 1px dashed var(--line); background: transparent; border-radius: 999px;
+  padding: 1px 10px; font-size: 12px; color: var(--muted); white-space: nowrap;
+}
+.first-btn[aria-pressed="true"] { border-style: solid; border-color: var(--ink); color: var(--ink); font-weight: 700; }
+
+.pill { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; line-height: 1.5; padding: 0 8px; border-radius: 999px; white-space: nowrap; }
+.pill-kind { background: var(--accent-soft); color: var(--accent); }
+.pill-bao { background: var(--warn-soft); color: var(--warn); }
+.pill-win { background: var(--gain-soft); color: var(--gain); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 44px; align-items: center; padding: 6px; border-radius: 8px; background: var(--surface-2); }
+.chips-empty { font-size: var(--step--1); color: var(--muted); padding-inline: 4px; }
+.chip {
+  width: 30px; height: 40px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface);
+  box-shadow: var(--shadow); padding: 0;
+  font-family: var(--font-num); font-weight: 600; font-size: 14px; letter-spacing: -0.03em;
+  display: grid; place-items: center;
+}
+.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration: line-through; }
+.last7 { display: flex; gap: 8px; align-items: center; font-size: var(--step--1); cursor: pointer; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); }
+.last7 input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
+.last7:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+
+.keys { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.key {
+  height: 46px; border-radius: 7px; border: 1px solid var(--line); background: var(--surface-2);
+  display: grid; place-content: center; justify-items: center; gap: 0; padding: 0; line-height: 1.1;
+  transition: border-color .12s, transform .06s;
+}
+.key .r { font-family: var(--font-num); font-weight: 600; font-size: 16px; letter-spacing: -0.03em; }
+.key .p { font-family: var(--font-num); font-size: 10px; color: var(--muted); }
+.key:hover:not(:disabled) { border-color: var(--accent); }
+.key:active:not(:disabled) { transform: translateY(1px); }
+.key:disabled { opacity: .3; cursor: not-allowed; }
+.seat-foot { display: flex; justify-content: flex-end; margin-top: -4px; }
+
+/* 結算 */
+.result { display: grid; gap: 14px; min-width: 0; }
+@media (min-width: 980px) { .result { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); } }
+.win-card {
+  border-radius: 14px; padding: 18px 18px 16px; color: var(--back-ink);
+  background-color: var(--back);
+  background-image:
+    repeating-linear-gradient(45deg, var(--back-weave) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(-45deg, var(--back-weave) 0 2px, transparent 2px 9px);
+  display: grid; gap: 6px; position: relative; overflow: hidden;
+  box-shadow: inset 0 0 0 4px var(--back), inset 0 0 0 5px var(--back-weave);
+}
+.win-card .eyebrow { font-size: 12px; letter-spacing: 0.12em; opacity: .8; }
+.win-name { font-family: var(--font-display); font-weight: 700; font-size: var(--step-4); line-height: 1.1; overflow-wrap: anywhere; }
+.win-why { font-size: var(--step--1); opacity: .9; }
+.win-kind { display: inline-flex; width: fit-content; align-items: baseline; gap: 6px; font-weight: 700; font-size: var(--step-0); padding: 1px 10px; border-radius: 999px; background: var(--back-ink); color: var(--back); }
+.win-kind b { font-family: var(--font-num); }
+.win-total { margin-top: 6px; display: flex; align-items: baseline; gap: 8px; font-size: var(--step--1); }
+.win-total b { font-family: var(--font-num); font-size: var(--step-3); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.panel-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 10px; }
+.sub { font-size: var(--step--1); font-weight: 700; color: var(--muted); letter-spacing: 0.06em; }
+.transfers { list-style: none; margin: 0; padding: 0; display: grid; }
+.transfers li { display: grid; gap: 2px; padding-block: 8px; }
+.transfers li + li { border-top: 1px dashed var(--line); }
+.t-line { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.t-who { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.t-who .arrow { color: var(--muted); padding-inline: 4px; }
+.t-amt { font-family: var(--font-num); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.t-formula { font-family: var(--font-num); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.alert { background: var(--pay-soft); color: var(--ink); border-radius: 10px; padding: 12px 14px; font-size: var(--step--1); display: grid; gap: 4px; }
+.alert b { color: var(--pay); }
+.result-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.result-actions .btn.primary { flex: 1; }
+
+/* 累計帳 */
+.ledger { display: grid; gap: 16px; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+.section-head h2 { font-family: var(--font-display); font-size: var(--step-2); }
+.totals { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 720px) { .totals { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.total-tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 2px; min-width: 0; }
+.total-tile .who { display: flex; align-items: center; gap: 8px; font-weight: 700; min-width: 0; }
+.total-tile .who span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.total-tile .seat-badge { width: 24px; height: 24px; font-size: 0.85rem; border-radius: 6px; }
+.total-tile .amt { font-family: var(--font-num); font-weight: 600; font-size: var(--step-2); font-variant-numeric: tabular-nums; }
+.total-tile .meta { font-size: 12px; color: var(--muted); }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+table { border-collapse: collapse; width: 100%; font-size: var(--step--1); }
+th, td { padding: 8px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+thead th { font-weight: 700; color: var(--muted); background: var(--surface-2); font-size: 12px; }
+td.num, tfoot td { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+tfoot td { font-weight: 600; border-bottom: 0; background: var(--surface-2); }
+tbody tr:last-child td { border-bottom: 1px solid var(--line); }
+td .time { display: block; font-size: 11px; color: var(--muted); font-family: var(--font-num); }
+.empty-state { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); padding: 28px 20px; text-align: center; color: var(--muted); display: grid; gap: 6px; justify-items: center; }
+.empty-state strong { color: var(--ink); font-size: var(--step-1); }
+.ledger-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.copy-fallback { width: 100%; min-height: 120px; font-family: var(--font-num); font-size: var(--step--1); border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--surface); color: var(--ink); }
+
+/* 規則 */
+.rules { display: grid; gap: 22px; max-width: 760px; }
+.rules section { display: grid; gap: 10px; }
+.rules h2 { font-family: var(--font-display); font-size: var(--step-2); }
+.rules p, .rules li { max-width: 65ch; }
+.rules ul, .rules ol { margin: 0; padding-left: 1.4em; display: grid; gap: 6px; }
+.rules ol li::marker { font-family: var(--font-num); font-weight: 600; color: var(--accent); }
+.rules .note { padding: 12px 14px; border-radius: 10px; background: var(--accent-soft); font-size: var(--step--1); }
+.special { display: grid; gap: 10px; }
+.special-item { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 4px 14px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.special-item dt { font-weight: 700; display: grid; gap: 4px; align-content: start; }
+.special-item dt .x { font-family: var(--font-num); font-size: var(--step-2); color: var(--accent); line-height: 1; }
+.special-item dt .x.bao { color: var(--warn); }
+.special-item dd { margin: 0; display: grid; gap: 4px; }
+@media (max-width: 480px) { .special-item { grid-template-columns: 1fr; } .special-item dt { grid-auto-flow: column; justify-content: start; align-items: baseline; gap: 10px; } }
+.formula-box { font-family: var(--font-num); font-size: var(--step--1); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; overflow-x: auto; }
+.rules .table-wrap td:first-child { font-family: var(--font-body); }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 999px;
+  font-size: var(--step--1); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+  transition: opacity .2s, transform .2s; max-width: calc(100% - 32px); text-align: center;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><span class="ix">7</span><span class="pip">♠</span></div>
+      <div>
+        <h1>排七計錢</h1>
+        <p>翻開蓋牌點一點，馬上知道誰付誰多少</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="頁面">
+      <button type="button" role="tab" id="tab-btn-calc" data-tab="calc" aria-controls="tab-calc" aria-selected="true">本局</button>
+      <button type="button" role="tab" id="tab-btn-ledger" data-tab="ledger" aria-controls="tab-ledger" aria-selected="false">累計帳 <span class="badge" id="ledgerBadge">0</span></button>
+      <button type="button" role="tab" id="tab-btn-rules" data-tab="rules" aria-controls="tab-rules" aria-selected="false">規則</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="tab-calc" class="calc" role="tabpanel" aria-labelledby="tab-btn-calc">
+      <details class="settings" id="settings">
+        <summary>
+          <span class="sum-label">規則設定</span>
+          <span class="sum-chips" id="settingsChips"></span>
+          <span class="sum-edit"><span class="when-closed">調整</span><span class="when-open">收起</span></span>
+        </summary>
+        <div class="settings-body">
+          <div class="set-grid">
+            <div class="set-row">
+              <label class="set-label" for="rate">每點金額</label>
+              <span class="field"><span>$</span><input id="rate" type="number" min="0" step="0.5" inputmode="decimal"></span>
+              <p class="hint">1 點算多少錢，可以填小數。</p>
+            </div>
+            <div class="set-row">
+              <span class="set-label" id="modeLabel">計錢方式</span>
+              <div class="seg" role="radiogroup" aria-labelledby="modeLabel">
+                <label><input type="radio" name="mode" id="mode-full" value="full">付全額</label>
+                <label><input type="radio" name="mode" id="mode-diff" value="diff">付差額</label>
+              </div>
+              <p class="hint" id="modeHint"></p>
+            </div>
+          </div>
+          <div class="rule-list">
+            <div class="rule-row">
+              <label class="name" for="on-tuoShou"><input type="checkbox" class="switch" id="on-tuoShou">脫手</label>
+              <span class="hint">贏家一張都沒蓋</span>
+              <span class="ctrl"><span class="field small"><span>×</span><input id="mult-tuoShou" type="number" min="1" step="1" inputmode="numeric" aria-label="脫手倍數"></span></span>
+            </div>
+            <div class="rule-row">
+              <label class="name" for="on-weiQi"><input type="checkbox" class="switch" id="on-weiQi">尾張七</label>
+              <span class="hint">贏家脫手，最後一張打出 7（取代脫手倍數）</span>
+              <span class="ctrl"><span class="field small"><span>×</span><input id="mult-weiQi" type="number" min="1" step="1" inputmode="numeric" aria-label="尾張七倍數"></span></span>
+            </div>
+            <div class="rule-row">
+              <label class="name" for="on-shiSanGai"><input type="checkbox" class="switch" id="on-shiSanGai">十三蓋</label>
+              <span class="hint">13 張全蓋，反敗為勝直接算贏家</span>
+              <span class="ctrl"><span class="field small"><span>×</span><input id="mult-shiSanGai" type="number" min="1" step="1" inputmode="numeric" aria-label="十三蓋倍數"></span></span>
+            </div>
+            <div class="rule-row">
+              <label class="name" for="on-baoDian"><input type="checkbox" class="switch" id="on-baoDian">爆點</label>
+              <span class="hint">輸家蓋牌超過門檻點數，自己付的錢再加倍</span>
+              <span class="ctrl">
+                <span class="field"><span>&gt;</span><input id="threshold-baoDian" type="number" min="0" step="1" inputmode="numeric" aria-label="爆點門檻"><span>點</span></span>
+                <span class="field small"><span>×</span><input id="mult-baoDian" type="number" min="1" step="1" inputmode="numeric" aria-label="爆點倍數"></span>
+              </span>
+            </div>
+          </div>
+          <div class="settings-foot"><button type="button" class="btn" id="resetSettings">恢復預設規則</button></div>
+        </div>
+      </details>
+
+      <div class="lead">
+        <p class="hint">依座位順序 東 → 南 → 西 → 北 輪流出牌。翻開每家的蓋牌，在牌面鍵盤上點選加入，點上方已加入的牌可以移除。7 一定能出、不會被蓋，所以鍵盤上沒有 7。</p>
+        <button type="button" class="btn" id="clearRound">清空本局</button>
+      </div>
+      <div class="example-note" id="exampleNote" hidden>
+        <span><b>範例局</b>：東家脫手、北家爆點，先看看怎麼算。範例不會記入累計帳。</span>
+        <button type="button" class="btn" id="startFresh">清空，開始記這局</button>
+      </div>
+
+      <div class="calc-grid">
+        <div class="seats" id="seats"></div>
+        <aside class="result" id="result" aria-live="polite" aria-label="本局結算"></aside>
+      </div>
+    </section>
+
+    <section id="tab-ledger" class="ledger" role="tabpanel" aria-labelledby="tab-btn-ledger" hidden>
+      <div class="section-head">
+        <h2>累計帳</h2>
+        <p class="hint" id="ledgerMeta"></p>
+      </div>
+      <div id="ledgerBody"></div>
+    </section>
+
+    <section id="tab-rules" class="rules" role="tabpanel" aria-labelledby="tab-btn-rules" hidden>
+      <section>
+        <h2>怎麼玩</h2>
+        <ul>
+          <li>一副牌 52 張，四人各拿 13 張。拿到 ♠7 的人先出，第一張一定要出 ♠7。</li>
+          <li>依座位順序輪流，每次出一張：任何花色的 7 隨時可以出，開一條新的龍；或接在桌上同花色那條龍的頭尾，7 往上接 8、9…K，往下接 6、5…A。</li>
+          <li>有牌能出就一定要出，不能故意留著。</li>
+          <li>真的沒牌能出，才從手上挑一張牌面朝下蓋起來，這輪就算過。</li>
+          <li>手上有 7 一定能出，所以 7 永遠不會被蓋。</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>算點數</h2>
+        <p>所有牌出完或蓋完，這局結束。各家翻開蓋牌加總：A 算 1 點，2 到 10 照牌面，J 算 11、Q 算 12、K 算 13。點數越少越好。</p>
+      </section>
+
+      <section>
+        <h2>誰贏</h2>
+        <p>由上往下比，前一項分出勝負就不看後面：</p>
+        <ol>
+          <li><b>十三蓋</b>：13 張全部蓋掉，一張都沒出過，直接反敗為勝。</li>
+          <li><b>尾張七</b>：一張都沒蓋，而且最後打出的一張是 7。</li>
+          <li><b>脫手</b>：一張都沒蓋。</li>
+          <li>蓋牌點數少。</li>
+          <li>蓋牌張數少。</li>
+          <li>出牌順序早：從拿 ♠7 的人開始數，先輪到的人贏。</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>特殊牌型與倍數</h2>
+        <dl class="special">
+          <div class="special-item">
+            <dt>脫手 <span class="x">×2</span></dt>
+            <dd><p>贏家整局一張都沒蓋，三家付的錢都乘 2。</p></dd>
+          </div>
+          <div class="special-item">
+            <dt>尾張七 <span class="x">×4</span></dt>
+            <dd><p>贏家脫手，而且最後打出的一張是 7。改成乘 4，不再另外乘脫手的 2。</p></dd>
+          </div>
+          <div class="special-item">
+            <dt>十三蓋 <span class="x">×5</span></dt>
+            <dd><p>13 張全蓋。點數雖然最多，但算贏家，三家付的錢乘 5。</p><p class="hint">選「付差額」時，十三蓋的人以 0 點計算。</p></dd>
+          </div>
+          <div class="special-item">
+            <dt>爆點 <span class="x bao">×2</span></dt>
+            <dd><p>輸家蓋牌超過 40 點（41 點起），這位輸家自己付的錢再乘 2。</p><p class="hint">會和贏家的倍數相乘：贏家脫手、你又爆點，就是乘 4。</p></dd>
+          </div>
+        </dl>
+      </section>
+
+      <section>
+        <h2>怎麼算錢</h2>
+        <p>只有贏家收錢，三位輸家各自付給贏家。</p>
+        <div class="formula-box">
+          <span>付全額：付的錢 = 自己的點數 × 倍數 × 每點金額</span>
+          <span>付差額：付的錢 =（自己的點數 − 贏家的點數）× 倍數 × 每點金額</span>
+          <span>倍　數 = 贏家牌型的倍數 × 自己爆點的倍數（沒有就是 1）</span>
+        </div>
+      </section>
+
+      <section>
+        <h2>算一次看看</h2>
+        <p>每點 $1、付全額。東家脫手；南家蓋 K Q 9 共 34 點；西家蓋 A 3 5 2 共 11 點；北家蓋 K K J 10 8 共 55 點，超過 40 點爆點。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>輸家</th><th>算式</th><th>付給東家</th></tr></thead>
+            <tbody>
+              <tr><td>南家</td><td class="num">34 × 脫手 2</td><td class="num">$68</td></tr>
+              <tr><td>西家</td><td class="num">11 × 脫手 2</td><td class="num">$22</td></tr>
+              <tr><td>北家</td><td class="num">55 × 脫手 2 × 爆點 2</td><td class="num">$220</td></tr>
+            </tbody>
+            <tfoot><tr><td>東家共收</td><td></td><td>$310</td></tr></tfoot>
+          </table>
+        </div>
+      </section>
+
+      <p class="note">各家規矩不太一樣。倍數、爆點門檻、付全額或付差額，都可以在「本局」頁上方的「規則設定」裡改，改完立刻重算。</p>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script src="paiqi.js"></script>
+<script>
+(function () {
+  'use strict';
+  var P = window.PaiQi;
+  var SEATS = ['東', '南', '西', '北'];
+  var STORE_KEY = 'paiqi-calc-v1';
+  var RULE_KEYS = ['tuoShou', 'weiQi', 'shiSanGai', 'baoDian'];
+  var KIND_DESC = {
+    shiSanGai: '13 張全蓋，反敗為勝',
+    weiQi: '脫手，最後一張打出 7',
+    tuoShou: '一張都沒蓋',
+    normal: '蓋牌點數最少'
+  };
+
+  var state;
+  var result;
+
+  function $(sel, el) { return (el || document).querySelector(sel); }
+  function $$(sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function fmtNum(x) { return Number(x).toLocaleString('zh-TW', { maximumFractionDigits: 2 }); }
+  function money(x) { return '$' + fmtNum(Math.abs(x)); }
+  function signedMoney(x) { return (x > 0 ? '+' : x < 0 ? '−' : '') + money(x); }
+  function signClass(x) { return x > 0 ? 'pos' : x < 0 ? 'neg' : 'zero'; }
+
+  function exampleRound() {
+    return {
+      firstIdx: 0,
+      example: true,
+      players: [
+        { name: '東家', covered: [], lastSeven: false },
+        { name: '南家', covered: ['K', 'Q', '9'], lastSeven: false },
+        { name: '西家', covered: ['A', '3', '5', '2'], lastSeven: false },
+        { name: '北家', covered: ['K', 'K', 'J', '10', '8'], lastSeven: false }
+      ]
+    };
+  }
+
+  function freshState() {
+    return { settings: P.normalizeSettings(), round: exampleRound(), ledger: [] };
+  }
+
+  function sanitize(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    var r = raw.round;
+    if (!r || !Array.isArray(r.players) || r.players.length !== 4) return null;
+    var first = Number(r.firstIdx);
+    return {
+      settings: P.normalizeSettings(raw.settings),
+      round: {
+        firstIdx: first >= 0 && first < 4 ? Math.floor(first) : 0,
+        example: !!r.example,
+        players: r.players.map(function (p, i) {
+          p = p || {};
+          return {
+            name: typeof p.name === 'string' ? p.name.slice(0, 12) : SEATS[i] + '家',
+            covered: Array.isArray(p.covered) ? p.covered.filter(function (c) { return P.RANKS.indexOf(c) !== -1; }).slice(0, P.HAND_SIZE) : [],
+            lastSeven: !!p.lastSeven
+          };
+        })
+      },
+      ledger: Array.isArray(raw.ledger) ? raw.ledger.filter(function (e) {
+        return e && Array.isArray(e.nets) && e.nets.length === 4;
+      }) : []
+    };
+  }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      return raw ? sanitize(JSON.parse(raw)) : null;
+    } catch (e) { return null; }
+  }
+
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* 無痕視窗等情況存不了，畫面照常運作 */ }
+  }
+
+  function displayName(i) {
+    var n = state.round.players[i].name.trim();
+    return n || SEATS[i] + '家';
+  }
+
+  function toast(msg) {
+    var t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+
+  /* ---------- 規則設定 ---------- */
+
+  function syncSettingsForm() {
+    var s = state.settings;
+    $('#rate').value = s.rate;
+    $('#mode-' + s.mode).checked = true;
+    RULE_KEYS.forEach(function (k) {
+      $('#on-' + k).checked = s[k].on;
+      $('#mult-' + k).value = s[k].mult;
+    });
+    $('#threshold-baoDian').value = s.baoDian.threshold;
+  }
+
+  function readSettingsForm() {
+    var raw = {
+      rate: $('#rate').value === '' ? state.settings.rate : $('#rate').value,
+      mode: $('#mode-diff').checked ? 'diff' : 'full'
+    };
+    RULE_KEYS.forEach(function (k) {
+      var m = $('#mult-' + k).value;
+      raw[k] = { on: $('#on-' + k).checked, mult: m === '' ? state.settings[k].mult : m };
+    });
+    var th = $('#threshold-baoDian').value;
+    raw.baoDian.threshold = th === '' ? state.settings.baoDian.threshold : th;
+    state.settings = P.normalizeSettings(raw);
+  }
+
+  function renderSettingsSummary() {
+    var s = state.settings;
+    var chips = [
+      '<span class="sum-chip">每點 <b>' + money(s.rate) + '</b></span>',
+      '<span class="sum-chip">' + (s.mode === 'full' ? '付全額' : '付差額') + '</span>'
+    ];
+    var labels = { tuoShou: '脫手', weiQi: '尾張七', shiSanGai: '十三蓋', baoDian: '爆點' };
+    RULE_KEYS.forEach(function (k) {
+      var r = s[k];
+      var extra = k === 'baoDian' ? ' &gt;' + fmtNum(r.threshold) : '';
+      chips.push('<span class="sum-chip' + (r.on ? '' : ' off') + '">' + labels[k] + extra + ' <b>×' + fmtNum(r.mult) + '</b></span>');
+    });
+    $('#settingsChips').innerHTML = chips.join('');
+    $('#modeHint').textContent = s.mode === 'full'
+      ? '輸家付自己蓋牌的點數。'
+      : '輸家付和贏家的點數差；十三蓋的贏家以 0 點計。';
+  }
+
+  /* ---------- 座位 ---------- */
+
+  function keysHtml() {
+    return P.RANKS.map(function (r) {
+      var pts = P.RANK_POINTS[r];
+      var showPts = r === 'A' || pts > 10;
+      return '<button type="button" class="key" data-r="' + r + '" aria-label="蓋 ' + r + '（' + pts + ' 點）">' +
+        '<span class="r">' + r + '</span>' + (showPts ? '<span class="p">' + pts + '</span>' : '') + '</button>';
+    }).join('');
+  }
+
+  function buildSeats() {
+    var keys = keysHtml();
+    $('#seats').innerHTML = state.round.players.map(function (p, i) {
+      return '<section class="seat" data-seat="' + i + '" aria-label="' + SEATS[i] + '位">' +
+        '<header class="seat-head">' +
+          '<span class="seat-badge" aria-hidden="true">' + SEATS[i] + '</span>' +
+          '<input class="seat-name" id="name-' + i + '" maxlength="12" autocomplete="off" aria-label="' + SEATS[i] + '位玩家名稱" placeholder="' + SEATS[i] + '家">' +
+          '<span class="seat-net" data-net></span>' +
+        '</header>' +
+        '<div class="seat-meta">' +
+          '<p class="tally" data-tally></p>' +
+          '<button type="button" class="first-btn" data-first aria-pressed="false" title="這局拿到 ♠7、先出牌的人">♠7 先出</button>' +
+        '</div>' +
+        '<div class="chips" data-chips></div>' +
+        '<label class="last7" data-last7-wrap hidden><input type="checkbox" id="last7-' + i + '" data-last7>最後一張打出的是 7（尾張七）</label>' +
+        '<div class="keys" role="group" aria-label="加入' + SEATS[i] + '位的蓋牌">' + keys + '</div>' +
+        '<div class="seat-foot"><button type="button" class="link-btn" data-clear>清空這家</button></div>' +
+      '</section>';
+    }).join('');
+    state.round.players.forEach(function (p, i) { $('#name-' + i).value = p.name; });
+  }
+
+  function usedCounts() {
+    var used = {};
+    state.round.players.forEach(function (p) {
+      p.covered.forEach(function (r) { used[r] = (used[r] || 0) + 1; });
+    });
+    return used;
+  }
+
+  function sortedCovered(covered) {
+    return covered.slice().sort(function (a, b) { return P.RANKS.indexOf(a) - P.RANKS.indexOf(b); });
+  }
+
+  function updateSeats() {
+    var used = usedCounts();
+    var s = state.settings;
+    state.round.players.forEach(function (p, i) {
+      var el = $('[data-seat="' + i + '"]');
+      var info = result ? result.players[i] : null;
+      var count = p.covered.length;
+      var isWinner = result && result.winner === i;
+
+      var tags = [];
+      if (isWinner) tags.push('<span class="pill pill-win">贏家</span>');
+      if (info && info.kind !== 'normal') tags.push('<span class="pill pill-kind">' + P.KIND_LABEL[info.kind] + '</span>');
+      if (info && info.baoDian) tags.push('<span class="pill pill-bao">爆點</span>');
+      $('[data-tally]', el).innerHTML = '蓋 <b>' + count + '</b> 張 · <b>' + P.sumPoints(p.covered) + '</b> 點 ' + tags.join('');
+
+      var net = info ? info.net : 0;
+      var netEl = $('[data-net]', el);
+      netEl.textContent = signedMoney(net);
+      netEl.className = 'seat-net ' + signClass(net);
+
+      $('[data-chips]', el).innerHTML = count
+        ? sortedCovered(p.covered).map(function (r) {
+            return '<button type="button" class="chip" data-chip="' + r + '" aria-label="移除一張 ' + r + '">' + r + '</button>';
+          }).join('')
+        : '<span class="chips-empty">沒有蓋牌（脫手）</span>';
+
+      var wrap = $('[data-last7-wrap]', el);
+      wrap.hidden = !(count === 0 && s.weiQi.on);
+      $('[data-last7]', el).checked = p.lastSeven;
+
+      var firstBtn = $('[data-first]', el);
+      firstBtn.setAttribute('aria-pressed', String(state.round.firstIdx === i));
+
+      $$('.key', el).forEach(function (k) {
+        var r = k.getAttribute('data-r');
+        k.disabled = count >= P.HAND_SIZE || (used[r] || 0) >= P.PER_RANK;
+      });
+
+      el.classList.toggle('is-winner', !!isWinner);
+
+      var nameInput = $('#name-' + i);
+      if (document.activeElement !== nameInput && nameInput.value !== p.name) nameInput.value = p.name;
+    });
+  }
+
+  /* ---------- 結算 ---------- */
+
+  function buildRoundForCalc() {
+    return {
+      firstIdx: state.round.firstIdx,
+      players: state.round.players.map(function (p, i) {
+        return { name: displayName(i), covered: p.covered, lastSeven: p.lastSeven };
+      })
+    };
+  }
+
+  function whyText(r) {
+    var w = r.players[r.winner];
+    var ru = r.runnerUp != null ? r.players[r.runnerUp] : null;
+    if (r.decidedBy === 'kind') return KIND_DESC[w.kind];
+    if (r.decidedBy === 'points') return KIND_DESC[w.kind] + '（' + w.points + ' 點）';
+    var order = '出牌順序較早（' + displayName(state.round.firstIdx) + '拿 ♠7 先出）';
+    if (w.kind !== 'normal') return '和' + ru.name + '都是' + P.KIND_LABEL[w.kind] + '，' + order;
+    if (r.decidedBy === 'count') return '和' + ru.name + '同為 ' + w.points + ' 點，蓋的張數較少';
+    return '和' + ru.name + '點數、張數都一樣，' + order;
+  }
+
+  function formulaText(t, r) {
+    var from = r.players[t.from];
+    var parts = [];
+    if (r.settings.mode === 'full') parts.push(from.points + ' 點');
+    else parts.push('(' + from.points + ' − ' + r.winnerPoints + ') 點');
+    t.factors.forEach(function (f) { parts.push(f.label + ' ' + fmtNum(f.x)); });
+    parts.push('每點 ' + money(t.rate));
+    return parts.join(' × ');
+  }
+
+  function renderResult(errors) {
+    var box = $('#result');
+    if (errors.length) {
+      box.innerHTML = '<div class="alert"><b>這局的牌對不起來</b>' +
+        errors.map(function (e) { return '<span>' + esc(e) + '</span>'; }).join('') +
+        '<span>請在左邊移除多出來的牌。</span></div>';
+      return;
+    }
+    var r = result;
+    var w = r.players[r.winner];
+    var kindHtml = w.kind !== 'normal'
+      ? '<span class="win-kind">' + P.KIND_LABEL[w.kind] + ' <b>×' + fmtNum(r.winnerMult) + '</b></span>'
+      : '';
+    var transfers = r.transfers.map(function (t) {
+      return '<li>' +
+        '<div class="t-line"><span class="t-who">' + esc(r.players[t.from].name) + '<span class="arrow">付</span>' + esc(w.name) + '</span>' +
+        '<span class="t-amt ' + (t.amount > 0 ? 'neg' : 'zero') + '">' + money(t.amount) + '</span></div>' +
+        '<div class="t-formula">' + esc(formulaText(t, r)) + '</div>' +
+      '</li>';
+    }).join('');
+    var commitDisabled = state.round.example ? ' disabled title="範例局不會記入累計帳"' : '';
+    box.innerHTML =
+      '<div class="win-card">' +
+        '<p class="eyebrow">本局贏家</p>' +
+        '<p class="win-name">' + esc(w.name) + '</p>' +
+        kindHtml +
+        '<p class="win-why">' + esc(whyText(r)) + '</p>' +
+        '<p class="win-total">共收 <b>' + money(w.net) + '</b></p>' +
+      '</div>' +
+      '<div class="panel-box">' +
+        '<h3 class="sub">誰付多少</h3>' +
+        '<ol class="transfers">' + transfers + '</ol>' +
+      '</div>' +
+      '<div class="result-actions">' +
+        '<button type="button" class="btn primary" id="commitRound"' + commitDisabled + '>記入累計帳，開下一局</button>' +
+      '</div>';
+  }
+
+  function recalc() {
+    var round = buildRoundForCalc();
+    var errors = P.validateRound(round);
+    result = errors.length ? null : P.settle(round, state.settings);
+    renderSettingsSummary();
+    updateSeats();
+    renderResult(errors);
+    $('#exampleNote').hidden = !state.round.example;
+    renderLedger();
+    save();
+  }
+
+  function leaveExample() {
+    if (state.round.example) state.round.example = false;
+  }
+
+  function clearRound() {
+    state.round.example = false;
+    state.round.players.forEach(function (p) { p.covered = []; p.lastSeven = false; });
+  }
+
+  /* ---------- 累計帳 ---------- */
+
+  function renderLedger() {
+    var ledger = state.ledger;
+    $('#ledgerBadge').textContent = ledger.length;
+    var body = $('#ledgerBody');
+    if (!ledger.length) {
+      $('#ledgerMeta').textContent = '';
+      body.innerHTML = '<div class="empty-state"><strong>還沒有記錄</strong>' +
+        '<span>在「本局」算好之後按「記入累計帳，開下一局」，每局輸贏會加總在這裡。</span></div>';
+      return;
+    }
+    var totals = [0, 0, 0, 0];
+    var wins = [0, 0, 0, 0];
+    ledger.forEach(function (e) {
+      e.nets.forEach(function (n, i) { totals[i] = Math.round((totals[i] + n) * 100) / 100; });
+      wins[e.winner] = (wins[e.winner] || 0) + 1;
+    });
+    $('#ledgerMeta').textContent = '共 ' + ledger.length + ' 局';
+
+    var tiles = totals.map(function (t, i) {
+      return '<div class="total-tile">' +
+        '<span class="who"><span class="seat-badge" aria-hidden="true">' + SEATS[i] + '</span><span>' + esc(displayName(i)) + '</span></span>' +
+        '<span class="amt ' + signClass(t) + '">' + signedMoney(t) + '</span>' +
+        '<span class="meta">贏 ' + wins[i] + ' 局</span>' +
+      '</div>';
+    }).join('');
+
+    var head = '<tr><th>局</th><th>贏家</th>' + SEATS.map(function (s, i) { return '<th>' + esc(displayName(i)) + '</th>'; }).join('') + '</tr>';
+    var rows = ledger.map(function (e, n) {
+      var time = new Date(e.at);
+      var hhmm = isNaN(time) ? '' : String(time.getHours()).padStart(2, '0') + ':' + String(time.getMinutes()).padStart(2, '0');
+      var kind = e.kind && e.kind !== 'normal' ? ' <span class="pill pill-kind">' + P.KIND_LABEL[e.kind] + '</span>' : '';
+      return '<tr><td class="num">' + (n + 1) + '<span class="time">' + hhmm + '</span></td>' +
+        '<td>' + esc(displayName(e.winner)) + kind + '</td>' +
+        e.nets.map(function (v) { return '<td class="num ' + signClass(v) + '">' + signedMoney(v) + '</td>'; }).join('') + '</tr>';
+    }).reverse().join('');
+    var foot = '<tr><td>合計</td><td></td>' + totals.map(function (t) {
+      return '<td class="' + signClass(t) + '">' + signedMoney(t) + '</td>';
+    }).join('') + '</tr>';
+
+    body.innerHTML =
+      '<div class="ledger">' +
+        '<div class="totals">' + tiles + '</div>' +
+        '<div class="table-wrap"><table><thead>' + head + '</thead><tbody>' + rows + '</tbody><tfoot>' + foot + '</tfoot></table></div>' +
+        '<div class="ledger-actions">' +
+          '<button type="button" class="btn primary" id="copyLedger">複製結算文字</button>' +
+          '<button type="button" class="btn" id="undoLedger">刪除最後一局</button>' +
+          '<button type="button" class="btn danger" id="clearLedger">清空帳本</button>' +
+        '</div>' +
+        '<textarea class="copy-fallback" id="copyFallback" readonly hidden aria-label="結算文字"></textarea>' +
+      '</div>';
+  }
+
+  function ledgerText() {
+    var totals = [0, 0, 0, 0];
+    state.ledger.forEach(function (e) {
+      e.nets.forEach(function (n, i) { totals[i] = Math.round((totals[i] + n) * 100) / 100; });
+    });
+    var lines = ['排七累計（共 ' + state.ledger.length + ' 局）'];
+    totals.forEach(function (t, i) { lines.push(displayName(i) + ' ' + signedMoney(t)); });
+    return lines.join('\n');
+  }
+
+  function commitRound() {
+    if (!result || state.round.example) return;
+    state.ledger.push({
+      at: Date.now(),
+      winner: result.winner,
+      kind: result.winnerKind,
+      nets: result.players.map(function (p) { return p.net; })
+    });
+    clearRound();
+    recalc();
+    toast('已記入第 ' + state.ledger.length + ' 局，蓋牌已清空');
+  }
+
+  /* ---------- 分頁 ---------- */
+
+  function showTab(name) {
+    if (['calc', 'ledger', 'rules'].indexOf(name) === -1) name = 'calc';
+    $$('.tabs [role="tab"]').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === name));
+    });
+    ['calc', 'ledger', 'rules'].forEach(function (t) { $('#tab-' + t).hidden = t !== name; });
+  }
+
+  /* ---------- 事件 ---------- */
+
+  function bind() {
+    $('.tabs').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-tab]');
+      if (b) showTab(b.getAttribute('data-tab'));
+    });
+
+    $('#seats').addEventListener('click', function (e) {
+      var seatEl = e.target.closest('[data-seat]');
+      if (!seatEl) return;
+      var i = Number(seatEl.getAttribute('data-seat'));
+      var p = state.round.players[i];
+      var key = e.target.closest('[data-r]');
+      var chip = e.target.closest('[data-chip]');
+      if (key && !key.disabled) {
+        leaveExample();
+        p.covered.push(key.getAttribute('data-r'));
+        p.lastSeven = false;
+      } else if (chip) {
+        leaveExample();
+        var at = p.covered.lastIndexOf(chip.getAttribute('data-chip'));
+        if (at !== -1) p.covered.splice(at, 1);
+      } else if (e.target.closest('[data-first]')) {
+        state.round.firstIdx = i;
+      } else if (e.target.closest('[data-clear]')) {
+        leaveExample();
+        p.covered = [];
+        p.lastSeven = false;
+      } else {
+        return;
+      }
+      recalc();
+    });
+
+    $('#seats').addEventListener('change', function (e) {
+      if (!e.target.matches('[data-last7]')) return;
+      var i = Number(e.target.closest('[data-seat]').getAttribute('data-seat'));
+      leaveExample();
+      state.round.players[i].lastSeven = e.target.checked;
+      recalc();
+    });
+
+    $('#seats').addEventListener('input', function (e) {
+      if (!e.target.matches('.seat-name')) return;
+      var i = Number(e.target.closest('[data-seat]').getAttribute('data-seat'));
+      state.round.players[i].name = e.target.value.slice(0, 12);
+      recalc();
+    });
+
+    $('#clearRound').addEventListener('click', function () { clearRound(); recalc(); toast('本局蓋牌已清空'); });
+    $('#startFresh').addEventListener('click', function () { clearRound(); recalc(); });
+
+    var form = $('.settings-body');
+    form.addEventListener('input', function () { readSettingsForm(); recalc(); });
+    form.addEventListener('change', function () { readSettingsForm(); syncSettingsForm(); recalc(); });
+    $('#resetSettings').addEventListener('click', function () {
+      state.settings = P.normalizeSettings();
+      syncSettingsForm();
+      recalc();
+      toast('已恢復預設規則');
+    });
+
+    $('#result').addEventListener('click', function (e) {
+      if (e.target.closest('#commitRound')) commitRound();
+    });
+
+    $('#ledgerBody').addEventListener('click', function (e) {
+      var t = e.target;
+      if (t.closest('#copyLedger')) {
+        var text = ledgerText();
+        var fallback = function () {
+          var ta = $('#copyFallback');
+          ta.value = text;
+          ta.hidden = false;
+          ta.focus();
+          ta.select();
+          toast('請長按或 Ctrl+C 複製選取的文字');
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { toast('已複製，可以貼到群組'); }, fallback);
+        } else {
+          fallback();
+        }
+      } else if (t.closest('#undoLedger')) {
+        state.ledger.pop();
+        recalc();
+        toast('已刪除最後一局');
+      } else if (t.closest('#clearLedger')) {
+        var btn = t.closest('#clearLedger');
+        if (btn.classList.contains('armed')) {
+          state.ledger = [];
+          recalc();
+          toast('帳本已清空');
+        } else {
+          btn.classList.add('armed');
+          btn.textContent = '再按一次確定清空';
+          setTimeout(function () {
+            if (!btn.isConnected) return;
+            btn.classList.remove('armed');
+            btn.textContent = '清空帳本';
+          }, 4000);
+        }
+      }
+    });
+  }
+
+  function start(data) {
+    state = (data && sanitize(data.state)) || load() || freshState();
+    buildSeats();
+    syncSettingsForm();
+    bind();
+    recalc();
+    var hash = (location.hash || '').replace('#', '');
+    if (hash) showTab(hash);
+  }
+
+  var hot = window.claude && window.claude.hot;
+  if (hot && typeof hot.snapshot === 'function') hot.snapshot(function () { return { state: state }; });
+  if (hot && typeof hot.ready === 'function') hot.ready(start);
+  else start((hot && hot.data) || {});
+})();
+</script>
+</body>
+</html>

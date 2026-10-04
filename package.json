@@ -1,0 +1,9 @@
+{
+  "name": "paiqi-calculator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "排七計錢計算機：脫手、尾張七、十三蓋、爆點",
+  "scripts": {
+    "test": "node --test"
+  }
+}
