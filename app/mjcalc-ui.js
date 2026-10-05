@@ -149,6 +149,7 @@
   // 能不能拍照：checking 確認中、ready 可以、noclaude 不是在 claude.ai 打開、
   // denied 看的人沒允許、unavailable 這裡不能用 Claude、noimages 這裡不能傳照片
   var photoState = 'checking';
+  var photoDiag = ''; // 不能用時附一行小字，回報問題時方便看是哪裡不行
   var HONOR_CODE = { E: 27, S: 28, W: 29, N: 30, C: 31, F: 32, P: 33 };
 
   function photoPrompt() {
@@ -189,7 +190,8 @@
 
   // 不能用時說明原因；沒允許的話給一個開權限的按鈕
   function explainPhoto() {
-    photoStatus(PHOTO_WHY[photoState] || PHOTO_WHY.unavailable, photoState === 'checking' ? '' : 'bad');
+    photoStatus((PHOTO_WHY[photoState] || PHOTO_WHY.unavailable) + (photoDiag && photoState !== 'checking' ? '（' + photoDiag + '）' : ''),
+      photoState === 'checking' ? '' : 'bad');
     $('#mcPhotoPerm').hidden = photoState !== 'denied';
   }
 
@@ -201,21 +203,24 @@
 
   function checkPhoto() {
     var c = window.claude;
-    if (!c || typeof c.use !== 'function') { photoState = 'noclaude'; return; }
+    if (!c || typeof c.use !== 'function') { photoState = 'noclaude'; photoDiag = '代碼 N0'; return; }
     c.use('sample').then(function (s) {
       if (!s) {
         // 看是沒允許還是這裡根本不能用
         return c.use('permissions').then(function (perms) {
-          return perms ? perms.state('sample') : 'unavailable';
-        }).then(function (st) { photoState = st === 'denied' ? 'denied' : 'unavailable'; }, function () { photoState = 'unavailable'; });
+          return perms ? perms.state('sample') : 'no-perms';
+        }).then(function (st) {
+          photoState = st === 'denied' ? 'denied' : 'unavailable';
+          photoDiag = '代碼 S0・' + st + '・' + (T.view.mode || '');
+        }, function () { photoState = 'unavailable'; photoDiag = '代碼 S0・perm-error'; });
       }
       return s.limits().then(function (lim) {
-        if (!lim || !lim.images) { photoState = 'noimages'; return; }
+        if (!lim || !lim.images) { photoState = 'noimages'; photoDiag = '代碼 I0・' + (lim ? Object.keys(lim).join('+') : 'no-limits'); return; }
         sample = s;
         photoState = 'ready';
         if (lim.images.mediaTypes && lim.images.mediaTypes.length) $('#mcPhotoInput').accept = lim.images.mediaTypes.join(',');
-      }, function () { photoState = 'noimages'; });
-    }).catch(function () { photoState = 'unavailable'; });
+      }, function (e) { photoState = 'noimages'; photoDiag = '代碼 I1・' + ((e && e.code) || 'limits-error'); });
+    }).catch(function (e) { photoState = 'unavailable'; photoDiag = '代碼 S1・' + ((e && e.code) || 'use-error'); });
   }
 
   function useTiles(res) {
