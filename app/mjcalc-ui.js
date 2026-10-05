@@ -184,8 +184,8 @@
     checking: '還在確認這個畫面能不能用拍照辨識，等幾秒再按一次。',
     noclaude: '要在 claude.ai 打開這個頁面（登入 Claude）才能拍照辨識；直接開檔案不行。現在請用下面的鍵盤點牌。',
     denied: '你之前沒有允許這個頁面使用 Claude。按「開啟權限」把 Claude 打開，再按一次拍照。',
-    unavailable: '這個畫面不能使用 Claude：請確認已經登入 claude.ai；用手機 App 打開的話，試試用手機瀏覽器打開同一個連結。',
-    noimages: '這個畫面不能把照片傳給 Claude（可能是 App 版本比較舊）。請改用手機瀏覽器打開同一個連結，或更新 App。'
+    unavailable: '這個畫面拿不到 Claude（例如用手機瀏覽器直接開頁面時）。請在 Claude App 或電腦瀏覽器的 claude.ai 打開同一個連結；現在請先用鍵盤點牌。',
+    noimages: '這裡目前不能把照片傳給 Claude：這是 Claude 平台還沒開放，不是你的 App 太舊。可以試試用電腦瀏覽器在 claude.ai 打開同一個連結；手機上請先用鍵盤點牌。'
   };
 
   // 不能用時說明原因；沒允許的話給一個開權限的按鈕
@@ -201,9 +201,16 @@
     explainPhoto();
   }
 
+  // 確認完：能用就正常顯示；不能用就把按鈕變淡，點了看原因
+  function markPhoto() {
+    var off = photoState !== 'ready' && photoState !== 'checking';
+    $('#mcPhoto').classList.toggle('off', off);
+    if (!photoCtl) photoStatus(off ? '這裡目前不能拍照辨識（點按鈕看原因），請用鍵盤點牌。' : '拍手上的牌（排成一排、正面朝上），會自動填進來，再自己核對。');
+  }
+
   function checkPhoto() {
     var c = window.claude;
-    if (!c || typeof c.use !== 'function') { photoState = 'noclaude'; photoDiag = '代碼 N0'; return; }
+    if (!c || typeof c.use !== 'function') { photoState = 'noclaude'; photoDiag = '代碼 N0'; markPhoto(); return; }
     c.use('sample').then(function (s) {
       if (!s) {
         // 看是沒允許還是這裡根本不能用
@@ -220,7 +227,7 @@
         photoState = 'ready';
         if (lim.images.mediaTypes && lim.images.mediaTypes.length) $('#mcPhotoInput').accept = lim.images.mediaTypes.join(',');
       }, function (e) { photoState = 'noimages'; photoDiag = '代碼 I1・' + ((e && e.code) || 'limits-error'); });
-    }).catch(function (e) { photoState = 'unavailable'; photoDiag = '代碼 S1・' + ((e && e.code) || 'use-error'); });
+    }).catch(function (e) { photoState = 'unavailable'; photoDiag = '代碼 S1・' + ((e && e.code) || 'use-error'); }).then(markPhoto);
   }
 
   function useTiles(res) {
