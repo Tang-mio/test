@@ -78,9 +78,6 @@
 
   function emptyPaiqiSeat() { return { covered: [], lastSeven: false }; }
   function emptyHand() { return { winner: null, method: null, discarder: null, picks: {}, extra: 0 }; }
-  // 麻將這把配牌後又摸了幾張：drawn 全部（含補花、槓），flowers 補花、kongs 槓
-  function emptyWall() { return { drawn: 0, flowers: 0, kongs: 0 }; }
-  T.emptyWall = emptyWall;
   function filled(v) { var a = []; for (var i = 0; i < MAX_PLAYERS; i++) a.push(typeof v === 'function' ? v(i) : v); return a; }
 
   function emptyState() {
@@ -94,8 +91,7 @@
       },
       mahjong: {
         settings: MJ.normalizeSettings(), seats: [0, 1, 2, 3], seatsAt: 0,
-        jiang: 1, wind: 0, startDealer: 0, hands: 0, dealer: 0, streak: 0, hand: emptyHand(), nextRound: 1,
-        wall: emptyWall()
+        jiang: 1, wind: 0, startDealer: 0, hands: 0, dealer: 0, streak: 0, hand: emptyHand(), nextRound: 1
       },
       blackjack: { settings: BJ.normalizeSettings(), banker: 0, bets: filled(null), results: filled(null), doubled: filled(false), nextRound: 1 },
       ledger: []
@@ -144,13 +140,8 @@
         picks: MJ.cleanPicks(h.picks, method, settings),
         extra: int(h.extra, 0, -99, 99)
       },
-      nextRound: int(d.nextRound, 1, 1),
-      wall: cleanWall(d.wall)
+      nextRound: int(d.nextRound, 1, 1)
     };
-  }
-  function cleanWall(w) {
-    w = w || {};
-    return { drawn: int(w.drawn, 0, 0, 144), flowers: int(w.flowers, 0, 0, 144), kongs: int(w.kongs, 0, 0, 144) };
   }
   function cleanBlackjack(d) {
     d = d || {};
@@ -721,7 +712,7 @@
       Object.keys(GAMES).forEach(function (g) { $('#rules-' + g).hidden = g !== v.rulesGame; });
     }
     if ($('#setup').open) renderNameInputs();
-    if (T.mjTools) T.mjTools.render(); // 麻將小工具（擲骰子、剩幾張牌）首頁也能開
+    if (T.mjTools) T.mjTools.render(); // 擲骰子首頁也能開
     measureDock();
   };
 

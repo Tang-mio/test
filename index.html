@@ -346,7 +346,7 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .games.two .game-card { grid-template-columns: minmax(0, 1fr); justify-items: start; row-gap: 2px; padding: 12px; }
 .games.two .g-art { grid-row: auto; width: 56px; height: 52px; margin-bottom: 4px; transform: scale(.9); transform-origin: left top; }
 .games.two .g-name { font-size: var(--step-1); }
-.tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .tool-btn {
   display: grid; justify-items: center; align-content: start; gap: 2px; padding: 10px 4px 9px; text-align: center;
   border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink);
@@ -364,8 +364,8 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .mj-tools { display: flex; gap: 6px; flex-wrap: wrap; margin-top: -4px; }
 .mini-tool { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 600; }
 .mini-tool svg { width: 14px; height: 14px; color: var(--accent); }
-.mini-tool.warn { border-color: var(--warn); background: var(--warn-soft); }
-/* 擲骰子、剩幾張牌 */
+.mini-tool .mt-ico { width: 14px; height: 16px; border-radius: 3px; display: grid; place-items: center; background: var(--tile-face); border: 1px solid var(--line); color: #2F5DA8; font-family: var(--font-display); font-size: 10px; font-weight: 700; }
+/* 擲骰子 */
 .tool-sheet { max-height: 92vh; }
 .tool-body { padding: 12px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; }
 .dice-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -382,6 +382,9 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 @keyframes shake { 50% { transform: rotate(8deg) translateY(-2px); } }
 @media (prefers-reduced-motion: reduce) { .die.rolling { animation: none; } }
 .dice-roll { flex: 1; min-width: 110px; height: 46px; font-size: var(--step-0); }
+.dice-input { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
+.dice-input button { height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); font-family: var(--font-num); font-weight: 600; font-size: var(--step-0); color: var(--ink); }
+.dice-input button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
 .dice-result { display: grid; gap: 8px; }
 .dice-sum { font-size: var(--step--1); color: var(--muted); }
 .dice-sum b { font-family: var(--font-num); font-size: var(--step-3); color: var(--ink); margin-right: 4px; }
@@ -406,16 +409,6 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .wall-map .center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; font-size: 11px; opacity: .9; padding: 60px; }
 .wall-legend { display: flex; gap: 12px; justify-content: center; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
 .wall-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
-.wall-big { display: grid; justify-items: center; gap: 2px; text-align: center; padding: 6px 0; }
-.wall-big .n { font-family: var(--font-num); font-size: 56px; font-weight: 600; line-height: 1; }
-.wall-big .n.warn { color: var(--pay); }
-.wall-big .lb { font-size: var(--step--1); color: var(--muted); }
-.wall-big .st-msg { font-size: var(--step-0); font-weight: 700; }
-.wall-big .st-msg.warn { color: var(--pay); }
-.wall-draw { height: 52px; font-size: var(--step-1); }
-.wall-acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.wall-acts .btn { height: 40px; }
-.wall-set { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .stepper.small button { width: 30px; height: 30px; font-size: 16px; }
 .stepper.small output { min-width: 2em; width: 2.6em; }
 /* 首頁玩家：前四位排七・麻將，第 5 位起 21 點 */
@@ -688,32 +681,20 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; background: var(--surface); padding: 14px 16px 10px; border-bottom: 1px solid var(--line); z-index: 1; }
 .sheet-head h2 { font-family: var(--font-display); font-size: var(--step-2); }
 
-/* 牌型計算器：上面是手牌，中間選放哪，下面是點牌鍵盤和結果 */
+/* 胡什麼牌：上面是手牌和結果，下面是點牌鍵盤 */
 .calc-sheet { max-height: 94vh; }
 .mc-head-actions { display: flex; gap: 6px; }
 .mc-body { padding: 10px 12px calc(16px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; }
-.mc-ctx { display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; font-size: var(--step--1); }
-.mc-ctx .mc-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.mc-ctx .mc-seg button { padding: 4px 10px; border: 0; background: var(--surface-2); font-size: var(--step--1); }
-.mc-ctx .mc-seg button + button { border-left: 1px solid var(--line); }
-.mc-ctx .mc-seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 700; }
-.mc-ctx label { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
-.mc-ctx select { border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); color: var(--ink); padding: 2px 4px; font: inherit; }
-.mc-ctx .fixed { color: var(--muted); }
-.mc-ctx .fixed b { color: var(--ink); }
+.mc-tip { font-size: 12px; color: var(--muted); }
 .mc-hand {
-  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 6px; min-height: 52px; padding: 8px; border-radius: 10px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 46px; padding: 8px; border-radius: 10px;
   background: var(--felt); color: var(--felt-ink);
 }
-.mc-hand .empty { font-size: var(--step--1); opacity: .85; align-self: center; }
-.mc-group { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; border: 0; background: none; padding: 0; color: inherit; }
-.mc-group .lb { font-size: 9.5px; font-weight: 700; line-height: 1; opacity: .9; }
+.mc-hand .empty { font-size: var(--step--1); opacity: .85; }
 .mc-row { display: inline-flex; flex-wrap: wrap; gap: 1px; }
-.mc-concealed { max-width: 100%; }
 .mc-tbtn { border: 0; background: none; padding: 0; display: inline-grid; }
-.mc-win .mc-row .tl { box-shadow: 0 0 0 2px var(--warn); }
-.mc-count { margin-left: auto; align-self: center; font-family: var(--font-num); font-size: 11px; opacity: .85; }
-/* 小牌（手牌區）和鍵盤牌共用的牌面 */
+.mc-count { margin-left: auto; font-family: var(--font-num); font-size: 11px; opacity: .85; }
+/* 小牌（手牌區、結果）和鍵盤牌共用的牌面 */
 .tl {
   width: 19px; height: 26px; border-radius: 3px; display: grid; place-items: center; align-content: center; gap: 0;
   background: var(--tile-face); border: 1px solid rgba(0,0,0,.15); box-shadow: 0 2px 0 var(--tile-back);
@@ -725,41 +706,32 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .tl.m { color: #C62839; } .tl.p { color: #2F5DA8; } .tl.s { color: var(--tile-green); }
 .tl.t-zhong { color: #C62839; } .tl.t-fa { color: var(--tile-green); }
 .tl.t-bai span { color: #2F5DA8; border: 1.5px solid currentColor; border-radius: 2px; font-size: 8px; padding: 0 1px; }
-.tl.ghost { background: transparent; border: 1.5px dashed currentColor; box-shadow: none; color: inherit; font-family: var(--font-body); font-weight: 700; }
-.tl.fl { font-size: 12px; color: #A23B72; }
-.mc-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(38px, 1fr)); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.mc-modes button { padding: 7px 0; border: 0; background: var(--surface-2); font-size: var(--step--1); font-weight: 600; }
-.mc-modes button + button { border-left: 1px solid var(--line); }
-.mc-modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
-.mc-tip { font-size: 12px; color: var(--muted); min-height: 1.4em; }
 .mc-keys { display: grid; gap: 4px; }
 .mc-keyrow { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px; }
-.mc-keyrow.honors { grid-template-columns: repeat(9, minmax(0, 1fr)); }
-.mc-keyrow.flowers { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .mc-key { position: relative; height: 40px; padding: 0; border: 0; background: none; display: grid; place-items: center; }
 .mc-key .tl { width: 100%; height: 38px; border-radius: 5px; }
 .mc-key .tl .r { font-size: 16px; }
 .mc-key .tl .u { font-size: 10px; }
 .mc-key .tl.hz { font-size: 18px; }
-.mc-key .tl.fl { font-size: 15px; }
 .mc-key .tl.t-bai span { font-size: 11px; padding: 0 2px; }
 .mc-key:active .tl { transform: translateY(1px); box-shadow: 0 1px 0 var(--tile-back); }
 .mc-key:disabled { opacity: .3; cursor: not-allowed; }
-.mc-key[aria-pressed="true"] .tl { background: #DCE7FA; box-shadow: 0 0 0 2px var(--accent); }
 .mc-key .used { position: absolute; top: -3px; right: -2px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; background: var(--ink); color: var(--surface); font-family: var(--font-num); font-size: 9px; line-height: 14px; }
-.mc-result { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; background: var(--surface-2); }
+.mc-result { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; background: var(--surface-2); min-height: 48px; align-content: center; }
 .mc-total { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.mc-total b { font-family: var(--font-num); font-size: var(--step-3); line-height: 1; }
+.mc-total b { font-family: var(--font-display); font-size: var(--step-1); }
 .mc-total .sub { font-size: 12px; color: var(--muted); }
-.mc-items { font-size: var(--step--1); }
-.mc-sets { font-size: 12px; color: var(--muted); }
-.mc-result .btn.primary { justify-self: stretch; height: 42px; }
+.mc-waits { display: flex; flex-wrap: wrap; gap: 8px; }
+.mc-wait { display: grid; justify-items: center; gap: 3px; }
+.mc-wait .tl { width: 32px; height: 42px; border-radius: 5px; }
+.mc-wait .tl .r { font-size: 17px; }
+.mc-wait .tl .u { font-size: 10px; }
+.mc-wait .tl.hz { font-size: 20px; }
+.mc-wait .tl.t-bai span { font-size: 12px; padding: 0 2px; }
+.mc-wait .left { font-size: 11px; color: var(--muted); font-weight: 600; }
+.mc-wait.dead .tl { opacity: .4; }
 .mc-msg { font-size: var(--step--1); color: var(--muted); }
 .mc-msg.bad { color: var(--pay); font-weight: 700; }
-.mc-extras summary { font-size: 12px; color: var(--muted); cursor: pointer; padding: 2px 0; }
-.mc-extras .tai-chips { margin-top: 6px; }
-.mini-btn { margin-left: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; }
-.mini-btn:disabled { opacity: .4; }
 .set-label { font-size: var(--step--1); font-weight: 700; }
 .sec { display: grid; gap: 10px; }
 .name-grid { display: grid; gap: 8px 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -903,9 +875,8 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
           </button>
         </div>
         <div class="tools" role="group" aria-label="麻將工具">
-          <button type="button" class="tool-btn" data-tool="mjcalc"><span class="t-ico">台</span><b>牌型計算器</b><span>點牌自動算台</span></button>
-          <button type="button" class="tool-btn" data-tool="dice"><span class="t-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"></circle><circle cx="12" cy="12" r="1.2" fill="currentColor"></circle><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"></circle></svg></span><b>擲骰子</b><span>從哪裡開始抓</span></button>
-          <button type="button" class="tool-btn" data-tool="wall"><span class="t-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="5" height="12" rx="1"></rect><rect x="9.5" y="6" width="5" height="12" rx="1"></rect><rect x="16" y="6" width="5" height="12" rx="1"></rect></svg></span><b>剩幾張牌</b><span>摸到哪、何時海底</span></button>
+          <button type="button" class="tool-btn" data-tool="mjcalc"><span class="t-ico">胡</span><b>胡什麼牌</b><span>點手牌，算聽哪幾張</span></button>
+          <button type="button" class="tool-btn" data-tool="dice"><span class="t-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"></circle><circle cx="12" cy="12" r="1.2" fill="currentColor"></circle><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"></circle></svg></span><b>擲骰子</b><span>從哪一墩開始抓</span></button>
         </div>
       </section>
       <section class="game-group" aria-labelledby="grpPoker">
@@ -988,7 +959,7 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
       <button type="button" class="rule-line" id="mjChips" data-setup aria-label="目前規則，點一下調整"></button>
       <div class="mj-tools" role="group" aria-label="麻將工具">
         <button type="button" class="mini-tool" data-tool="dice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"></circle><circle cx="12" cy="12" r="1.2" fill="currentColor"></circle><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"></circle></svg>擲骰開門</button>
-        <button type="button" class="mini-tool" data-tool="wall"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="5" height="12" rx="1"></rect><rect x="9.5" y="6" width="5" height="12" rx="1"></rect><rect x="16" y="6" width="5" height="12" rx="1"></rect></svg><span id="mjWallChip">還能摸 63 張</span></button>
+        <button type="button" class="mini-tool" data-tool="mjcalc"><span class="mt-ico">胡</span>胡什麼牌</button>
       </div>
       <section class="step table-step" aria-labelledby="mjQ1">
         <div class="seat-bar" id="mjSeatBar">
@@ -1028,7 +999,7 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
         <p class="hint hand-only" id="mjDealerHint"></p>
       </section>
       <section class="step hand-only" id="mjStep3" aria-labelledby="mjQ3">
-        <h3 id="mjQ3"><span class="n">2</span>幾台？<button type="button" class="mini-btn" id="mjCalcOpen">點牌自動算</button><span class="aside">共 <b id="mjTaiSum">0</b> 台 <span class="cap-note" id="mjCapNote" hidden></span></span></h3>
+        <h3 id="mjQ3"><span class="n">2</span>幾台？<span class="aside">共 <b id="mjTaiSum">0</b> 台 <span class="cap-note" id="mjCapNote" hidden></span></span></h3>
         <div id="mjTai"></div>
         <div class="extra-row">
           <span>表上沒有的台數</span>
@@ -1186,20 +1157,13 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
         <section>
           <h2>開門與牌牆</h2>
           <ul>
-            <li><b>擲骰子開門</b>：莊家擲三顆骰子，從莊家數點數（莊家算 1，往下家數），數到那一家面前的牌牆；從他那邊看的右邊數點數那麼多墩當牌尾，從下一墩開始抓。首頁和麻將頁的「擲骰子」會直接告訴你從哪一墩開始。</li>
+            <li><b>擲骰子開門</b>：莊家擲三顆骰子，從莊家數點數（莊家算 1，往下家數），數到那一家面前的牌牆；從他那邊看的右邊數點數那麼多墩當牌尾，從下一墩開始抓。首頁和麻將頁的「擲骰子」可以隨機擲，也可以自己輸入點數，會直接告訴你從哪一墩開始。</li>
             <li><b>配牌</b>：莊家先抓 2 墩（4 張），下家、對家、上家輪流，抓 4 輪每人 16 張，莊家再跳牌多拿 1 張，共 65 張。</li>
-            <li><b>剩幾張</b>：有花 144 張配完剩 79 張、沒花 136 張配完剩 71 張；最後留 16 張不摸（可以改）。「剩幾張牌」每摸一張按一下，就知道還能摸幾張、下一張是不是海底。</li>
           </ul>
         </section>
         <section>
-          <h2>牌型計算器</h2>
-          <p>不想自己挑牌型，可以點手上的牌讓它算：首頁的「牌型計算器」單獨用，或在算台時按「點牌自動算」，算好直接套用到這把。</p>
-          <ul>
-            <li>手牌加吃、碰、槓共 16 張，再點胡的那張；會列出聽哪些牌，只聽一張就是獨聽。</li>
-            <li>自動判斷門清、平胡、求人、碰碰胡、暗刻、一色、中發白、東南西北、三元、四喜、花牌；同一副牌有好幾種拆法時取台數最多的。</li>
-            <li>胡別人打的那組刻子不算暗刻；平胡要沒字、沒花、全順子、聽兩面，而且是胡別人打的。</li>
-            <li>槓上開花、海底撈月這類看牌看不出來的，在計算器最下面勾。</li>
-          </ul>
+          <h2>胡什麼牌</h2>
+          <p>點手上還沒亮出來的牌（吃、碰、槓的不用點），就會算出胡哪幾張、每張還剩幾張。首頁和麻將頁上方的「胡什麼牌」都能打開。</p>
         </section>
         <section>
           <h2>北部打法與南部打法</h2>
@@ -1499,23 +1463,17 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
 
 <dialog class="sheet calc-sheet" id="mjCalc" aria-labelledby="mcTitle">
   <div class="sheet-head">
-    <h2 id="mcTitle">牌型計算器</h2>
+    <h2 id="mcTitle">胡什麼牌</h2>
     <div class="mc-head-actions">
       <button type="button" class="btn" id="mcClear">清除</button>
       <button type="button" class="btn primary" id="mcClose">關閉</button>
     </div>
   </div>
   <div class="mc-body">
-    <div class="mc-ctx" id="mcCtx"></div>
+    <p class="mc-tip">點你手上還沒亮出來的牌（吃、碰、槓的不用點），就會算出胡哪幾張。點上面的牌可以拿掉。</p>
     <div class="mc-hand" id="mcHand"></div>
-    <div class="mc-modes" id="mcModes" role="group" aria-label="點的牌放哪"></div>
-    <p class="mc-tip" id="mcTip"></p>
-    <div class="mc-keys" id="mcKeys"></div>
     <div class="mc-result" id="mcResult" aria-live="polite"></div>
-    <details class="mc-extras">
-      <summary>看牌看不出來的：槓上開花、海底撈月…</summary>
-      <div class="tai-chips" id="mcExtras"></div>
-    </details>
+    <div class="mc-keys" id="mcKeys"></div>
   </div>
 </dialog>
 
@@ -1529,31 +1487,9 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
       <div class="dice" id="diceFaces"></div>
       <button type="button" class="btn primary dice-roll" id="diceRoll">擲骰子</button>
     </div>
-    <p class="hint">莊家擲三顆骰子；用實體骰子的話，點骰子改成擲出來的點數。</p>
+    <span class="set-label" id="diceInputLabel">或自己輸入：三顆骰子加起來幾點？</span>
+    <div class="dice-input" id="diceInput" role="group" aria-labelledby="diceInputLabel"></div>
     <div class="dice-result" id="diceResult" aria-live="polite"></div>
-  </div>
-</dialog>
-
-<dialog class="sheet tool-sheet" id="mjWall" aria-labelledby="wallTitle">
-  <div class="sheet-head">
-    <h2 id="wallTitle">剩幾張牌</h2>
-    <button type="button" class="btn primary" data-close>關閉</button>
-  </div>
-  <div class="tool-body">
-    <div class="wall-big" id="wallBig" aria-live="polite"></div>
-    <button type="button" class="btn primary wall-draw" id="wallDraw">摸一張</button>
-    <div class="wall-acts">
-      <button type="button" class="btn" id="wallFlower">補花</button>
-      <button type="button" class="btn" id="wallKong">槓</button>
-      <button type="button" class="btn" id="wallUndo">復原一張</button>
-    </div>
-    <p class="hint" id="wallLog"></p>
-    <div class="wall-set">
-      <span class="set-label" id="wallReserveLabel">最後留幾張不摸</span>
-      <span class="stepper small" aria-labelledby="wallReserveLabel"><button type="button" id="wallReserveDown" aria-label="少留兩張">−</button><output id="wallReserve">16</output><button type="button" id="wallReserveUp" aria-label="多留兩張">+</button></span>
-    </div>
-    <button type="button" class="btn" id="wallReset">重新配牌（這把重算）</button>
-    <p class="hint">配牌每人 16 張、莊家 17 張，共 65 張。每摸一張（含補花、槓）按一下；記入下一把時會自動重算。誰按都一樣，同一桌的手機會同步。</p>
   </div>
 </dialog>
 

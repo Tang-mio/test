@@ -13,127 +13,50 @@ function tiles(str) {
   });
   return out;
 }
-const one = s => tiles(s)[0];
-const base = { method: 'fangQiang', roundWind: 0, seatWind: 1, flowers: [] };
-const ids = r => Object.keys(r.picks).sort();
+const names = r => r.waits.map(w => H.tileName(w.tile));
 
-test('還不夠 16 張、還沒點胡牌、胡不了，都會說原因', () => {
-  assert.deepEqual(H.analyze({ ...base, concealed: tiles('123m') }), { ok: false, reason: 'short', need: 13 });
-  assert.equal(H.analyze({ ...base, concealed: tiles('123m 456m 789m 123p 99s 23s') }).reason, 'win');
-  const bad = H.analyze({ ...base, concealed: tiles('123m 456m 789m 123p 99s 23s'), win: one('6s') });
-  assert.equal(bad.reason, 'notWin');
+test('聽兩面：23 條聽 1、4 條', () => {
+  const r = H.check(tiles('123m 456m 789m 234p 99s 23s'));
+  assert.equal(r.kind, 'waits');
+  assert.deepEqual(names(r), ['1條', '4條']);
+  assert.deepEqual(r.waits.map(w => w.left), [4, 4]);
 });
 
-test('平胡：全是順子、沒字沒花、聽兩面、胡別人打的', () => {
-  // 23s 聽 1s、4s，胡 4s
-  const hand = { ...base, concealed: tiles('123m 456m 789m 234p 99s 23s'), win: one('4s') };
-  const r = H.analyze(hand);
-  assert.equal(r.ok, true);
-  assert.equal(r.shape, 'sides');
-  assert.deepEqual(ids(r), ['menQing', 'pingHu']);
-  assert.equal(r.tai, 1 + 2);
-  // 自摸就不算平胡：門清自摸 3 台
-  const z = H.analyze({ ...hand, method: 'ziMo' });
-  assert.deepEqual(ids(z), ['menQing']);
-  assert.equal(z.tai, 3);
+test('中洞、邊張、單吊都只聽一張', () => {
+  assert.deepEqual(names(H.check(tiles('123m 456m 789m 234p 99s 13s'))), ['2條']);
+  assert.deepEqual(names(H.check(tiles('123m 456m 789m 234p 99s 12s'))), ['3條']);
+  assert.deepEqual(names(H.check(tiles('5m'))), ['5萬']);
+  assert.deepEqual(names(H.check(tiles('123m 456m 789m 234p 567p E'))), ['東']);
 });
 
-test('獨聽：中洞、邊張、單吊只聽一張', () => {
-  const mid = H.analyze({ ...base, concealed: tiles('123m 456m 789m 234p 99s 13s'), win: one('2s') });
-  assert.equal(mid.shape, 'middle');
-  assert.deepEqual(ids(mid), ['duTing', 'menQing']);
-  const edge = H.analyze({ ...base, concealed: tiles('123m 456m 789m 234p 99s 12s'), win: one('3s') });
-  assert.equal(edge.shape, 'edge');
-  assert.equal(edge.picks.duTing, 1);
-  // 1112s 聽 2s、3s：不是獨聽
-  const two = H.analyze({ ...base, concealed: tiles('123m 456m 789m 234p 1112s'), win: one('2s') });
-  assert.deepEqual(H.waitsOf({ concealed: tiles('123m 456m 789m 234p 1112s'), melds: [] }).map(H.tileName), ['2條', '3條']);
-  assert.equal(two.picks.duTing, undefined);
+test('對碰、一張多種聽法', () => {
+  assert.deepEqual(names(H.check(tiles('EE SS'))), ['東', '南']);
+  assert.deepEqual(names(H.check(tiles('123m 456m 789m 234p 1112s'))), ['2條', '3條']);
+  // 九蓮寶燈的形狀：一到九萬都聽
+  assert.deepEqual(names(H.check(tiles('1112345678999m 123p'))), ['1萬', '2萬', '3萬', '4萬', '5萬', '6萬', '7萬', '8萬', '9萬']);
 });
 
-test('碰碰胡、暗刻：自摸的刻子算暗刻，放槍胡成的刻子不算', () => {
-  const concealed = tiles('111m 999p EE 77s');
-  const melds = [{ type: 'pon', tile: one('3m') }, { type: 'pon', tile: one('8p') }];
-  const zi = H.analyze({ ...base, method: 'ziMo', concealed, melds, win: one('7s') });
-  assert.equal(zi.picks.pengPeng, 1);
-  assert.equal(zi.picks.sanAn, 1); // 111m 999p 777s 三個暗刻
-  const fang = H.analyze({ ...base, concealed, melds, win: one('7s') });
-  assert.equal(fang.picks.pengPeng, 1);
-  assert.equal(fang.picks.sanAn, undefined); // 777s 是胡別人的，只剩兩個暗刻
+test('還剩幾張：手上已經有的要扣掉；四張都在手上就是空聽', () => {
+  const some = H.check(tiles('123m 456m 789m 234p 99s 44s'));
+  assert.deepEqual(some.waits.map(w => [H.tileName(w.tile), w.left]), [['4條', 2], ['9條', 2]]);
+  assert.equal(some.live, 4);
+  const dead = H.check(tiles('2222m 345p'));
+  assert.deepEqual(dead.waits, [{ tile: 1, left: 0 }]);
+  assert.equal(dead.live, 0);
 });
 
-test('暗槓算暗刻、不影響門清；明槓、碰就不是門清', () => {
-  const r = H.analyze({ ...base, concealed: tiles('123m 456m 789m 55p 67p'), melds: [{ type: 'ankong', tile: one('9s') }], win: one('8p') });
-  assert.equal(r.picks.menQing, 1);
-  const k = H.analyze({ ...base, concealed: tiles('123m 456m 789m 55p 67p'), melds: [{ type: 'kong', tile: one('9s') }], win: one('8p') });
-  assert.equal(k.picks.menQing, undefined);
+test('還沒聽牌、張數不對、多一張、超過四張', () => {
+  assert.equal(H.check([]).kind, 'empty');
+  assert.equal(H.check(tiles('19m 19p 19s ESWN')).kind, 'none');
+  assert.deepEqual(H.check(tiles('123m 456m 789m 234p 99s 2s')), { kind: 'need', need: 1 });
+  assert.equal(H.check(tiles('123m 456m 789m 234p 99s 234s')).kind, 'win');
+  assert.equal(H.check(tiles('123m 456m 789m 234p 99s 235s')).kind, 'extra');
+  assert.deepEqual(H.check(tiles('11111m 23m')), { kind: 'over', tile: 0 });
 });
 
-test('一色：清一色、混一色、字一色', () => {
-  const q = H.analyze({ ...base, concealed: tiles('123m 456m 789m 111m 345m 2m'), win: one('2m') });
-  assert.equal(q.picks.qingYiSe, 1);
-  const h = H.analyze({ ...base, concealed: tiles('123m 456m 789m EEE 345m 2m'), win: one('2m') });
-  assert.equal(h.picks.hunYiSe, 1);
-  const z = H.analyze({ ...base, concealed: tiles('EEE SSS WWW CCC FF P'), win: one('P') });
-  assert.equal(z.ok, false); // 16 張要 5 組
-  const z2 = H.analyze({ ...base, concealed: tiles('EEE SSS WWW CCC FFF P'), win: one('P') });
-  assert.equal(z2.picks.ziYiSe, 1);
-  assert.equal(z2.picks.pengPeng, 1);
-});
-
-test('中發白、東南西北刻子；小三元、大三元、小四喜、大四喜', () => {
-  const r = H.analyze({ ...base, roundWind: 0, seatWind: 1, concealed: tiles('123m 456m CCC SSS 789m 2m'), win: one('2m') });
-  assert.equal(r.picks.zhong, 1);
-  assert.equal(r.picks.fengS, 1);
-  assert.equal(r.items.some(i => i.name === '南（門風）' && i.tai === 1), true);
-  const xiao2 = H.analyze({ ...base, concealed: tiles('123m 456m 789m CCC FFF P'), win: one('P') });
-  assert.equal(xiao2.picks.xiaoSanYuan, 1);
-  assert.equal(xiao2.picks.zhong, undefined);
-  const da = H.analyze({ ...base, concealed: tiles('123m 456m CCC FFF PPP 9m'), win: one('9m') });
-  assert.equal(da.picks.daSanYuan, 1);
-  const siXi = H.analyze({ ...base, concealed: tiles('EEE SSS WWW NNN 123m 9m'), win: one('9m') });
-  assert.equal(siXi.picks.daSiXi, 1);
-  assert.equal(siXi.picks.fengE, undefined);
-});
-
-test('全求、半求：五組都亮出來，單吊最後一張', () => {
-  const melds = [['chi', '1m'], ['chi', '4m'], ['pon', '9p'], ['chi', '2s'], ['pon', 'C']].map(([type, t]) => ({ type, tile: one(t) }));
-  const quan = H.analyze({ ...base, concealed: tiles('5s'), melds, win: one('5s') });
-  assert.equal(quan.picks.quanQiu, 1);
-  const ban = H.analyze({ ...base, method: 'ziMo', concealed: tiles('5s'), melds, win: one('5s') });
-  assert.equal(ban.picks.banQiu, 1);
-  assert.equal(ban.picks.menQing, undefined);
-});
-
-test('花牌：正花看門風，一整組是花槓，八張是八仙過海', () => {
-  const hand = { ...base, seatWind: 1, concealed: tiles('123m 456m 789m 234p 99s 23s'), win: one('4s') };
-  const r = H.analyze({ ...hand, flowers: [1, 5, 0] }); // 夏、蘭是南的正花
-  assert.equal(r.picks.hua, 2);
-  assert.equal(r.picks.pingHu, undefined); // 有花不算平胡
-  assert.equal(H.analyze({ ...hand, flowers: [0, 1, 2, 3] }).picks.huaGang, 1);
-  const all = H.analyze({ ...hand, flowers: [0, 1, 2, 3, 4, 5, 6, 7] });
-  assert.equal(all.picks.baXian, 1);
-  assert.equal(all.picks.hua, undefined);
-  // 不玩花牌時花牌不算
-  assert.equal(H.analyze({ ...hand, flowers: [1, 5] }, { flowers: false }).picks.hua, undefined);
-});
-
-test('看牌看不出來的（槓上開花、海底撈月…）照勾的算，也照胡法過濾', () => {
-  const hand = { ...base, method: 'ziMo', concealed: tiles('123m 456m 789m 234p 99s 23s'), win: one('4s'), extras: { gangShang: 1, heDi: 1 } };
-  const r = H.analyze(hand);
-  assert.equal(r.picks.gangShang, 1);
-  assert.equal(r.picks.heDi, undefined);
-});
-
-test('同一副牌有好幾種拆法時取台數最多的', () => {
-  // 111222333m：三個暗刻（自摸）比三組順子台數多
-  const r = H.analyze({ ...base, method: 'ziMo', concealed: tiles('111m 222m 333m 456p 789p 5s'), win: one('5s') });
-  assert.equal(r.picks.sanAn, 1);
-  assert.equal(H.setText({ type: 'seq', tile: one('1m') }), '123萬');
-  assert.equal(H.setText({ type: 'pair', tile: one('E') }), '東東');
-});
-
-test('同一張牌超過 4 張會擋下來', () => {
-  const r = H.analyze({ ...base, concealed: tiles('1111m 123m 456m 789m 99s 2m'), win: one('1m') });
-  assert.equal(r.reason, 'over');
+test('胡了沒：一對眼加其餘全是順子刻子', () => {
+  assert.equal(H.isWin(tiles('111m 222m 333m 456p 789p 55s')), true);
+  assert.equal(H.isWin(tiles('EEE SSS WWW CCC FFF PP')), true);
+  assert.equal(H.isWin(tiles('123m 456m 789m 234p 99s 23s')), false);
+  assert.equal(H.tileName(31), '中');
 });

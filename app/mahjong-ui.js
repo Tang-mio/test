@@ -500,7 +500,6 @@
       if (nm) nm.textContent = p.name + (n > 1 ? ' ×' + n : '');
     });
     $('#mjExtra').textContent = h.extra > 0 ? '+' + h.extra : h.extra;
-    $('#mjCalcOpen').disabled = !editable || !ready3;
     $('#mjExtraDown').disabled = !editable || !ready3;
     $('#mjExtraUp').disabled = !editable || !ready3;
     $('#mjTaiList').textContent = ready3 && t.items.length
@@ -609,17 +608,14 @@
 
   function change() { T.changed(PATH); }
 
-  function resetHand() {
-    mj().hand = T.emptyHand();
-    if (T.mjCalc) T.mjCalc.reset();
-  }
+  function resetHand() { mj().hand = T.emptyHand(); }
 
   // 這把打完：換莊或連莊，莊家輪一輪就換圈，北風圈打完進下一將並重新抓位；回傳要顯示的訊息
   function finishHand(m, winner) {
     var p = MJ.advance(m, winner);
     ['jiang', 'wind', 'dealer', 'streak', 'hands'].forEach(function (k) { m[k] = p[k]; });
     resetHand();
-    if (T.mjTools) T.mjTools.newHand(); // 下一把重新配牌
+    if (T.mjTools) T.mjTools.newHand(); // 下一把重擲骰子
     if (p.newJiang) {
       m.seatsAt = 0;
       seatingOpen = false;
@@ -762,20 +758,6 @@
       if (!b || b.disabled || !T.canEdit()) return;
       hand().picks = MJ.togglePick(hand().picks, b.getAttribute('data-pat'), hand().method, settings());
       change();
-    });
-    // 牌型計算器：照這把的胡法、圈風、門風算，算好可以直接套用
-    $('#mjCalcOpen').addEventListener('click', function () {
-      var h = hand();
-      if (!T.canEdit() || h.winner == null || h.winner < 0 || !h.method) return;
-      var ctx = windCtx();
-      T.mjCalc.open({
-        fromHand: true, who: seatName(h.winner), method: h.method, roundWind: ctx.roundWind, seatWind: ctx.seatWind,
-        onApply: function (r) {
-          hand().picks = r.picks;
-          change();
-          T.toast('已套用牌型：' + r.tai + ' 台');
-        }
-      });
     });
     $('#mjExtraDown').addEventListener('click', function () { if (T.canEdit()) { hand().extra -= 1; change(); } });
     $('#mjExtraUp').addEventListener('click', function () { if (T.canEdit()) { hand().extra += 1; change(); } });
