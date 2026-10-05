@@ -146,6 +146,9 @@
 
   var sample = null;  // 這個畫面能用 Claude 看照片時才有
   var photoCtl = null; // 辨識中可以停止
+  // 能不能拍照：checking 確認中、ready 可以、noclaude 不是在 claude.ai 打開、
+  // denied 看的人沒允許、unavailable 這裡不能用 Claude、noimages 這裡不能傳照片
+  var photoState = 'checking';
   var HONOR_CODE = { E: 27, S: 28, W: 29, N: 30, C: 31, F: 32, P: 33 };
 
   function photoPrompt() {
@@ -176,9 +179,43 @@
     $('#mcPhotoStop').hidden = !busy;
   }
 
-  function hidePhoto() {
+  var PHOTO_WHY = {
+    checking: '還在確認這個畫面能不能用拍照辨識，等幾秒再按一次。',
+    noclaude: '要在 claude.ai 打開這個頁面（登入 Claude）才能拍照辨識；直接開檔案不行。現在請用下面的鍵盤點牌。',
+    denied: '你之前沒有允許這個頁面使用 Claude。按「開啟權限」把 Claude 打開，再按一次拍照。',
+    unavailable: '這個畫面不能使用 Claude：請確認已經登入 claude.ai；用手機 App 打開的話，試試用手機瀏覽器打開同一個連結。',
+    noimages: '這個畫面不能把照片傳給 Claude（可能是 App 版本比較舊）。請改用手機瀏覽器打開同一個連結，或更新 App。'
+  };
+
+  // 不能用時說明原因；沒允許的話給一個開權限的按鈕
+  function explainPhoto() {
+    photoStatus(PHOTO_WHY[photoState] || PHOTO_WHY.unavailable, photoState === 'checking' ? '' : 'bad');
+    $('#mcPhotoPerm').hidden = photoState !== 'denied';
+  }
+
+  function hidePhoto(state) {
     sample = null;
-    $('#mcPhotoRow').hidden = true;
+    photoState = state || 'unavailable';
+    explainPhoto();
+  }
+
+  function checkPhoto() {
+    var c = window.claude;
+    if (!c || typeof c.use !== 'function') { photoState = 'noclaude'; return; }
+    c.use('sample').then(function (s) {
+      if (!s) {
+        // 看是沒允許還是這裡根本不能用
+        return c.use('permissions').then(function (perms) {
+          return perms ? perms.state('sample') : 'unavailable';
+        }).then(function (st) { photoState = st === 'denied' ? 'denied' : 'unavailable'; }, function () { photoState = 'unavailable'; });
+      }
+      return s.limits().then(function (lim) {
+        if (!lim || !lim.images) { photoState = 'noimages'; return; }
+        sample = s;
+        photoState = 'ready';
+        if (lim.images.mediaTypes && lim.images.mediaTypes.length) $('#mcPhotoInput').accept = lim.images.mediaTypes.join(',');
+      }, function () { photoState = 'noimages'; });
+    }).catch(function () { photoState = 'unavailable'; });
   }
 
   function useTiles(res) {
@@ -215,8 +252,7 @@
       var code = e && e.code;
       if (code === 'cancelled') photoStatus('已經停止。');
       else if (['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed', 'images_unavailable'].indexOf(code) !== -1) {
-        hidePhoto();
-        T.toast('這裡沒辦法用拍照辨識，請用鍵盤點牌');
+        hidePhoto(code === 'not_granted' ? 'denied' : code === 'images_unavailable' ? 'noimages' : 'unavailable');
       } else if (code === 'rate_limited') photoStatus('用得太頻繁了，等一下再試。', 'bad');
       else if (code === 'image_rejected') photoStatus('這張照片不能用，換一張試試（JPG、PNG）。', 'bad');
       else if (code === 'session_expired') photoStatus('要重新登入 Claude 才能用。', 'bad');
@@ -231,20 +267,33 @@
     });
   }
 
-  // 在 claude.ai 打開、而且能傳照片時才出現拍照按鈕；直接開檔案時沒有
-  if (window.claude && typeof window.claude.use === 'function') {
-    window.claude.use('sample').then(function (s) {
-      if (!s) return null;
-      return s.limits().then(function (lim) {
-        if (!lim || !lim.images) return;
-        sample = s;
-        if (lim.images.mediaTypes && lim.images.mediaTypes.length) $('#mcPhotoInput').accept = lim.images.mediaTypes.join(',');
-        $('#mcPhotoRow').hidden = false;
-      });
-    }).catch(function () { /* 不能用就不顯示 */ });
-  }
+  // 一開頁面就先確認能不能用，按下去時才能馬上打開相機（不然手機會擋）
+  checkPhoto();
 
-  $('#mcPhoto').addEventListener('click', function () { if (sample && !photoCtl) $('#mcPhotoInput').click(); });
+  $('#mcPhoto').addEventListener('click', function () {
+    if (photoCtl) return;
+    if (photoState === 'ready' && sample) $('#mcPhotoInput').click();
+    else explainPhoto();
+  });
+  $('#mcPhotoPerm').addEventListener('click', function () {
+    var c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    c.use('permissions').then(function (perms) {
+      if (!perms) throw new Error('none');
+      return perms.manage();
+    }).then(function () {
+      photoState = 'checking';
+      $('#mcPhotoPerm').hidden = true;
+      photoStatus('重新確認中…');
+      checkPhoto();
+      setTimeout(function () {
+        if (photoState === 'ready') photoStatus('可以了，按「拍照辨識手牌」。');
+        else photoStatus('權限改好後，請重新整理這個頁面，再按一次拍照。', 'bad');
+      }, 1500);
+    }).catch(function () {
+      photoStatus('打不開權限設定。請從這個頁面右上角的選單找「權限」，把 Claude 打開。', 'bad');
+    });
+  });
   $('#mcPhotoStop').addEventListener('click', function () { if (photoCtl) photoCtl.abort(); });
   $('#mcPhotoInput').addEventListener('change', function (e) {
     var file = e.target.files && e.target.files[0];

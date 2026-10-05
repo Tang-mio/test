@@ -1528,9 +1528,10 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
       <button type="button" data-mode="13" aria-pressed="false">13 張<small>含七對、十三么</small></button>
     </div>
     <p class="mc-tip">點滿手上的牌（16 張；吃、碰的牌也一起點，槓只點 3 張）才會算胡什麼；多摸一張就給聽牌建議。點上面的牌可以拿掉。</p>
-    <div class="mc-photo" id="mcPhotoRow" hidden>
+    <div class="mc-photo" id="mcPhotoRow">
       <button type="button" class="btn mc-photo-btn" id="mcPhoto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>拍照辨識手牌</button>
       <button type="button" class="btn" id="mcPhotoStop" hidden>停止</button>
+      <button type="button" class="btn" id="mcPhotoPerm" hidden>開啟權限</button>
       <input type="file" id="mcPhotoInput" accept="image/jpeg,image/png,image/webp" hidden>
       <p class="mc-photo-status" id="mcPhotoStatus" aria-live="polite">拍手上的牌（排成一排、正面朝上），會自動填進來，再自己核對。</p>
     </div>
