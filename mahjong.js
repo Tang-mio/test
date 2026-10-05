@@ -80,6 +80,7 @@
     ziMoTai: 1,             // 自摸
     menQingZiMoTai: 3,      // 門清加自摸合計
     menFengBySeat: false,   // 門風照座位（坐東就是東風）；預設跟著莊家（莊家算東）
+    reverseDraw: false,     // 逆抓（從牌牆左邊數、往逆時針抓）；預設順抓
     tai: {},                // 改過的台數 { 台型 id: 台數 }
     off: {},                // 不用的台型 { 台型 id: true }
     on: {},                 // 打開的預設不用台型 { 台型 id: true }
@@ -132,6 +133,7 @@
       ziMoTai: int(s.ziMoTai, d.ziMoTai, 0, 99),
       menQingZiMoTai: int(s.menQingZiMoTai, d.menQingZiMoTai, 0, 99),
       menFengBySeat: !!s.menFengBySeat,
+      reverseDraw: !!s.reverseDraw,
       tai: tai,
       off: off,
       on: on,

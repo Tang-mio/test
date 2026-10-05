@@ -3,7 +3,8 @@
  *
  * 一副牌有花 144 張、沒花 136 張；四面牌牆各 18 墩（沒花 17 墩），一墩兩張。
  * 莊家擲三顆骰子，從莊家自己數起（逆時針：莊家、下家、對家、上家）數到點數那一家，
- * 從他面前牌牆的右邊數點數那麼多墩，這幾墩是牌尾（補花、槓從這裡拿），從下一墩開始抓。
+ * 從他面前的牌牆數點數那麼多墩，這幾墩是牌尾（補花、槓從這裡拿），從下一墩開始抓。
+ * 順抓：從那一家看的右邊數，往順時針方向抓；逆抓：從左邊數，往逆時針方向抓。
  * 瀏覽器載入後是 window.MahjongWall，Node 用 require('./mahjong-wall.js')。
  */
 (function (root, factory) {
@@ -19,14 +20,17 @@
 
   /*
    * 骰子點數 → 開門的位置。owner、startOwner 都是相對莊家：0 莊家、1 下家、2 對家、3 上家。
-   * tail：牌尾有幾墩（從 owner 牌牆右邊數）；點數比一面牆多時，數完這面再接著數他上家的牌牆，
-   * 這時 startOwner 是 owner 的上家，startStack 是那面牆從右邊數第幾墩。
+   * reverse 是逆抓。from 是從牌牆哪一邊數（'right' 順抓、'left' 逆抓，都是從那一家看）。
+   * tail：牌尾有幾墩；點數比一面牆多時，數完這面再接著數下一面（順抓是他上家的、逆抓是他下家的），
+   * 這時 startOwner 是那一家，startStack 是那面牆從同一邊數第幾墩。
    */
-  function breakPoint(sum, flowers) {
+  function breakPoint(sum, flowers, reverse) {
     var per = stacksPerWall(flowers);
     var owner = (sum - 1) % 4;
-    if (sum < per) return { sum: sum, per: per, owner: owner, tail: sum, startOwner: owner, startStack: sum + 1 };
-    return { sum: sum, per: per, owner: owner, tail: sum, startOwner: (owner + 3) % 4, startStack: sum - per + 1 };
+    var from = reverse ? 'left' : 'right';
+    if (sum < per) return { sum: sum, per: per, owner: owner, from: from, tail: sum, startOwner: owner, startStack: sum + 1 };
+    var next = reverse ? (owner + 1) % 4 : (owner + 3) % 4;
+    return { sum: sum, per: per, owner: owner, from: from, tail: sum, startOwner: next, startStack: sum - per + 1 };
   }
 
   function rollDie(random) { return 1 + Math.floor((random || Math.random)() * 6); }

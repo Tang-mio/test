@@ -369,6 +369,10 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .tool-sheet { max-height: 92vh; }
 .tool-body { padding: 12px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; }
 .dice-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.draw-dir { display: grid; gap: 6px; }
+.draw-dir .method button { height: auto; min-height: 48px; padding: 5px 8px; display: grid; gap: 0; justify-items: center; line-height: 1.3; }
+.draw-dir .method button small { font-size: 11px; font-weight: 500; color: var(--muted); }
+.draw-dir .method button[aria-pressed="true"] small { color: var(--accent); }
 .dice { display: flex; gap: 8px; }
 .die {
   width: 46px; height: 46px; padding: 6px; border-radius: 10px; border: 1px solid var(--line); background: #FBF8EF;
@@ -396,6 +400,11 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .wall-map .wl.at-top { left: 26px; right: 26px; top: 10px; height: 12px; flex-direction: row; }
 .wall-map .wl.at-right { top: 26px; bottom: 26px; right: 10px; width: 12px; flex-direction: column; }
 .wall-map .wl.at-left { top: 26px; bottom: 26px; left: 10px; width: 12px; flex-direction: column-reverse; }
+/* 逆抓：每面牆從那一家看的左邊數起 */
+.wall-map.rev .wl.at-bottom { flex-direction: row; }
+.wall-map.rev .wl.at-top { flex-direction: row-reverse; }
+.wall-map.rev .wl.at-right { flex-direction: column-reverse; }
+.wall-map.rev .wl.at-left { flex-direction: column; }
 .wall-map .st { flex: 1; border-radius: 2px; background: var(--tile-face); opacity: .55; }
 .wall-map .st.tail { background: var(--warn); opacity: 1; }
 .wall-map .st.start { background: #C62839; opacity: 1; box-shadow: 0 0 0 2px #fff; }
@@ -1158,6 +1167,7 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
           <h2>開門與牌牆</h2>
           <ul>
             <li><b>擲骰子開門</b>：莊家擲三顆骰子，從莊家數點數（莊家算 1，往下家數），數到那一家面前的牌牆；從他那邊看的右邊數點數那麼多墩當牌尾，從下一墩開始抓。首頁和麻將頁的「擲骰子」可以隨機擲，也可以自己輸入點數，會直接告訴你從哪一墩開始。</li>
+            <li><b>順抓、逆抓</b>：順抓是從那一家看的右邊數墩、往順時針方向抓；逆抓是從左邊數、往逆時針方向抓。點數比一面牆多時，順抓接著數他上家的牌牆，逆抓接著數他下家的。在「擲骰子」上方選，同一桌共用。</li>
             <li><b>配牌</b>：莊家先抓 2 墩（4 張），下家、對家、上家輪流，抓 4 輪每人 16 張，莊家再跳牌多拿 1 張，共 65 張。</li>
           </ul>
         </section>
@@ -1483,6 +1493,13 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
     <button type="button" class="btn primary" data-close>關閉</button>
   </div>
   <div class="tool-body">
+    <div class="draw-dir">
+      <span class="set-label" id="drawDirLabel">抓牌方向（同一桌共用）</span>
+      <div class="method" id="drawDir" role="group" aria-labelledby="drawDirLabel">
+        <button type="button" data-dir="cw" aria-pressed="true">順抓<small>右邊數，往順時針抓</small></button>
+        <button type="button" data-dir="ccw" aria-pressed="false">逆抓<small>左邊數，往逆時針抓</small></button>
+      </div>
+    </div>
     <div class="dice-row">
       <div class="dice" id="diceFaces"></div>
       <button type="button" class="btn primary dice-roll" id="diceRoll">擲骰子</button>
