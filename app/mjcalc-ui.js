@@ -30,6 +30,17 @@
     }).join('') + '</div>';
   }
 
+  // 聽牌建議：一句話說完，牌直接畫在句子裡
+  function advice(html, action) {
+    return '<div class="mc-advice"><span class="mc-advice-lb">聽牌建議</span><p>' + html + '</p>' + (action || '') + '</div>';
+  }
+  function inlineTiles(list, max) {
+    var shown = list.slice(0, max || list.length);
+    return '<span class="mc-inline">' + shown.map(function (w) { return tileHtml(w.tile); }).join('') + '</span>' +
+      (list.length > shown.length ? '等 ' + list.length + ' 種' : '');
+  }
+  function special(r) { return r.special ? '（' + r.special + '）' : ''; }
+
   function renderMode() {
     $$('#mcMode [data-mode]').forEach(function (b) { b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-mode')) === mode)); });
   }
@@ -86,24 +97,29 @@
       return;
     }
     if (r.kind === 'waits') {
-      box.innerHTML = '<div class="mc-total"><b>聽牌！胡 ' + r.waits.length + ' 種</b><span class="sub">' +
-        (r.special ? r.special + '・' : '') + (r.live ? '還有 ' + r.live + ' 張可以胡' : '要的牌都在你手上了，胡不到（空聽）') + '</span></div>' +
-        tileList(r.waits, true);
+      box.innerHTML = advice(r.live
+        ? '此牌型尚未胡牌，已經聽牌：聽 ' + inlineTiles(r.waits) + '（共 <b>' + r.live + '</b> 張）' + special(r) + '。'
+        : '此牌型尚未胡牌，聽 ' + inlineTiles(r.waits) + '，但要的牌都在你手上了（空聽），胡不到。') +
+        '<p class="mc-sub">每張還剩幾張：</p>' + tileList(r.waits, true);
       return;
     }
     if (r.kind === 'far') {
-      box.innerHTML = '<div class="mc-total"><b>還差 ' + r.shanten + ' 張聽牌</b><span class="sub">' + r.shanten + ' 向聽</span></div>' +
-        '<p class="mc-sub">摸到這些牌會更接近（' + r.accepts.length + ' 種、' + r.live + ' 張）：</p>' + tileList(r.accepts, true);
+      box.innerHTML = advice('此牌型尚未胡牌，還差 <b>' + r.shanten + '</b> 張聽牌；摸到 ' + inlineTiles(r.accepts, 8) +
+        '（共 <b>' + r.live + '</b> 張）會更接近。') +
+        '<p class="mc-sub">每張還剩幾張：</p>' + tileList(r.accepts, true);
       return;
     }
-    // 多一張還沒胡：打哪張
+    // 多一張還沒胡：建議捨棄哪張，打了聽什麼
     var opts = r.options;
     var top = opts[0];
-    var bestOf = function (o) { return o.shanten === top.shanten && o.live === top.live; };
-    box.innerHTML = '<div class="mc-total"><b>打哪張？</b><span class="sub">' +
-      (top.shanten === 0 ? '有 ' + opts.filter(function (o) { return o.shanten === 0; }).length + ' 種打法可以聽牌' : '最快還差 ' + top.shanten + ' 張聽牌') +
-      '・點一下就打掉</span></div>' +
-      '<div class="mc-opts">' + opts.slice(0, SHOW_OPTIONS).map(function (o) { return optionHtml(o, bestOf(o)); }).join('') + '</div>' +
+    var bests = opts.filter(function (o) { return o.shanten === top.shanten && o.live === top.live; });
+    var text = '此牌型尚未胡牌，建議捨棄 ' + inlineTiles([top]) + (top.shanten === 0
+      ? '，聽 ' + inlineTiles(top.tiles) + (top.live ? '（共 <b>' + top.live + '</b> 張）。' : '（要的牌都在你手上，空聽）。')
+      : '，還差 <b>' + top.shanten + '</b> 張聽牌；摸到 ' + inlineTiles(top.tiles, 8) + '（共 <b>' + top.live + '</b> 張）會更接近。');
+    if (bests.length > 1) text += '<br>捨棄 ' + inlineTiles(bests.slice(1)) + ' 也一樣好。';
+    box.innerHTML = advice(text, '<button type="button" class="btn primary mc-do" data-discard="' + top.tile + '">捨棄' + H.tileName(top.tile) + '</button>') +
+      '<p class="mc-sub">每一種打法（點一下就打掉）：</p>' +
+      '<div class="mc-opts">' + opts.slice(0, SHOW_OPTIONS).map(function (o) { return optionHtml(o, bests.indexOf(o) !== -1); }).join('') + '</div>' +
       (opts.length > SHOW_OPTIONS
         ? '<details class="mc-more"><summary>其他 ' + (opts.length - SHOW_OPTIONS) + ' 種打法</summary><div class="mc-opts">' +
           opts.slice(SHOW_OPTIONS).map(function (o) { return optionHtml(o, false); }).join('') + '</div></details>'
