@@ -474,6 +474,11 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .step h3 .n { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--surface); font-family: var(--font-num); font-size: 12px; }
 .step h3 .aside { margin-left: auto; font-size: var(--step--1); color: var(--muted); font-weight: 500; }
 .step h3 .aside b { font-family: var(--font-num); color: var(--ink); font-size: var(--step-1); }
+.mini-btn {
+  min-height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--accent); background: transparent;
+  color: var(--accent); font: inherit; font-size: var(--step--1); font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.mini-btn:disabled { opacity: .4; cursor: not-allowed; }
 .step.off { opacity: .45; }
 .wide-toggle {
   border: 1px dashed var(--line); background: transparent; border-radius: 10px; padding: 8px; font-size: var(--step--1); color: var(--muted);
@@ -1052,7 +1057,7 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
         <p class="hint hand-only" id="mjDealerHint"></p>
       </section>
       <section class="step hand-only" id="mjStep3" aria-labelledby="mjQ3">
-        <h3 id="mjQ3"><span class="n">2</span>幾台？<span class="aside">共 <b id="mjTaiSum">0</b> 台 <span class="cap-note" id="mjCapNote" hidden></span></span></h3>
+        <h3 id="mjQ3"><span class="n">2</span>幾台？<button type="button" class="mini-btn" id="mjTaiAuto">看牌自動勾</button><span class="aside">共 <b id="mjTaiSum">0</b> 台 <span class="cap-note" id="mjCapNote" hidden></span></span></h3>
         <div id="mjTai"></div>
         <div class="extra-row">
           <span>表上沒有的台數</span>
@@ -1218,6 +1223,7 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
         <section>
           <h2>胡牌計算機</h2>
           <p>點滿手上的 16 張牌（吃、碰的牌也一起點，槓只點 3 張），算出胡哪幾張、每張還剩幾張；還沒聽牌就告訴你還差幾張、摸哪些牌會更接近；多摸一張就給「聽牌建議」：建議捨棄哪張、打了聽什麼、共幾張，按一下就照建議打掉。預設 16 張（台灣麻將），也可以切成 13 張，另外算七對、十三么。在 claude.ai 打開時還能「拍照辨識手牌」：拍手上的牌自動填進來，再自己核對。首頁和麻將頁上方的「胡牌計算機」都能打開。</p>
+          <p><b>看牌自動勾</b>：算台時按「幾台？」旁邊的「看牌自動勾」，點胡牌的人全部 17 張，會自動勾碰碰胡、清一色、混一色、字一色、中發白、東南西北、大小三元、大小四喜；門清、獨聽、暗刻、自摸、花牌這些看牌看不出來，要自己點。</p>
         </section>
         <section>
           <h2>北部打法與南部打法</h2>
@@ -1528,7 +1534,7 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
       <button type="button" data-mode="16" aria-pressed="true">16 張<small>台灣麻將</small></button>
       <button type="button" data-mode="13" aria-pressed="false">13 張<small>含七對、十三么</small></button>
     </div>
-    <p class="mc-tip">點滿手上的牌（16 張；吃、碰的牌也一起點，槓只點 3 張）才會算胡什麼；多摸一張就給聽牌建議。點上面的牌可以拿掉。</p>
+    <p class="mc-tip" id="mcTip">點滿手上的牌（16 張；吃、碰的牌也一起點，槓只點 3 張）才會算胡什麼；多摸一張就給聽牌建議。點上面的牌可以拿掉。</p>
     <div class="mc-photo" id="mcPhotoRow">
       <button type="button" class="btn mc-photo-btn" id="mcPhoto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"></path><circle cx="12" cy="13" r="3.5"></circle></svg>拍照辨識手牌</button>
       <button type="button" class="btn" id="mcPhotoStop" hidden>停止</button>

@@ -502,6 +502,7 @@
     $('#mjExtra').textContent = h.extra > 0 ? '+' + h.extra : h.extra;
     $('#mjExtraDown').disabled = !editable || !ready3;
     $('#mjExtraUp').disabled = !editable || !ready3;
+    $('#mjTaiAuto').disabled = !editable || !ready3 || !T.mjCalc;
     $('#mjTaiList').textContent = ready3 && t.items.length
       ? t.items.map(function (it) { return it.name + ' ' + it.tai; }).join('・') + '（不含莊家台）'
       : '';
@@ -608,7 +609,10 @@
 
   function change() { T.changed(PATH); }
 
-  function resetHand() { mj().hand = T.emptyHand(); }
+  function resetHand() {
+    mj().hand = T.emptyHand();
+    if (T.mjCalc) T.mjCalc.resetTai(); // 看牌算台點的牌也清掉
+  }
 
   // 這把打完：換莊或連莊，莊家輪一輪就換圈，北風圈打完進下一將並重新抓位；回傳要顯示的訊息
   function finishHand(m, winner) {
@@ -758,6 +762,29 @@
       if (!b || b.disabled || !T.canEdit()) return;
       hand().picks = MJ.togglePick(hand().picks, b.getAttribute('data-pat'), hand().method, settings());
       change();
+    });
+    // 看牌自動勾：點胡牌的 17 張，碰碰胡、一色、中發白、東南西北自動勾
+    $('#mjTaiAuto').addEventListener('click', function () {
+      var h = hand();
+      if (!T.canEdit() || !T.mjCalc || h.winner == null || h.winner < 0 || !h.method) return;
+      var ctx = windCtx();
+      T.mjCalc.openTai({
+        who: seatName(h.winner), method: h.method, roundWind: ctx.roundWind, seatWind: ctx.seatWind,
+        onApply: function (auto) {
+          if (!T.canEdit()) return;
+          var cur = hand();
+          // 看牌看得出來的台型整個換掉，門清、獨聽、暗刻這些自己點的留著
+          var ids = window.MahjongHand.TILE_PATTERN_IDS;
+          var out = {};
+          Object.keys(cur.picks || {}).forEach(function (id) { if (ids.indexOf(id) === -1) out[id] = cur.picks[id]; });
+          Object.keys(auto).forEach(function (id) {
+            if (!out[id]) out = MJ.togglePick(out, id, cur.method, settings());
+          });
+          cur.picks = MJ.cleanPicks(out, cur.method, settings());
+          change();
+          T.toast('已自動勾台型，門清、獨聽、暗刻請自己點');
+        }
+      });
     });
     $('#mjExtraDown').addEventListener('click', function () { if (T.canEdit()) { hand().extra -= 1; change(); } });
     $('#mjExtraUp').addEventListener('click', function () { if (T.canEdit()) { hand().extra += 1; change(); } });

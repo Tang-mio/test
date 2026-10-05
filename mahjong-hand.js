@@ -6,6 +6,7 @@
  *   1、4、7、10、13、16 張 → 聽哪幾張；還沒聽就算還差幾張、摸哪些牌會更接近
  *   多一張（2、5、8…17 張）→ 胡了沒；沒胡就列出打哪張、打了聽什麼
  * mode 16 是台灣十六張（預設，五組加一對）；13 是十三張，另外算七對、十三么。
+ * tilePatterns：胡牌的 17 張看得出來的台型（碰碰胡、一色、中發白、東南西北、三元、四喜），給算台數用。
  * 「還差幾張」用向聽數：0 是聽牌，-1 是胡了，1 是再摸到一張有用的就聽。
  * 瀏覽器載入後是 window.MahjongHand，Node 用 require('./mahjong-hand.js')。
  */
@@ -214,6 +215,79 @@
 
   function sortTiles(tiles) { return tiles.slice().sort(function (a, b) { return a - b; }); }
 
+  /* ---------- 看牌就知道的台型（算台數用） ---------- */
+
+  // 看牌就能判斷的台型；門清、獨聽、暗刻、自摸、花牌這些看牌看不出來
+  var TILE_PATTERN_IDS = ['pengPeng', 'hunYiSe', 'qingYiSe', 'ziYiSe', 'zhong', 'fa', 'bai', 'xiaoSanYuan', 'daSanYuan',
+    'fengE', 'fengS', 'fengW', 'fengN', 'xiaoSiXi', 'daSiXi'];
+  var DRAGON_IDS = ['zhong', 'fa', 'bai'];
+  var WIND_IDS = ['fengE', 'fengS', 'fengW', 'fengN'];
+
+  // 胡牌的每一種拆法：一對眼加其餘全是順子（seq）或刻子（tri）
+  function winningSplits(tiles) {
+    var c = countsOf(tiles);
+    var found = [];
+    var acc = [];
+    function sets(i) {
+      while (i < 34 && !c[i]) i++;
+      if (i === 34) { found.push(acc.slice()); return; }
+      if (c[i] >= 3) {
+        c[i] -= 3; acc.push({ type: 'tri', tile: i });
+        sets(i);
+        acc.pop(); c[i] += 3;
+      }
+      if (i < 27 && rankOf(i) <= 7 && c[i + 1] && c[i + 2]) {
+        c[i]--; c[i + 1]--; c[i + 2]--; acc.push({ type: 'seq', tile: i });
+        sets(i);
+        acc.pop(); c[i]++; c[i + 1]++; c[i + 2]++;
+      }
+    }
+    var out = [];
+    for (var p = 0; p < 34; p++) {
+      if (c[p] < 2) continue;
+      c[p] -= 2;
+      found = [];
+      sets(0);
+      found.forEach(function (list) { out.push({ pair: p, sets: list }); });
+      c[p] += 2;
+    }
+    return out;
+  }
+
+  // 每一種拆法看得出來的台型 { picks, pair, sets }；picks 用 Mahjong 台型的 id，給 countTai 選台數最多的
+  function tilePatterns(tiles) {
+    return winningSplits(tiles).map(function (w) {
+      var picks = {};
+      var tris = w.sets.filter(function (x) { return x.type === 'tri'; });
+      if (tris.length === w.sets.length) picks.pengPeng = 1;
+      var all = w.sets.map(function (x) { return x.tile; }).concat([w.pair]);
+      var honors = all.some(isHonor);
+      var suits = {};
+      all.forEach(function (t) { if (!isHonor(t)) suits[suitOf(t)] = true; });
+      var n = Object.keys(suits).length;
+      if (!n) picks.ziYiSe = 1;
+      else if (n === 1) picks[honors ? 'hunYiSe' : 'qingYiSe'] = 1;
+      var dragons = tris.filter(function (x) { return x.tile >= 31; });
+      if (dragons.length === 3) picks.daSanYuan = 1;
+      else if (dragons.length === 2 && w.pair >= 31) picks.xiaoSanYuan = 1;
+      else dragons.forEach(function (x) { picks[DRAGON_IDS[x.tile - 31]] = 1; });
+      var winds = tris.filter(function (x) { return x.tile >= 27 && x.tile <= 30; });
+      var pairWind = w.pair >= 27 && w.pair <= 30;
+      if (winds.length === 4) picks.daSiXi = 1;
+      else if (winds.length === 3 && pairWind) picks.xiaoSiXi = 1;
+      else winds.forEach(function (x) { picks[WIND_IDS[x.tile - 27]] = 1; });
+      return { picks: picks, pair: w.pair, sets: w.sets };
+    });
+  }
+
+  // 一組牌寫成字，例如「123萬」「東東東」「眼 99條」
+  function setText(set) {
+    if (set.type === 'seq') return rankOf(set.tile) + '' + (rankOf(set.tile) + 1) + (rankOf(set.tile) + 2) + SUITS[suitOf(set.tile)];
+    var n = set.type === 'pair' ? 2 : 3;
+    if (isHonor(set.tile)) return new Array(n + 1).join(HONORS[set.tile - 27]);
+    return new Array(n + 1).join(String(rankOf(set.tile))) + SUITS[suitOf(set.tile)];
+  }
+
   return {
     SUITS: SUITS,
     HONORS: HONORS,
@@ -228,6 +302,10 @@
     accepts: accepts,
     discards: discards,
     check: check,
-    sortTiles: sortTiles
+    sortTiles: sortTiles,
+    TILE_PATTERN_IDS: TILE_PATTERN_IDS,
+    winningSplits: winningSplits,
+    tilePatterns: tilePatterns,
+    setText: setText
   };
 });

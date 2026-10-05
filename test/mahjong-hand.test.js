@@ -129,3 +129,22 @@ test('隨機手牌：向聽數算出的胡牌、聽牌和慢慢拆的結果一�
     assert.equal(H.shanten(hand, 16).s === 0, slow.length > 0);
   }
 });
+
+test('看牌就知道的台型：碰碰胡、一色、字牌刻子、三元、四喜', () => {
+  const pick = s => H.tilePatterns(tiles(s)).map(o => Object.keys(o.picks).sort().join(','));
+  // 字一色、碰碰胡、小三元（中發刻＋白眼），東南西刻子
+  assert.deepEqual(pick('EEE SSS WWW CCC FFF PP'), ['fengE,fengS,fengW,pengPeng,xiaoSanYuan,ziYiSe']);
+  // 清一色
+  assert.ok(pick('123m 456m 789m 111m 345m 22m').every(p => p.includes('qingYiSe')));
+  // 混一色＋南刻子
+  assert.ok(pick('123m 456m 789m SSS 345m 22m').every(p => p === 'fengS,hunYiSe'));
+  // 大四喜
+  assert.ok(pick('EEE SSS WWW NNN 123m 99m').every(p => p.includes('daSiXi') && !p.includes('fengE')));
+  // 111222333 萬可以拆成三刻或三順：兩種都列出來，給算台數挑多的
+  const opts = pick('111m 222m 333m 456p 789p 55s');
+  assert.equal(opts.length, 2);
+  // 沒胡就沒有拆法
+  assert.deepEqual(H.tilePatterns(tiles('123m 456m 789m 234p 99s 235s')), []);
+  assert.equal(H.setText({ type: 'seq', tile: 0 }), '123萬');
+  assert.equal(H.setText({ type: 'pair', tile: 27 }), '東東');
+});

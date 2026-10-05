@@ -1,4 +1,5 @@
-/* 胡牌計算機：點手上還沒亮出來的牌，算胡什麼牌、打哪張、還差幾張；16 張（台灣，預設）或 13 張 */
+/* 胡牌計算機：點手上還沒亮出來的牌，算胡什麼牌、打哪張、還差幾張；16 張（台灣，預設）或 13 張。
+ * 同一個畫面也給麻將算台數用（看牌算台）：點胡牌的 17 張，自動勾出看牌就知道的台型。 */
 (function () {
   'use strict';
   var T = window.TableApp;
@@ -9,8 +10,14 @@
 
   var HONOR_CLASS = { 31: ' t-zhong', 32: ' t-fa', 33: ' t-bai' };
   var SUIT_CLASS = ['m', 'p', 's'];
+  var MJ = window.Mahjong;
   var hand = [];
   var mode = 16;
+  var view = 'calc';                  // 'calc' 胡牌計算機、'tai' 算台數看牌
+  var store = { calc: [], tai: [] };  // 兩邊各自記得點過的牌
+  var taiOpts = {};                   // 看牌算台：{ who, method, roundWind, seatWind, onApply }
+  var taiBest = null;                 // 看牌算台算出來要勾的台型
+  function curMode() { return view === 'tai' ? 16 : mode; }
   try { if (localStorage.getItem(MODE_KEY) === '13') mode = 13; } catch (e) { /* 存不了就用預設 */ }
 
   function tileHtml(t) {
@@ -42,7 +49,12 @@
   function special(r) { return r.special ? '（' + r.special + '）' : ''; }
 
   function renderMode() {
+    $('#mcMode').hidden = view === 'tai';
     $$('#mcMode [data-mode]').forEach(function (b) { b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-mode')) === mode)); });
+    $('#mcTitle').textContent = view === 'tai' ? '看牌算台' : '胡牌計算機';
+    $('#mcTip').textContent = view === 'tai'
+      ? '照這把：' + taiOpts.who + (taiOpts.method === 'ziMo' ? ' 自摸' : ' 胡') + '。點胡牌的人全部 17 張（吃、碰的也點，槓只點 3 張），會自動勾出看牌就知道的台型。'
+      : '點滿手上的牌（16 張；吃、碰的牌也一起點，槓只點 3 張）才會算胡什麼；多摸一張就給聽牌建議。點上面的牌可以拿掉。';
   }
 
   function renderHand() {
@@ -51,11 +63,14 @@
           return '<button type="button" class="mc-tbtn" data-ctile="' + t + '" aria-label="拿掉 ' + H.tileName(t) + '">' + tileHtml(t) + '</button>';
         }).join('')
       : '<span class="empty">用下面的鍵盤點手上的牌</span>';
-    $('#mcHand').innerHTML = '<div class="mc-row">' + html + '</div><span class="mc-count">' + (hand.length > mode ? hand.length + ' 張（多摸 1 張）' : hand.length + ' / ' + mode + ' 張') + '</span>';
+    var m = curMode();
+    var target = view === 'tai' ? m + 1 : m;
+    $('#mcHand').innerHTML = '<div class="mc-row">' + html + '</div><span class="mc-count">' +
+      (hand.length > target ? hand.length + ' 張（多摸 1 張）' : hand.length + ' / ' + target + ' 張') + '</span>';
   }
 
   function renderKeys() {
-    var full = hand.length >= H.maxTiles(mode);
+    var full = hand.length >= H.maxTiles(curMode());
     var key = function (t) {
       var n = countOf(t);
       return '<button type="button" class="mc-key" data-t="' + t + '" aria-label="' + H.tileName(t) + (n ? '，手上有 ' + n + ' 張' : '') + '"' +
@@ -82,7 +97,43 @@
       tileList(o.tiles, false) + '</button>';
   }
 
+  // 看牌算台：17 張胡牌，挑台數最多的拆法，列出會自動勾的台型
+  function renderTai() {
+    var box = $('#mcResult');
+    var msg = function (text, bad) { box.innerHTML = '<p class="mc-msg' + (bad ? ' bad' : '') + '">' + esc(text) + '</p>'; };
+    taiBest = null;
+    if (hand.length > 17) return msg('最多 17 張，請拿掉 ' + (hand.length - 17) + ' 張。', true);
+    if (hand.length < 17) {
+      return msg(hand.length
+        ? '還差 ' + (17 - hand.length) + ' 張。點滿胡牌的 17 張，就會自動勾出看牌就知道的台型。'
+        : '點胡牌的人全部 17 張牌，會自動勾出碰碰胡、清一色、混一色、中發白、東南西北這些看牌就知道的台型。');
+    }
+    var c = H.check(hand, 16);
+    if (c.kind === 'over') return msg(H.tileName(c.tile) + '超過 4 張了，點上面的牌拿掉一張。', true);
+    var opts = H.tilePatterns(hand);
+    if (!opts.length) return msg('這副牌還沒胡（拆不成 5 組加 1 對眼），檢查一下有沒有點錯。', true);
+    var s = T.state.mahjong.settings;
+    var ctx = { roundWind: taiOpts.roundWind, seatWind: taiOpts.seatWind };
+    var best = null;
+    opts.forEach(function (o) {
+      var r = MJ.countTai(o.picks, 'fangQiang', 0, s, ctx); // 只算看牌的台，不含自摸
+      if (!best || r.tai > best.r.tai) best = { o: o, r: r };
+    });
+    // 只套用真的有算台的（不是圈風也不是門風的風牌刻子不勾）
+    taiBest = {};
+    best.r.items.forEach(function (it) { taiBest[it.id] = best.o.picks[it.id]; });
+    var split = best.o.sets.map(H.setText).concat(['眼 ' + H.setText({ type: 'pair', tile: best.o.pair })]).join('・');
+    box.innerHTML = '<div class="mc-advice"><span class="mc-advice-lb">看牌算台</span><p>' +
+      (best.r.items.length
+        ? '會自動勾：' + best.r.items.map(function (it) { return esc(it.name) + ' ' + it.tai; }).join('・') + '（共 <b>' + best.r.tai + '</b> 台）'
+        : '看牌沒有額外的台型（沒有碰碰胡、一色、算台的字牌刻子）。') + '</p>' +
+      '<p class="mc-sub">' + esc(split) + '</p>' +
+      '<button type="button" class="btn primary mc-do" data-apply>套用到這把</button></div>' +
+      '<p class="mc-sub">門清、獨聽、暗刻、自摸、花牌、槓上開花這些看牌看不出來，套用後回到算台畫面自己點。</p>';
+  }
+
   function renderResult() {
+    if (view === 'tai') return renderTai();
     var box = $('#mcResult');
     var msg = function (text, bad) { box.innerHTML = '<p class="mc-msg' + (bad ? ' bad' : '') + '">' + esc(text) + '</p>'; };
     var max = H.maxTiles(mode);
@@ -153,8 +204,11 @@
   var HONOR_CODE = { E: 27, S: 28, W: 29, N: 30, C: 31, F: 32, P: 33 };
 
   function photoPrompt() {
-    return 'This photo shows the tiles in one player\'s Mahjong hand (Taiwanese mahjong, about ' + mode + ' or ' + (mode + 1) +
-      ' tiles). List every tile face you can see, in order from left to right (then the next row, if any). ' +
+    var m = curMode();
+    return (view === 'tai'
+      ? 'This photo shows one player\'s complete winning Mahjong hand (Taiwanese mahjong, about 17 tiles, including any exposed melds laid out face up). '
+      : 'This photo shows the tiles in one player\'s Mahjong hand (Taiwanese mahjong, about ' + m + ' or ' + (m + 1) + ' tiles). ') +
+      'List every tile face you can see, in order from left to right (then the next row, if any). ' +
       'Codes: characters 萬 (a red 萬 under a Chinese numeral 一–九) = 1m-9m; dots/circles 筒 = 1p-9p (count the circles); ' +
       'bamboo 條/索 = 1s-9s (count the sticks; 1s is usually a bird); winds 東=E, 南=S, 西=W, 北=N; ' +
       'dragons 中 (red) = C, 發 (green) = F, 白 (blank, or an empty blue frame) = P. ' +
@@ -240,7 +294,7 @@
       counts[t] = (counts[t] || 0) + 1;
       if (counts[t] <= 4) tiles.push(t);
     });
-    var max = H.maxTiles(mode);
+    var max = H.maxTiles(curMode());
     var cut = Math.max(0, tiles.length - max);
     tiles = tiles.slice(0, max);
     if (!tiles.length) {
@@ -313,13 +367,22 @@
     if (file) recognize(file);
   });
 
+  function show(next) {
+    store[view] = hand;
+    view = next;
+    hand = store[next];
+    render();
+    var dlg = $('#mjCalc');
+    if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); }
+    else dlg.setAttribute('open', '');
+  }
+
   T.mjCalc = {
-    open: function () {
-      render();
-      var dlg = $('#mjCalc');
-      if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); }
-      else dlg.setAttribute('open', '');
-    }
+    open: function () { show('calc'); },
+    // 麻將算台數：o = { who, method, roundWind, seatWind, onApply(picks) }
+    openTai: function (o) { taiOpts = o || {}; show('tai'); },
+    // 記入下一把時清掉看牌算台點過的牌
+    resetTai: function () { store.tai = []; if (view === 'tai') hand = store.tai; }
   };
 
   $('#mcClose').addEventListener('click', close);
@@ -344,8 +407,12 @@
     hand.splice(hand.indexOf(Number(b.getAttribute('data-ctile'))), 1);
     render();
   });
-  // 打哪張：點一下就把那張打掉，接著看聽什麼
+  // 打哪張：點一下就把那張打掉，接著看聽什麼；看牌算台的「套用到這把」
   $('#mcResult').addEventListener('click', function (e) {
+    if (e.target.closest('[data-apply]')) {
+      if (taiBest && taiOpts.onApply) { taiOpts.onApply(taiBest); close(); }
+      return;
+    }
     var b = e.target.closest('[data-discard]');
     if (!b) return;
     var t = Number(b.getAttribute('data-discard'));
