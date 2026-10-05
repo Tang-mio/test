@@ -142,6 +142,116 @@
     else dlg.removeAttribute('open');
   }
 
+  /* ---------- 拍照辨識：用看的人自己的 Claude 看照片，把牌填進來 ---------- */
+
+  var sample = null;  // 這個畫面能用 Claude 看照片時才有
+  var photoCtl = null; // 辨識中可以停止
+  var HONOR_CODE = { E: 27, S: 28, W: 29, N: 30, C: 31, F: 32, P: 33 };
+
+  function photoPrompt() {
+    return 'This photo shows the tiles in one player\'s Mahjong hand (Taiwanese mahjong, about ' + mode + ' or ' + (mode + 1) +
+      ' tiles). List every tile face you can see, in order from left to right (then the next row, if any). ' +
+      'Codes: characters 萬 (a red 萬 under a Chinese numeral 一–九) = 1m-9m; dots/circles 筒 = 1p-9p (count the circles); ' +
+      'bamboo 條/索 = 1s-9s (count the sticks; 1s is usually a bird); winds 東=E, 南=S, 西=W, 北=N; ' +
+      'dragons 中 (red) = C, 發 (green) = F, 白 (blank, or an empty blue frame) = P. ' +
+      'Skip flower and season tiles (春夏秋冬梅蘭竹菊), face-down tiles, and anything that is not a tile face. ' +
+      'Reply with only JSON like {"tiles": ["1m","1m","5p","E","C"], "unsure": 0, "note": ""}: "unsure" is how many tiles you could not read with confidence, ' +
+      'and "note" is one short sentence in Traditional Chinese (Taiwan) only if the photo is unclear or cut off, otherwise "".';
+  }
+
+  function codeToTile(code) {
+    var c = String(code == null ? '' : code).trim();
+    var m = c.match(/^([1-9])\s*([mps])$/i);
+    if (m) return { m: 0, p: 9, s: 18 }[m[2].toLowerCase()] + Number(m[1]) - 1;
+    var h = HONOR_CODE[c.toUpperCase()];
+    return h == null ? null : h;
+  }
+
+  function photoStatus(text, kind) {
+    var el = $('#mcPhotoStatus');
+    el.textContent = text;
+    el.className = 'mc-photo-status' + (kind ? ' ' + kind : '');
+    var busy = kind === 'busy';
+    $('#mcPhoto').disabled = busy;
+    $('#mcPhotoStop').hidden = !busy;
+  }
+
+  function hidePhoto() {
+    sample = null;
+    $('#mcPhotoRow').hidden = true;
+  }
+
+  function useTiles(res) {
+    var list = res && Array.isArray(res.tiles) ? res.tiles : [];
+    var counts = {};
+    var tiles = [];
+    list.forEach(function (code) {
+      var t = codeToTile(code);
+      if (t == null) return;
+      counts[t] = (counts[t] || 0) + 1;
+      if (counts[t] <= 4) tiles.push(t);
+    });
+    var max = H.maxTiles(mode);
+    var cut = Math.max(0, tiles.length - max);
+    tiles = tiles.slice(0, max);
+    if (!tiles.length) {
+      photoStatus('沒認出麻將牌。再拍一次：牌排成一排、正面朝上、光線充足、拍近一點。', 'bad');
+      return;
+    }
+    hand = tiles;
+    render();
+    var unsure = Math.max(0, Math.round(Number(res.unsure) || 0));
+    var note = typeof res.note === 'string' ? res.note.trim().slice(0, 80) : '';
+    photoStatus('辨識出 ' + tiles.length + ' 張，已經填進來了' + (unsure ? '，其中 ' + unsure + ' 張不太確定' : '') +
+      (cut ? '（多的 ' + cut + ' 張沒放進來）' : '') + '。請對一下：錯的點上面的牌拿掉，少的用鍵盤補。' + (note ? note : ''));
+  }
+
+  function recognize(file) {
+    if (!sample || photoCtl) return;
+    var ctl = new AbortController();
+    photoCtl = ctl;
+    photoStatus('辨識中…通常要 10 到 30 秒，第一次會先問你要不要讓這個頁面使用 Claude。', 'busy');
+    sample.json(photoPrompt(), { images: file, signal: ctl.signal }).then(useTiles, function (e) {
+      var code = e && e.code;
+      if (code === 'cancelled') photoStatus('已經停止。');
+      else if (['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed', 'images_unavailable'].indexOf(code) !== -1) {
+        hidePhoto();
+        T.toast('這裡沒辦法用拍照辨識，請用鍵盤點牌');
+      } else if (code === 'rate_limited') photoStatus('用得太頻繁了，等一下再試。', 'bad');
+      else if (code === 'image_rejected') photoStatus('這張照片不能用，換一張試試（JPG、PNG）。', 'bad');
+      else if (code === 'session_expired') photoStatus('要重新登入 Claude 才能用。', 'bad');
+      else if (code === 'refused' || code === 'empty_completion' || code === 'invalid_json') {
+        photoStatus('沒認出來。再拍一次：牌排成一排、正面朝上、光線充足、拍近一點。', 'bad');
+      } else photoStatus('連線出了點問題，再試一次。', 'bad');
+    }).then(function () {
+      if (photoCtl === ctl) photoCtl = null;
+      if ($('#mcPhotoStatus').className.indexOf('busy') !== -1) photoStatus('');
+      $('#mcPhoto').disabled = false;
+      $('#mcPhotoStop').hidden = true;
+    });
+  }
+
+  // 在 claude.ai 打開、而且能傳照片時才出現拍照按鈕；直接開檔案時沒有
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('sample').then(function (s) {
+      if (!s) return null;
+      return s.limits().then(function (lim) {
+        if (!lim || !lim.images) return;
+        sample = s;
+        if (lim.images.mediaTypes && lim.images.mediaTypes.length) $('#mcPhotoInput').accept = lim.images.mediaTypes.join(',');
+        $('#mcPhotoRow').hidden = false;
+      });
+    }).catch(function () { /* 不能用就不顯示 */ });
+  }
+
+  $('#mcPhoto').addEventListener('click', function () { if (sample && !photoCtl) $('#mcPhotoInput').click(); });
+  $('#mcPhotoStop').addEventListener('click', function () { if (photoCtl) photoCtl.abort(); });
+  $('#mcPhotoInput').addEventListener('change', function (e) {
+    var file = e.target.files && e.target.files[0];
+    e.target.value = ''; // 同一張可以再選一次
+    if (file) recognize(file);
+  });
+
   T.mjCalc = {
     open: function () {
       render();
