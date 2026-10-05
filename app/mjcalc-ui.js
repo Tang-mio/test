@@ -51,7 +51,7 @@
           return '<button type="button" class="mc-tbtn" data-ctile="' + t + '" aria-label="拿掉 ' + H.tileName(t) + '">' + tileHtml(t) + '</button>';
         }).join('')
       : '<span class="empty">用下面的鍵盤點手上的牌</span>';
-    $('#mcHand').innerHTML = '<div class="mc-row">' + html + '</div><span class="mc-count">' + hand.length + ' 張</span>';
+    $('#mcHand').innerHTML = '<div class="mc-row">' + html + '</div><span class="mc-count">' + (hand.length > mode ? hand.length + ' 張（多摸 1 張）' : hand.length + ' / ' + mode + ' 張') + '</span>';
   }
 
   function renderKeys() {
@@ -87,11 +87,14 @@
     var msg = function (text, bad) { box.innerHTML = '<p class="mc-msg' + (bad ? ' bad' : '') + '">' + esc(text) + '</p>'; };
     var max = H.maxTiles(mode);
     if (hand.length > max) return msg(mode + ' 張最多 ' + max + ' 張，請拿掉 ' + (hand.length - max) + ' 張。', true);
+    // 點滿才算：剛好 16 張（13 張模式 13 張）看胡什麼，多摸一張看打哪張
+    if (hand.length < mode) {
+      return msg(hand.length
+        ? '還差 ' + (mode - hand.length) + ' 張。點滿 ' + mode + ' 張才會算胡什麼；多摸一張（' + (mode + 1) + ' 張）就給聽牌建議。'
+        : '點手上的 ' + mode + ' 張牌（吃、碰的牌也一起點，槓只點 3 張），點滿就會算胡什麼；多摸一張（' + (mode + 1) + ' 張）就給聽牌建議。');
+    }
     var r = H.check(hand, mode);
-    var target = mode === 13 ? '1、4、7、10 或 13 張' : '1、4、7、10、13 或 16 張';
-    if (r.kind === 'empty') return msg('點手上的牌：' + mode + ' 張看胡什麼；多摸一張（' + (mode + 1) + ' 張）看打哪張。');
     if (r.kind === 'over') return msg(H.tileName(r.tile) + '超過 4 張了，點上面的牌拿掉一張。', true);
-    if (r.kind === 'need') return msg('再點 1 張。手上的牌要 ' + target + '（吃、碰、槓的不用點），多摸一張就看打哪張。');
     if (r.kind === 'win') {
       box.innerHTML = '<div class="mc-total"><b>胡了！</b>' + (r.special ? '<span class="sub">' + r.special + '</span>' : '') + '</div>';
       return;
