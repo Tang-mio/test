@@ -120,7 +120,7 @@
   function cleanMahjong(d) {
     d = d || {};
     var h = d.hand || {};
-    var method = h.method === 'ziMo' || h.method === 'fangQiang' ? h.method : null;
+    var method = h.method === 'ziMo' || h.method === 'fangQiang' || h.method === 'zhaHu' ? h.method : null;
     var winner = h.winner === -1 ? -1 : (h.winner == null ? null : int(h.winner, null, 0, 3));
     var settings = MJ.normalizeSettings(d.settings);
     return {
@@ -474,6 +474,7 @@
     }
     if (e.game === 'mahjong') {
       if (e.kind === 'draw') return '<span class="muted">流局</span>';
+      if (e.kind === 'zhaHu') return esc(T.plainName(e.winner)) + ' <span class="pill pill-kind pill-zha">炸胡</span>';
       var how = e.kind === 'ziMo' ? '自摸' : '胡';
       return esc(T.plainName(e.winner)) + ' <span class="pill pill-kind">' + how + (e.tai != null ? ' ' + e.tai + ' 台' : '') + '</span>';
     }

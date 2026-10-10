@@ -31,6 +31,36 @@ test('莊家放槍給閒家，也要加莊家台', () => {
   assert.equal(r.transfers[0].amount, 50 + 3 * 20);
 });
 
+test('炸胡：閒家炸胡賠三家各 20，付給莊家的那筆加 1 台', () => {
+  const s = { base: 20, perTai: 10, cap: 4 };
+  const r = MJ.settle({ dealer: 0, streak: 2, winner: 2, method: 'zhaHu', tai: 9 }, s);
+  assert.equal(r.ready, true);
+  assert.equal(r.method, 'zhaHu');
+  const byTo = Object.fromEntries(r.transfers.map(t => [t.to, t.amount]));
+  assert.deepEqual(byTo, { 0: 30, 1: 20, 3: 20 });
+  r.transfers.forEach(t => assert.equal(t.from, 2));
+  assert.deepEqual(r.nets, [30, 20, -70, 20]);
+});
+
+test('炸胡：莊家炸胡，三家都加 1 台；不算連莊、不限台', () => {
+  const r = MJ.settle({ dealer: 1, streak: 3, winner: 1, method: 'zhaHu' }, { base: 20, perTai: 10, cap: 1, capIncludesDealer: true });
+  r.transfers.forEach(t => { assert.equal(t.amount, 30); assert.equal(t.dealerTai, 1); });
+  assert.deepEqual(r.nets, [30, -90, 30, 30]);
+});
+
+test('炸胡：預設賠 20、莊家加 1 台；可以改', () => {
+  const d = MJ.normalizeSettings({});
+  assert.equal(d.zhaHuBase, 20);
+  assert.equal(d.zhaHuDealerTai, 1);
+  const s = MJ.normalizeSettings({ zhaHuBase: 100, zhaHuDealerTai: 2, perTai: 20 });
+  const r = MJ.settle({ dealer: 3, streak: 0, winner: 0, method: 'zhaHu' }, s);
+  assert.deepEqual(r.nets, [-(100 + 100 + 140), 100, 100, 140]);
+  assert.equal(MJ.normalizeSettings({ zhaHuBase: -5, zhaHuDealerTai: 'x' }).zhaHuBase, 0);
+  assert.equal(MJ.normalizeSettings({ zhaHuDealerTai: 'x' }).zhaHuDealerTai, 1);
+  // 一鍵套用打法不會改炸胡
+  assert.equal(MJ.applyPreset({ zhaHuBase: 50 }, 'south').zhaHuBase, 50);
+});
+
 test('資料不完整時不結算', () => {
   assert.equal(MJ.settle({ dealer: 0, streak: 0, winner: null, method: 'ziMo', tai: 1 }, S).ready, false);
   assert.equal(MJ.settle({ dealer: 0, streak: 0, winner: 1, method: 'fangQiang', discarder: 1, tai: 1 }, S).reason, 'discarder');

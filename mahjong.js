@@ -4,6 +4,7 @@
  * 每位付錢的人付「底 + 台數 × 每台」。
  * 莊家有關的支付（莊家胡，或莊家付錢）另外加莊家台：預設 1 台 + 連莊數 × 2（連 N 拉 N）。
  * 台數、莊家台、限台都可以在設定裡改，也能關掉或新增台型。
+ * 炸胡（亂喊胡）：炸胡的人賠另外三家，每家付炸胡的底；跟莊家有關的那筆（莊家炸胡，或付給莊家）再加幾台。
  * 瀏覽器載入後是 window.Mahjong，Node 用 require('./mahjong.js')。
  */
 (function (root, factory) {
@@ -79,6 +80,8 @@
     streakTai: 2,           // 每連莊一次加幾台（連 N 拉 N 是 2）
     ziMoTai: 1,             // 自摸
     menQingZiMoTai: 3,      // 門清加自摸合計
+    zhaHuBase: 20,          // 炸胡：賠每家多少
+    zhaHuDealerTai: 1,      // 炸胡：跟莊家有關的那筆再加幾台
     menFengBySeat: false,   // 門風照座位（坐東就是東風）；預設跟著莊家（莊家算東）
     reverseDraw: false,     // 逆抓（從牌牆左邊數、往逆時針抓）；預設順抓
     tai: {},                // 改過的台數 { 台型 id: 台數 }
@@ -132,6 +135,8 @@
       streakTai: int(s.streakTai, d.streakTai, 0, 99),
       ziMoTai: int(s.ziMoTai, d.ziMoTai, 0, 99),
       menQingZiMoTai: int(s.menQingZiMoTai, d.menQingZiMoTai, 0, 99),
+      zhaHuBase: num(s.zhaHuBase, d.zhaHuBase, 0),
+      zhaHuDealerTai: int(s.zhaHuDealerTai, d.zhaHuDealerTai, 0, 99),
       menFengBySeat: !!s.menFengBySeat,
       reverseDraw: !!s.reverseDraw,
       tai: tai,
@@ -280,15 +285,38 @@
     return s.dealerTai + s.streakTai * n;
   }
 
+  // 炸胡：w 賠另外三家，每家付炸胡的底；莊家炸胡或付給莊家的那筆再加炸胡莊家台（不算連莊、不限台）
+  function settleZhaHu(w, dealer, s) {
+    var nets = [0, 0, 0, 0];
+    var transfers = [];
+    for (var i = 0; i < SEATS; i++) {
+      if (i === w) continue;
+      var extra = i === dealer || w === dealer ? s.zhaHuDealerTai : 0;
+      var amount = round2(s.zhaHuBase + extra * s.perTai);
+      nets[w] = round2(nets[w] - amount);
+      nets[i] = round2(nets[i] + amount);
+      transfers.push({
+        from: w, to: i, tai: 0, dealerTai: extra, totalTai: extra, capped: false,
+        base: s.zhaHuBase, perTai: s.perTai, amount: amount
+      });
+    }
+    return {
+      ready: true, settings: s, winner: w, method: 'zhaHu', tai: 0, dealerTai: s.zhaHuDealerTai,
+      capped: false, transfers: transfers, nets: nets
+    };
+  }
+
   /*
-   * hand = { dealer, streak, winner, method: 'ziMo' | 'fangQiang', discarder, tai }
+   * hand = { dealer, streak, winner, method: 'ziMo' | 'fangQiang' | 'zhaHu', discarder, tai }
    * tai 是胡牌者的台數（countTai 的結果），限台在這裡套用。
+   * 炸胡時 winner 是炸胡的人，他付錢給另外三家。
    * 回傳每筆支付與每人淨額；資料不完整時回傳 { ready: false, reason }
    */
   function settle(hand, settings) {
     var s = normalizeSettings(settings);
     var w = hand.winner;
     if (w == null || w < 0 || w >= SEATS) return { ready: false, reason: 'winner' };
+    if (hand.method === 'zhaHu') return settleZhaHu(w, hand.dealer, s);
     if (hand.method !== 'ziMo' && hand.method !== 'fangQiang') return { ready: false, reason: 'method' };
     if (hand.method === 'fangQiang' && (hand.discarder == null || hand.discarder === w || hand.discarder < 0 || hand.discarder >= SEATS)) {
       return { ready: false, reason: 'discarder' };

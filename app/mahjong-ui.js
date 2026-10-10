@@ -24,6 +24,7 @@
   function mj() { return T.state.mahjong; }
   function hand() { return mj().hand; }
   function isDraw() { return hand().winner === -1; }
+  function isZhaHu() { return hand().method === 'zhaHu'; }
   function settings() { return mj().settings; }
 
   function tai() { return MJ.countTai(hand().picks, hand().method, hand().extra, settings(), windCtx()); }
@@ -56,7 +57,8 @@
 
   var FIELDS = [
     ['#mjBase', 'base'], ['#mjPerTai', 'perTai'], ['#mjCap', 'cap'], ['#mjDealerTai', 'dealerTai'],
-    ['#mjStreakTai', 'streakTai'], ['#mjZiMoTai', 'ziMoTai'], ['#mjMqzmTai', 'menQingZiMoTai']
+    ['#mjStreakTai', 'streakTai'], ['#mjZiMoTai', 'ziMoTai'], ['#mjMqzmTai', 'menQingZiMoTai'],
+    ['#mjZhaHuBase', 'zhaHuBase'], ['#mjZhaHuDealerTai', 'zhaHuDealerTai']
   ];
 
   function syncSettings() {
@@ -346,13 +348,15 @@
       var tags = [];
       if (!sit) {
         if (w === m.dealer) tags.push('<span class="tg dealer">莊' + (m.streak ? ' 連' + m.streak : '') + '</span>');
-        if (w === h.winner) tags.push('<span class="tg win">' + (h.method === 'ziMo' ? '自摸' : '胡') + '</span>');
+        if (w === h.winner) {
+          tags.push(h.method === 'zhaHu' ? '<span class="tg pay">炸胡</span>' : '<span class="tg win">' + (h.method === 'ziMo' ? '自摸' : '胡') + '</span>');
+        }
         if (h.method === 'fangQiang' && w === h.discarder) tags.push('<span class="tg pay">放槍</span>');
       }
       var net = ready ? r.nets[w] : 0;
       var cls = 'tseat p-' + POS[k] + (sit
         ? (w === seatSlot ? ' is-picking' : '')
-        : (w === h.winner ? ' is-winner' : '') + (ready && net < 0 ? ' is-payer' : ''));
+        : (w === h.winner && h.method !== 'zhaHu' ? ' is-winner' : '') + (ready && net < 0 ? ' is-payer' : ''));
       html += '<button type="button" class="' + cls + '"' +
         ' data-tseat="' + w + '"' + (editable ? '' : ' disabled') +
         (sit ? ' aria-pressed="' + (w === seatSlot) + '"' : '') +
@@ -374,6 +378,7 @@
     else if (state === 'winner') { main = '點誰胡'; sub = '沒人胡就按「流局」'; }
     else if (state === 'method') { main = '自摸還是放槍？'; sub = '點下面的按鈕'; }
     else if (state === 'discarder') main = '點誰放槍';
+    else if (h.method === 'zhaHu') { main = seatName(h.winner) + ' 炸胡'; sub = '賠另外三家'; }
     else {
       main = seatName(h.winner) + (h.method === 'ziMo' ? ' 自摸' : ' 胡');
       sub = ready ? r.tai + ' 台' + (r.capped ? '・限 ' + r.settings.cap : '') : '';
@@ -481,7 +486,8 @@
     });
 
     // 3 幾台
-    var ready3 = hasWinner && !!h.method;
+    var ready3 = hasWinner && !!h.method && h.method !== 'zhaHu';
+    $('#mjStep3').hidden = h.method === 'zhaHu'; // 炸胡不用算台
     var t = tai();
     var clean = MJ.cleanPicks(h.picks, h.method, s);
     $('#mjStep3').classList.toggle('off', !ready3);
@@ -532,9 +538,10 @@
     if (!r.ready) {
       box.innerHTML = '<div class="guide"><strong>每把這樣輸入</strong><ol>' +
         '<li>確認莊家和連莊次數。</li><li>點誰胡；沒人胡就按「流局」。</li>' +
-        '<li>選自摸或放槍，放槍要再點是誰打的。</li><li>點選牌型算台數，下方就會算出誰付多少。</li></ol></div>';
+        '<li>選自摸或放槍，放槍要再點是誰打的；亂喊胡就選「炸胡」。</li><li>點選牌型算台數，下方就會算出誰付多少。</li></ol></div>';
       return;
     }
+    if (r.method === 'zhaHu') return renderZhaHu(box, r);
     var w = r.winner;
     var transfers = r.transfers.map(function (t) {
       return '<li><div class="t-line"><span class="t-who">' + esc(seatLabel(t.from)) +
@@ -552,6 +559,31 @@
         (w === m.dealer ? '<span class="win-why">莊家胡，每家多 ' + r.dealerTai + ' 台</span>' : '') + '</p>' +
       '</div>' +
       '<div class="panel-box"><h3 class="sub">誰付多少</h3><ol class="transfers">' + transfers + '</ol></div>';
+  }
+
+  // 炸胡：炸胡的人賠另外三家
+  function zhaFormula(t) {
+    return '炸胡 ' + T.fmtNum(t.base) + (t.dealerTai ? ' + 莊家 ' + t.dealerTai + ' 台 × ' + T.fmtNum(t.perTai) : '');
+  }
+  function renderZhaHu(box, r) {
+    var w = r.winner;
+    var s = r.settings;
+    var m = mj();
+    var transfers = r.transfers.map(function (t) {
+      return '<li><div class="t-line"><span class="t-who">' + esc(seatLabel(w)) +
+        '<span class="arrow">付</span>' + esc(seatLabel(t.to)) + '</span><span class="t-amt neg">' + T.money(t.amount) + '</span></div>' +
+        '<div class="t-formula">' + esc(zhaFormula(t)) + '</div></li>';
+    }).join('');
+    box.innerHTML =
+      '<div class="win-card">' +
+        '<p class="eyebrow">這把炸胡</p>' +
+        '<p class="win-name">' + esc(seatName(w)) + '</p>' +
+        '<p class="win-total">共賠<b>' + T.money(-r.nets[w]) + '</b></p>' +
+        '<p class="win-meta"><span class="win-kind">炸胡</span><span class="win-why">賠另外三家，每家 ' + T.money(s.zhaHuBase) +
+        (s.zhaHuDealerTai ? (w === m.dealer ? '，莊家炸胡每家多 ' : '，付給莊家的多 ') + s.zhaHuDealerTai + ' 台' : '') + '</span></p>' +
+      '</div>' +
+      '<div class="panel-box"><h3 class="sub">誰付多少</h3><ol class="transfers">' + transfers + '</ol></div>' +
+      '<p class="hint">記炸胡後莊家和連莊都不變。這把重打或繼續打都可以，打完再照常輸入。</p>';
   }
 
   function renderDock() {
@@ -575,9 +607,16 @@
     commit.textContent = '記入，下一把';
     if (!r.ready) {
       var h = hand();
-      var tip = h.winner == null ? '點誰胡' : !h.method ? '選自摸或放槍' : '點是誰放槍';
+      var tip = h.winner == null ? '點誰胡' : !h.method ? '選自摸、放槍或炸胡' : '點是誰放槍';
       sum.innerHTML = '<span class="muted">' + (editable ? tip : '等有人輸入') + '</span>';
       commit.disabled = true;
+      return;
+    }
+    if (r.method === 'zhaHu') {
+      sum.innerHTML = '<span class="who">' + esc(seatName(r.winner)) + ' 炸胡</span>' +
+        '<span class="pill pill-kind pill-zha">賠三家</span><span class="amt">付 ' + T.money(-r.nets[r.winner]) + '</span>';
+      commit.textContent = '記炸胡';
+      commit.disabled = false;
       return;
     }
     sum.innerHTML = '<span class="who">' + esc(seatName(r.winner)) + ' ' + (r.method === 'ziMo' ? '自摸' : '胡') + '</span>' +
@@ -593,7 +632,8 @@
       (s.flowers ? '有玩花牌' : '沒玩花牌') + '，' +
       (s.cap ? '限 ' + s.cap + ' 台（莊家台' + (s.capIncludesDealer ? '算在內' : '另外加') + '）' : '不限台') +
       '，莊家 ' + s.dealerTai + ' 台' + (s.dealerNeedsStreak ? '（沒連莊不算）' : '') + '、每連莊加 ' + s.streakTai + ' 台' +
-      (MJ.matchPreset(s) ? '（' + MJ.PRESETS[MJ.matchPreset(s)].name + '）' : '') + '。';
+      (MJ.matchPreset(s) ? '（' + MJ.PRESETS[MJ.matchPreset(s)].name + '）' : '') +
+      '；炸胡賠每家 ' + T.money(s.zhaHuBase) + (s.zhaHuDealerTai ? '，跟莊家有關加 ' + s.zhaHuDealerTai + ' 台' : '') + '。';
     var rows = [
       ['自摸', '選「自摸」就自動算', String(s.ziMoTai)],
       ['門清自摸', '門清又自摸，兩個合計', String(s.menQingZiMoTai)]
@@ -638,9 +678,18 @@
     for (var p = 0; p < T.MAX_PLAYERS; p++) nets.push(0);
     var entry = { jiang: m.jiang, round: MJ.roundName(m.wind, m.dealer, m.startDealer), nets: nets };
     var winner = -1;
+    var zha = false;
     if (isDraw()) {
       entry.winner = -1;
       entry.kind = 'draw';
+      entry.tai = null;
+    } else if (isZhaHu()) {
+      var z = settleNow();
+      if (!z.ready) return;
+      z.nets.forEach(function (n, w) { nets[playerAt(w)] = n; });
+      zha = true;
+      entry.winner = playerAt(z.winner);
+      entry.kind = 'zhaHu';
       entry.tai = null;
     } else {
       var r = settleNow();
@@ -652,6 +701,15 @@
       entry.tai = r.tai;
     }
     T.commitEntry('mahjong', entry, function () {
+      if (zha) {
+        // 炸胡只賠錢：莊家、連莊、圈都不變
+        var m2 = mj();
+        resetHand();
+        change();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        T.toast('已記炸胡，' + seatName(m2.dealer) + '繼續當莊' + (m2.streak ? '（連 ' + m2.streak + '）' : ''));
+        return;
+      }
       var msg = finishHand(mj(), winner);
       change();
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -753,7 +811,8 @@
       if (!b || !T.canEdit()) return;
       var h = hand();
       h.method = b.getAttribute('data-method');
-      if (h.method === 'ziMo') h.discarder = null;
+      if (h.method !== 'fangQiang') h.discarder = null;
+      if (h.method === 'zhaHu') { h.picks = {}; h.extra = 0; } // 炸胡不算台
       h.picks = MJ.cleanPicks(h.picks, h.method, settings());
       change();
     });

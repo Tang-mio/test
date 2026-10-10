@@ -248,6 +248,7 @@ legend { padding: 0; }
 
 .pill { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; line-height: 1.5; padding: 0 8px; border-radius: 999px; white-space: nowrap; }
 .pill-kind, .st-tag.kind { background: var(--accent-soft); color: var(--accent); }
+.pill-kind.pill-zha { background: var(--pay-soft); color: var(--pay); }
 .pill-bao, .st-tag.bao { background: var(--warn-soft); color: var(--warn); }
 .pill-win, .st-tag.win { background: var(--gain-soft); color: var(--gain); }
 .st-tag.first { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); line-height: 14px; }
@@ -487,6 +488,8 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .method { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .method button { height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 700; }
 .method button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); color: var(--accent); }
+#mjMethod { grid-template-columns: repeat(3, 1fr); }
+#mjMethod [data-method="zhaHu"][aria-pressed="true"] { border-color: var(--pay); box-shadow: 0 0 0 1px var(--pay); background: var(--pay-soft); color: var(--pay); }
 .dealer-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
 .stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2); }
 .stepper button { width: 36px; height: 36px; border: 0; background: transparent; font-size: 18px; font-weight: 700; color: var(--ink); }
@@ -1044,6 +1047,7 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
           <div class="method" id="mjMethod" role="group" aria-label="胡法">
             <button type="button" data-method="ziMo" aria-pressed="false">自摸</button>
             <button type="button" data-method="fangQiang" aria-pressed="false">放槍</button>
+            <button type="button" data-method="zhaHu" aria-pressed="false">炸胡</button>
           </div>
         </div>
         <button type="button" class="wide-toggle hand-only" id="mjDraw" aria-pressed="false">流局（沒人胡，莊家連莊）</button>
@@ -1191,6 +1195,10 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
             <li>兩個閒家之間的支付不算莊家台。</li>
             <li>莊家胡或流局：莊家連莊。閒家胡：換下一家（東 → 南 → 西 → 北）當莊，連莊歸零。記完一把會自動換。</li>
           </ul>
+        </section>
+        <section>
+          <h2>炸胡</h2>
+          <p>亂喊胡（牌其實沒胡）叫炸胡。點那個人，再選「炸胡」：他賠另外三家，每家付炸胡的錢（預設 $20）；莊家炸胡，或賠給莊家的那筆，再加 1 台。不算台型、不算連莊、不限台。記炸胡後莊家和連莊都不變，這把重打或繼續打都可以，打完再照常輸入。金額和加幾台在「名字・規則」裡改。</p>
         </section>
         <section>
           <h2>將、圈、把</h2>
@@ -1458,6 +1466,16 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
           <label class="name" for="mjMqzmTai">門清自摸</label>
           <span class="hint">門清又自摸時，兩個合計幾台</span>
           <span class="ctrl"><span class="field small"><input id="mjMqzmTai" type="number" min="0" step="1" inputmode="numeric"><span>台</span></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="mjZhaHuBase">炸胡賠每家</label>
+          <span class="hint">亂喊胡的人賠另外三家，每家這麼多</span>
+          <span class="ctrl"><span class="field small"><span>$</span><input id="mjZhaHuBase" type="number" min="0" step="10" inputmode="numeric"></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="mjZhaHuDealerTai">炸胡莊家加</label>
+          <span class="hint">莊家炸胡，或賠給莊家的那筆，再加幾台（照每台算）</span>
+          <span class="ctrl"><span class="field small"><input id="mjZhaHuDealerTai" type="number" min="0" step="1" inputmode="numeric"><span>台</span></span></span>
         </div>
       </div>
       <details class="tai-editor" id="mjTaiEditor">
