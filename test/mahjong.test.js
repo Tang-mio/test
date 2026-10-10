@@ -59,6 +59,10 @@ test('炸胡：預設賠 20、莊家加 1 台；可以改', () => {
   assert.equal(MJ.normalizeSettings({ zhaHuDealerTai: 'x' }).zhaHuDealerTai, 1);
   // 一鍵套用打法不會改炸胡
   assert.equal(MJ.applyPreset({ zhaHuBase: 50 }, 'south').zhaHuBase, 50);
+  // 炸胡後莊家連莊：預設打開，可以關掉
+  assert.equal(d.zhaHuStreak, true);
+  assert.equal(MJ.normalizeSettings({ zhaHuStreak: false }).zhaHuStreak, false);
+  assert.equal(MJ.applyPreset({ zhaHuStreak: false }, 'north').zhaHuStreak, false);
 });
 
 test('資料不完整時不結算', () => {
@@ -269,6 +273,9 @@ test('刪掉一把：舊紀錄用第幾將和圈風推算，炸胡不改進度',
   const p = MJ.progressBefore({ kind: 'ziMo', jiang: 1, round: '北風南' }, log, 0);
   assert.deepEqual(p, { jiang: 1, wind: 3, startDealer: 0, dealer: 1, streak: 2, hands: 3, seats: null });
   assert.equal(MJ.progressBefore({ kind: 'zhaHu', jiang: 1, round: '北風南' }, log, 0), null);
+  // 新的炸胡有快照（炸胡後連莊時要退回）
+  const zp = { jiang: 1, wind: 3, startDealer: 0, dealer: 1, streak: 0, hands: 17, seats: [0, 1, 2, 3] };
+  assert.deepEqual(MJ.progressBefore({ kind: 'zhaHu', jiang: 1, round: '北風南', prev: zp }, log, 0), zp);
   assert.equal(MJ.progressBefore({ kind: 'ziMo', jiang: 1, round: '亂寫' }, log, 0), null);
   // 起莊不是東家時，莊家照起莊往後數
   assert.equal(MJ.progressBefore({ kind: 'ziMo', jiang: 2, round: '東風西' }, [], 1).dealer, 3);

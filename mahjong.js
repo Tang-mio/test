@@ -5,6 +5,7 @@
  * 莊家有關的支付（莊家胡，或莊家付錢）另外加莊家台：預設 1 台 + 連莊數 × 2（連 N 拉 N）。
  * 台數、莊家台、限台都可以在設定裡改，也能關掉或新增台型。
  * 炸胡（亂喊胡）：炸胡的人賠另外三家，每家付炸胡的底；跟莊家有關的那筆（莊家炸胡，或付給莊家）再加幾台。
+ * 炸胡後預設莊家連莊（跟流局一樣），規則裡可以關掉，關掉時莊家和連莊都不變。
  * 瀏覽器載入後是 window.Mahjong，Node 用 require('./mahjong.js')。
  */
 (function (root, factory) {
@@ -82,6 +83,7 @@
     menQingZiMoTai: 3,      // 門清加自摸合計
     zhaHuBase: 20,          // 炸胡：賠每家多少
     zhaHuDealerTai: 1,      // 炸胡：跟莊家有關的那筆再加幾台
+    zhaHuStreak: true,      // 炸胡後莊家連莊（關掉：莊家、連莊都不變）
     menFengBySeat: false,   // 門風照座位（坐東就是東風）；預設跟著莊家（莊家算東）
     reverseDraw: false,     // 逆抓（從牌牆左邊數、往逆時針抓）；預設順抓
     tai: {},                // 改過的台數 { 台型 id: 台數 }
@@ -137,6 +139,7 @@
       menQingZiMoTai: int(s.menQingZiMoTai, d.menQingZiMoTai, 0, 99),
       zhaHuBase: num(s.zhaHuBase, d.zhaHuBase, 0),
       zhaHuDealerTai: int(s.zhaHuDealerTai, d.zhaHuDealerTai, 0, 99),
+      zhaHuStreak: s.zhaHuStreak === undefined ? d.zhaHuStreak : !!s.zhaHuStreak,
       menFengBySeat: !!s.menFengBySeat,
       reverseDraw: !!s.reverseDraw,
       tai: tai,
@@ -445,11 +448,13 @@
    * 刪掉一把之後，牌局要退回這把開始前的樣子。
    * entry 有 prev（記錄時存的快照）就用它；沒有的舊紀錄用它的第幾將和圈風推算：
    * 前面連續同一圈同一位莊家的把數是連莊數（炸胡不算），同一將前面幾把是把數。
-   * before 是這把之前的麻將紀錄（舊到新），startDealer 是現在的起莊。炸胡不改進度，回傳 null。
+   * before 是這把之前的麻將紀錄（舊到新），startDealer 是現在的起莊。
+   * 沒有快照的舊炸胡當時不改進度，回傳 null。
    */
   function progressBefore(entry, before, startDealer) {
-    if (!entry || entry.kind === 'zhaHu') return null;
+    if (!entry) return null;
     if (entry.prev) return entry.prev;
+    if (entry.kind === 'zhaHu') return null;
     var r = parseRound(entry.round);
     if (!r || !entry.jiang) return null;
     var streak = 0;

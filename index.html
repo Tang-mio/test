@@ -1220,7 +1220,7 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
         </section>
         <section>
           <h2>炸胡</h2>
-          <p>亂喊胡（牌其實沒胡）叫炸胡。點那個人，再選「炸胡」：他賠另外三家，每家付炸胡的錢（預設 $20）；莊家炸胡，或賠給莊家的那筆，再加 1 台。不算台型、不算連莊、不限台。記炸胡後莊家和連莊都不變，這把重打或繼續打都可以，打完再照常輸入。金額和加幾台在「名字・規則」裡改。</p>
+          <p>亂喊胡（牌其實沒胡）叫炸胡。點那個人，再選「炸胡」：他賠另外三家，每家付炸胡的錢（預設 $20）；莊家炸胡，或賠給莊家的那筆，再加 1 台。不算台型、不限台，莊家台只加這 1 台、不算連莊台。記炸胡後預設莊家連莊（連莊數加 1，跟流局一樣）；要莊家和連莊都不變，在「名字・規則」關掉「炸胡後莊家連莊」。金額和加幾台也在那裡改。</p>
         </section>
         <section>
           <h2>將、圈、把</h2>
@@ -1499,6 +1499,10 @@ td .time { display: block; font-size: 11px; color: var(--muted); font-family: va
           <label class="name" for="mjZhaHuDealerTai">炸胡莊家加</label>
           <span class="hint">莊家炸胡，或賠給莊家的那筆，再加幾台（照每台算）</span>
           <span class="ctrl"><span class="field small"><input id="mjZhaHuDealerTai" type="number" min="0" step="1" inputmode="numeric"><span>台</span></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="mjZhaHuStreak"><input type="checkbox" class="switch" id="mjZhaHuStreak">炸胡後莊家連莊</label>
+          <span class="hint">打開（預設）：記炸胡後莊家連莊、連莊數加 1，跟流局一樣。關掉：莊家和連莊都不變</span>
         </div>
       </div>
       <details class="tai-editor" id="mjTaiEditor">

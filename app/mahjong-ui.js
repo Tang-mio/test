@@ -69,6 +69,7 @@
     $('#mjFlowers').checked = s.flowers;
     $('#mjDealerNeedsStreak').checked = s.dealerNeedsStreak;
     $('#mjMenFengBySeat').checked = s.menFengBySeat;
+    $('#mjZhaHuStreak').checked = s.zhaHuStreak;
     syncProgress();
     var preset = MJ.matchPreset(s);
     $$('#mjPresets [data-preset]').forEach(function (b) {
@@ -88,6 +89,7 @@
     next.flowers = $('#mjFlowers').checked;
     next.dealerNeedsStreak = $('#mjDealerNeedsStreak').checked;
     next.menFengBySeat = $('#mjMenFengBySeat').checked;
+    next.zhaHuStreak = $('#mjZhaHuStreak').checked;
     mj().settings = MJ.normalizeSettings(next);
   }
 
@@ -583,7 +585,10 @@
         (s.zhaHuDealerTai ? (w === m.dealer ? '，莊家炸胡每家多 ' : '，付給莊家的多 ') + s.zhaHuDealerTai + ' 台' : '') + '</span></p>' +
       '</div>' +
       '<div class="panel-box"><h3 class="sub">誰付多少</h3><ol class="transfers">' + transfers + '</ol></div>' +
-      '<p class="hint">記炸胡後莊家和連莊都不變。這把重打或繼續打都可以，打完再照常輸入。</p>';
+      '<p class="hint">' + (s.zhaHuStreak
+        ? '記炸胡後' + esc(seatName(m.dealer)) + '連莊，變成連 ' + (m.streak + 1) + '（跟流局一樣）。'
+        : '記炸胡後莊家和連莊都不變，這把重打或繼續打都可以。') +
+      '要改在「名字・規則」的「炸胡後莊家連莊」。</p>';
   }
 
   function renderDock() {
@@ -633,7 +638,8 @@
       (s.cap ? '限 ' + s.cap + ' 台（莊家台' + (s.capIncludesDealer ? '算在內' : '另外加') + '）' : '不限台') +
       '，莊家 ' + s.dealerTai + ' 台' + (s.dealerNeedsStreak ? '（沒連莊不算）' : '') + '、每連莊加 ' + s.streakTai + ' 台' +
       (MJ.matchPreset(s) ? '（' + MJ.PRESETS[MJ.matchPreset(s)].name + '）' : '') +
-      '；炸胡賠每家 ' + T.money(s.zhaHuBase) + (s.zhaHuDealerTai ? '，跟莊家有關加 ' + s.zhaHuDealerTai + ' 台' : '') + '。';
+      '；炸胡賠每家 ' + T.money(s.zhaHuBase) + (s.zhaHuDealerTai ? '，跟莊家有關加 ' + s.zhaHuDealerTai + ' 台' : '') +
+      (s.zhaHuStreak ? '，炸胡後莊家連莊' : '，炸胡後莊家不變') + '。';
     var rows = [
       ['自摸', '選「自摸」就自動算', String(s.ziMoTai)],
       ['門清自摸', '門清又自摸，兩個合計', String(s.menQingZiMoTai)]
@@ -703,12 +709,18 @@
     }
     T.commitEntry('mahjong', entry, function () {
       if (zha) {
-        // 炸胡只賠錢：莊家、連莊、圈都不變
         var m2 = mj();
-        resetHand();
+        var zmsg;
+        if (settings().zhaHuStreak) {
+          zmsg = finishHand(m2, -1); // 跟流局一樣：莊家連莊
+        } else {
+          // 只賠錢：莊家、連莊、圈都不變
+          resetHand();
+          zmsg = seatName(m2.dealer) + '繼續當莊' + (m2.streak ? '（連 ' + m2.streak + '）' : '');
+        }
         change();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        T.toast('已記炸胡，' + seatName(m2.dealer) + '繼續當莊' + (m2.streak ? '（連 ' + m2.streak + '）' : ''));
+        T.toast('已記炸胡，' + zmsg);
         return;
       }
       var msg = finishHand(mj(), winner);
