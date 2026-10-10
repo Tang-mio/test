@@ -426,6 +426,47 @@
     return WIND_NAMES[wind] + '風' + WIND_NAMES[(dealer - startDealer + SEATS) % SEATS];
   }
 
+  // 「東風南」拆回 { wind: 0, offset: 1 }；看不懂就回傳 null
+  function parseRound(name) {
+    var m = /^([東南西北])風([東南西北])$/.exec(String(name || ''));
+    return m ? { wind: WIND_NAMES.indexOf(m[1]), offset: WIND_NAMES.indexOf(m[2]) } : null;
+  }
+
+  // 這把記錄當時牌局進度的快照，刪掉這把時退回去
+  var PROGRESS_KEYS = ['jiang', 'wind', 'startDealer', 'dealer', 'streak', 'hands'];
+  function progressOf(m) {
+    var p = {};
+    PROGRESS_KEYS.forEach(function (k) { p[k] = m[k]; });
+    p.seats = (m.seats || [0, 1, 2, 3]).slice();
+    return p;
+  }
+
+  /*
+   * 刪掉一把之後，牌局要退回這把開始前的樣子。
+   * entry 有 prev（記錄時存的快照）就用它；沒有的舊紀錄用它的第幾將和圈風推算：
+   * 前面連續同一圈同一位莊家的把數是連莊數（炸胡不算），同一將前面幾把是把數。
+   * before 是這把之前的麻將紀錄（舊到新），startDealer 是現在的起莊。炸胡不改進度，回傳 null。
+   */
+  function progressBefore(entry, before, startDealer) {
+    if (!entry || entry.kind === 'zhaHu') return null;
+    if (entry.prev) return entry.prev;
+    var r = parseRound(entry.round);
+    if (!r || !entry.jiang) return null;
+    var streak = 0;
+    for (var i = before.length - 1; i >= 0; i--) {
+      var e = before[i];
+      if (e.kind === 'zhaHu') continue;
+      if (e.jiang !== entry.jiang || e.round !== entry.round) break;
+      streak++;
+    }
+    var hands = before.filter(function (e) { return e.jiang === entry.jiang && e.kind !== 'zhaHu'; }).length;
+    var start = Math.max(0, Math.min(SEATS - 1, Math.floor(Number(startDealer) || 0)));
+    return {
+      jiang: entry.jiang, wind: r.wind, startDealer: start, dealer: (start + r.offset) % SEATS,
+      streak: streak, hands: hands, seats: null
+    };
+  }
+
   return {
     PATTERNS: PATTERNS,
     GROUP_NAMES: GROUP_NAMES,
@@ -445,6 +486,9 @@
     settle: settle,
     nextDealer: nextDealer,
     advance: advance,
-    roundName: roundName
+    roundName: roundName,
+    parseRound: parseRound,
+    progressOf: progressOf,
+    progressBefore: progressBefore
   };
 });

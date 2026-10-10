@@ -251,3 +251,34 @@ test('起莊不是東家時，圈照起莊算', () => {
   p = MJ.advance(p, 0);
   assert.deepEqual([p.wind, p.dealer, p.newWind, MJ.roundName(p.wind, p.dealer, p.startDealer)], [1, 2, true, '南風東']);
 });
+
+test('刪掉一把：有快照就照快照退回', () => {
+  const prev = { jiang: 1, wind: 3, startDealer: 0, dealer: 3, streak: 0, hands: 19, seats: [0, 2, 3, 1] };
+  assert.deepEqual(MJ.progressBefore({ kind: 'ziMo', jiang: 1, round: '北風北', prev }, [], 0), prev);
+  assert.deepEqual(MJ.progressOf({ jiang: 2, wind: 0, startDealer: 1, dealer: 1, streak: 0, hands: 0, seats: [3, 2, 1, 0], hand: {} }),
+    { jiang: 2, wind: 0, startDealer: 1, dealer: 1, streak: 0, hands: 0, seats: [3, 2, 1, 0] });
+});
+
+test('刪掉一把：舊紀錄用第幾將和圈風推算，炸胡不改進度', () => {
+  const log = [
+    { kind: 'ziMo', jiang: 1, round: '北風東' },
+    { kind: 'fangQiang', jiang: 1, round: '北風南' },
+    { kind: 'zhaHu', jiang: 1, round: '北風南' },
+    { kind: 'draw', jiang: 1, round: '北風南' }
+  ];
+  const p = MJ.progressBefore({ kind: 'ziMo', jiang: 1, round: '北風南' }, log, 0);
+  assert.deepEqual(p, { jiang: 1, wind: 3, startDealer: 0, dealer: 1, streak: 2, hands: 3, seats: null });
+  assert.equal(MJ.progressBefore({ kind: 'zhaHu', jiang: 1, round: '北風南' }, log, 0), null);
+  assert.equal(MJ.progressBefore({ kind: 'ziMo', jiang: 1, round: '亂寫' }, log, 0), null);
+  // 起莊不是東家時，莊家照起莊往後數
+  assert.equal(MJ.progressBefore({ kind: 'ziMo', jiang: 2, round: '東風西' }, [], 1).dealer, 3);
+  assert.deepEqual(MJ.parseRound('西風北'), { wind: 2, offset: 3 });
+});
+
+test('記一把再退回：進度回到記之前', () => {
+  const m = { jiang: 1, wind: 3, startDealer: 0, dealer: 3, streak: 1, hands: 19, seats: [0, 1, 2, 3] };
+  const prev = MJ.progressOf(m);
+  const next = MJ.advance(m, 0); // 北風北莊家下莊，這將打完
+  assert.equal(next.newJiang, true);
+  assert.deepEqual(MJ.progressBefore({ kind: 'fangQiang', jiang: 1, round: '北風北', prev }, [], 0), prev);
+});

@@ -863,7 +863,29 @@ thead th { font-weight: 700; color: var(--muted); background: var(--surface-2); 
 td.num, tfoot td { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 tfoot td { font-weight: 600; border-bottom: 0; background: var(--surface-2); }
 td .time { display: block; font-size: 11px; color: var(--muted); font-family: var(--font-num); white-space: nowrap; }
-tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); letter-spacing: .1em; }
+/* 累計帳每一筆：一列一個 grid，欄寬一樣，往左滑露出刪除 */
+.lg { font-size: var(--step--1); }
+.lg-row, .lg-cells { display: grid; grid-template-columns: var(--cols); align-items: center; }
+.lg-row > *, .lg-cells > * { min-width: 0; padding: 8px 5px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg-row > :nth-child(-n+2), .lg-cells > :nth-child(-n+2) { text-align: left; }
+.lg-row > :first-child, .lg-cells > :first-child { padding: 8px 3px 8px 9px; }
+.lg-row > :last-child, .lg-cells > :last-child { padding-right: 8px; }
+.lg .num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.lg .time { display: block; font-size: 10.5px; color: var(--muted); font-family: var(--font-num); white-space: nowrap; }
+.lg-head { font-size: 12px; font-weight: 700; color: var(--muted); background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.lg-foot { font-weight: 600; background: var(--surface-2); }
+.lg-foot > * { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.lg-what { white-space: normal !important; text-overflow: clip !important; line-height: 1.55; }
+.lg-item { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
+.lg-cells { position: relative; z-index: 1; background: var(--surface); transition: transform .2s ease; }
+.lg-item.dragging .lg-cells { transition: none; }
+.lg-item:focus-within .lg-cells { transform: translateX(-76px); }
+.lg-delcell { position: absolute; top: 0; right: 0; bottom: 0; width: 76px; display: flex; }
+.lg-del { flex: 1; border: 0; background: var(--pay); color: var(--surface); font: inherit; font-weight: 700; font-size: var(--step-0); cursor: pointer; }
+.lg-del:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
+.lg-jiang > span { display: block; padding: 3px 10px; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); letter-spacing: .1em; border-bottom: 1px solid var(--line); }
+.lg-hint { margin-top: -6px; }
+@media (prefers-reduced-motion: reduce) { .lg-cells { transition: none; } }
 .empty-state { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); padding: 28px 20px; text-align: center; color: var(--muted); display: grid; gap: 6px; justify-items: center; }
 .empty-state strong { color: var(--ink); font-size: var(--step-1); }
 .ledger-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -1205,9 +1227,10 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
           <ul>
             <li><b>一把</b>：一手牌，從洗牌到有人胡或流局。</li>
             <li><b>一圈</b>：莊家從起莊輪一輪、回到起莊。連莊和流局會多打幾把，但不算新的一圈，所以一圈至少 4 把。</li>
-            <li><b>一將</b>：四圈，依序是東風圈、南風圈、西風圈、北風圈，至少 16 把。</li>
             <li>標題的「東風南」是東風圈、第二位莊家（起莊算東）。北風北的莊家下莊，這將就打完了，會進下一將並重新抓位。</li>
+            <li><b>一將</b>：四圈，依序是東風圈、南風圈、西風圈、北風圈，至少 16 把；連莊、流局多幾把，例如連莊 4 次就是 20 把。</li>
             <li>一次打幾將各家自己約，例如「一局打四將」。</li>
+            <li>記錯了在累計帳往左滑刪除。刪掉最新的一把，將、圈、莊家都會退回那把開始前，重新輸入就好。</li>
           </ul>
         </section>
         <section>

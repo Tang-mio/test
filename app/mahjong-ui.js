@@ -676,7 +676,8 @@
     // 累計帳記的是玩家，不是位置；每把都記第幾將和圈風，流局也記一筆
     var nets = [];
     for (var p = 0; p < T.MAX_PLAYERS; p++) nets.push(0);
-    var entry = { jiang: m.jiang, round: MJ.roundName(m.wind, m.dealer, m.startDealer), nets: nets };
+    // prev：記這把之前的進度，刪掉這把時退回去
+    var entry = { jiang: m.jiang, round: MJ.roundName(m.wind, m.dealer, m.startDealer), prev: MJ.progressOf(m), nets: nets };
     var winner = -1;
     var zha = false;
     if (isDraw()) {
@@ -933,7 +934,29 @@
     });
   }
 
+  /*
+   * 累計帳刪掉麻將最新的一把（或從最後往前刪好幾把）：牌局進度退回那把開始前。
+   * entry 是刪掉的最早那把，before 是它之前還留著的麻將紀錄（舊到新）。回傳要顯示的訊息；沒退回就回傳 ''。
+   */
+  function restore(entry, before) {
+    var m = mj();
+    var p = MJ.progressBefore(entry, before, m.startDealer);
+    if (!p) return '';
+    ['jiang', 'wind', 'startDealer', 'dealer', 'streak', 'hands'].forEach(function (k) { m[k] = p[k]; });
+    if (p.seats) m.seats = p.seats.slice();
+    if (!m.seatsAt) m.seatsAt = Date.now(); // 退回打到一半的將，不用重新抓位
+    seatingOpen = false;
+    seatSlot = null;
+    pickDealer = false;
+    resetHand();
+    if (T.mjTools) T.mjTools.newHand();
+    change();
+    return '牌局退回第 ' + m.jiang + ' 將' + MJ.roundName(m.wind, m.dealer, m.startDealer) + '，' +
+      seatName(m.dealer) + '當莊' + (m.streak ? '（連 ' + m.streak + '）' : '');
+  }
+
   T.games.mahjong = {
+    restore: restore,
     init: init,
     render: render,
     renderRules: renderRules,

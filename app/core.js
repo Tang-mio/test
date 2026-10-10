@@ -156,6 +156,19 @@
       nextRound: int(d.nextRound, 1, 1)
     };
   }
+  // 麻將：記這把時的牌局進度，刪掉這把時退回去
+  function cleanPrev(p) {
+    if (!p || typeof p !== 'object') return null;
+    return {
+      jiang: int(p.jiang, 1, 1, 999),
+      wind: int(p.wind, 0, 0, 3),
+      startDealer: int(p.startDealer, 0, 0, 3),
+      dealer: int(p.dealer, 0, 0, 3),
+      streak: int(p.streak, 0, 0, 99),
+      hands: int(p.hands, 0, 0),
+      seats: Array.isArray(p.seats) ? cleanSeats(p.seats) : null
+    };
+  }
   function cleanEntry(e, id) {
     if (!e || !Array.isArray(e.nets) || (e.nets.length !== 4 && e.nets.length !== MAX_PLAYERS)) return null;
     var nets = filled(function (i) { return Number(e.nets[i]) || 0; });
@@ -170,6 +183,7 @@
       tai: e.tai == null ? null : int(e.tai, null, 0, 999),
       jiang: e.jiang == null ? null : int(e.jiang, null, 1, 999), // 麻將：第幾將
       round: typeof e.round === 'string' ? e.round.slice(0, 6) : '', // 麻將：例如「東風南」
+      prev: game === 'mahjong' ? cleanPrev(e.prev) : null,
       nets: nets
     };
   }
@@ -481,6 +495,100 @@
     return '莊 ' + esc(T.plainName(e.winner));
   }
 
+  /* 累計帳往左滑刪除：手指往左滑一列，右邊露出「刪除」；表格比畫面寬時，先捲到最右邊再滑。
+   * 滑一半以上就停在打開，點「刪除」才真的刪；點別的地方收起來。滑鼠也可以拖，鍵盤 Tab 到「刪除」會自己打開。 */
+  var DEL_W = 76;
+  var swipe = null;
+  function swipeSet(item, x, animate) {
+    var cells = item.querySelector('.lg-cells');
+    item.classList.toggle('dragging', !animate);
+    cells.style.transform = x ? 'translateX(' + x + 'px)' : '';
+  }
+  function swipeClose(except) {
+    $$('#ledgerBody .lg-item.open').forEach(function (it) {
+      if (it === except) return;
+      it.classList.remove('open');
+      swipeSet(it, 0, true);
+    });
+  }
+  function atRightEdge(item) {
+    var wrap = item.closest('.table-wrap');
+    return !wrap || wrap.scrollLeft + wrap.clientWidth >= wrap.scrollWidth - 2;
+  }
+  function swipeStart(item, x, y) {
+    swipe = { item: item, x0: x, y0: y, base: item.classList.contains('open') ? -DEL_W : 0, mode: null, dx: 0 };
+  }
+  // 回傳 true 表示這一下是往左滑（呼叫的人要擋掉捲動）
+  function swipeMove(x, y) {
+    if (!swipe) return false;
+    var dx = x - swipe.x0;
+    var dy = y - swipe.y0;
+    if (!swipe.mode) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return false;
+      var sideways = Math.abs(dx) > Math.abs(dy) * 1.2;
+      swipe.mode = sideways && (swipe.base || (dx < 0 && atRightEdge(swipe.item))) ? 'swipe' : 'scroll';
+      if (swipe.mode === 'swipe') swipeClose(swipe.item);
+    }
+    if (swipe.mode !== 'swipe') return false;
+    swipe.dx = dx;
+    swipeSet(swipe.item, Math.max(-DEL_W - 24, Math.min(0, swipe.base + dx)), false);
+    return true;
+  }
+  function swipeEnd() {
+    var sw = swipe;
+    swipe = null;
+    if (!sw || sw.mode !== 'swipe') return false;
+    var open = sw.base + sw.dx < -DEL_W / 2;
+    sw.item.classList.toggle('open', open);
+    swipeSet(sw.item, open ? -DEL_W : 0, true);
+    return true;
+  }
+  function initSwipe(body) {
+    var itemOf = function (t) {
+      if (!T.canEdit() || !t.closest || t.closest('.lg-del')) return null;
+      return t.closest('.lg-item');
+    };
+    body.addEventListener('touchstart', function (e) {
+      var item = itemOf(e.target);
+      if (!item || e.touches.length !== 1) { swipe = null; return; }
+      swipeStart(item, e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+    body.addEventListener('touchmove', function (e) {
+      if (swipe && e.touches.length === 1 && swipeMove(e.touches[0].clientX, e.touches[0].clientY) && e.cancelable) e.preventDefault();
+    }, { passive: false });
+    body.addEventListener('touchend', swipeEnd);
+    body.addEventListener('touchcancel', swipeEnd);
+    // 滑鼠拖：拖完那一下的 click 不算
+    var dragged = false;
+    body.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      var item = itemOf(e.target);
+      if (!item) return;
+      swipeStart(item, e.clientX, e.clientY);
+      var move = function (ev) { if (swipeMove(ev.clientX, ev.clientY)) ev.preventDefault(); };
+      var up = function () {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        dragged = swipeEnd();
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    });
+    body.addEventListener('click', function (e) {
+      if (dragged) { dragged = false; e.stopImmediatePropagation(); }
+    }, true);
+    // 點累計帳以外的地方也收起來
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest || !e.target.closest('#ledgerBody .lg-item.open')) swipeClose();
+    });
+  }
+
+  // 累計帳每一筆的代號：有 id 用 id，舊的本機紀錄用位置
+  function entryKey(e) { return e.id || 'i' + T.state.ledger.indexOf(e); }
+  function entryByKey(key) {
+    return T.state.ledger.filter(function (e) { return entryKey(e) === key; })[0] || null;
+  }
+
   function renderLedger() {
     var filter = T.view.ledgerFilter;
     var list = ledgerFor(filter);
@@ -507,8 +615,25 @@
         '<span class="amt ' + T.signClass(totals[i]) + '">' + T.signedMoney(totals[i]) + '</span>' +
       '</div>';
     }).join('');
-    var head = '<tr><th>#</th><th>' + (filter === 'all' ? '遊戲・' : '') + '結果</th>' +
-      who.map(function (i) { return '<th>' + T.esc(T.plainName(i)) + '</th>'; }).join('') + '</tr>';
+    // 每一筆是一列 grid（不用 table，才能往左滑出「刪除」）；所有列用同一組欄寬，看起來還是一張表
+    var editable = T.canEdit();
+    var textEm = function (str) {
+      var w = 0;
+      String(str).split('').forEach(function (c) { w += c.charCodeAt(0) < 0x2E80 ? 0.62 : 1; }); // 中日文字一個字寬，其他（數字、−、$）大約 0.62
+      return w;
+    };
+    // 表格裡的金額不寫 $，手機上四個人才排得下（上面的合計卡片有寫）
+    var signed = function (x) { return (x > 0 ? '+' : x < 0 ? '−' : '') + T.fmtNum(Math.abs(x)); };
+    var amtEm = 2.2;
+    who.forEach(function (i) {
+      amtEm = Math.max(amtEm, Math.min(4.6, textEm(T.plainName(i)) * 0.98), textEm(signed(totals[i])) * 1.04);
+      list.forEach(function (e) { if (e.nets[i]) amtEm = Math.max(amtEm, textEm(signed(e.nets[i]))); });
+    });
+    var amtCol = 'calc(' + amtEm.toFixed(2) + 'em + 10px)';
+    var cols = '3.5em minmax(5.6em, 1fr) repeat(' + who.length + ', ' + amtCol + ')';
+    var minW = 'calc(9.1em + ' + who.length + ' * (' + amtEm.toFixed(2) + 'em + 10px))';
+    var head = '<div class="lg-row lg-head" role="row"><span role="columnheader">#</span><span role="columnheader">' + (filter === 'all' ? '遊戲・' : '') + '結果</span>' +
+      who.map(function (i) { return '<span role="columnheader">' + T.esc(T.plainName(i)) + '</span>'; }).join('') + '</div>';
     // 麻將打了不只一將時，每將上面加一條細細的「第 N 將」
     var jiangs = {};
     list.forEach(function (e) { if (e.game === 'mahjong' && e.jiang) jiangs[e.jiang] = true; });
@@ -519,26 +644,35 @@
       var hhmm = isNaN(t) ? '' : String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
       // 麻將那格小字寫圈風（例如東風南），其他遊戲寫時間
       var sub = e.game === 'mahjong' && e.round ? e.round : hhmm;
-      return { e: e, html: '<tr><td class="num"' + (sub !== hhmm && hhmm ? ' title="' + hhmm + '"' : '') + '>' + (n + 1) + '<span class="time">' + sub + '</span></td>' +
-        '<td>' + (filter === 'all' ? '<span class="game-tag">' + GAMES[e.game] + '</span>' : '') + entrySummary(e) + '</td>' +
-        who.map(function (i) { return '<td class="num ' + T.signClass(e.nets[i]) + '">' + (e.nets[i] ? T.signedMoney(e.nets[i]) : '·') + '</td>'; }).join('') + '</tr>' };
+      var key = entryKey(e);
+      var word = ROUND_WORD[e.game] || '局';
+      return { e: e, html: '<div class="lg-item" role="row" data-key="' + T.esc(key) + '">' +
+        '<div class="lg-cells" role="none">' +
+          '<span role="cell" class="num"' + (sub !== hhmm && hhmm ? ' title="' + hhmm + '"' : '') + '>' + (n + 1) + '<span class="time">' + sub + '</span></span>' +
+          '<span role="cell" class="lg-what">' + (filter === 'all' ? '<span class="game-tag">' + GAMES[e.game] + '</span>' : '') + entrySummary(e) + '</span>' +
+          who.map(function (i) { return '<span role="cell" class="num ' + T.signClass(e.nets[i]) + '">' + (e.nets[i] ? signed(e.nets[i]) : '·') + '</span>'; }).join('') +
+        '</div>' +
+        (editable ? '<span role="cell" class="lg-delcell"><button type="button" class="lg-del" data-del="' + T.esc(key) + '" data-no="' + (n + 1) + '"' +
+          ' aria-label="刪除第 ' + (n + 1) + ' ' + word + '">刪除</button></span>' : '') +
+      '</div>' };
     }).reverse().map(function (r) {
       var e = r.e;
       if (!showJiang || e.game !== 'mahjong' || !e.jiang || e.jiang === lastJiang) return r.html;
       lastJiang = e.jiang;
-      return '<tr class="jiang-row"><td colspan="' + (who.length + 2) + '">第 ' + e.jiang + ' 將</td></tr>' + r.html;
+      return '<div class="lg-jiang" role="row"><span role="cell">第 ' + e.jiang + ' 將</span></div>' + r.html;
     }).join('');
-    var foot = '<tr><td>合計</td><td></td>' + who.map(function (i) {
-      return '<td class="' + T.signClass(totals[i]) + '">' + T.signedMoney(totals[i]) + '</td>';
-    }).join('') + '</tr>';
-    var dis = T.canEdit() ? '' : ' disabled';
+    var foot = '<div class="lg-row lg-foot" role="row"><span role="cell">合計</span><span role="cell"></span>' + who.map(function (i) {
+      return '<span role="cell" class="num ' + T.signClass(totals[i]) + '">' + signed(totals[i]) + '</span>';
+    }).join('') + '</div>';
+    var dis = editable ? '' : ' disabled';
     body.innerHTML =
       '<div class="ledger">' +
         '<div class="totals">' + tiles + '</div>' +
-        '<div class="table-wrap"><table><thead>' + head + '</thead><tbody>' + rows + '</tbody><tfoot>' + foot + '</tfoot></table></div>' +
+        '<div class="table-wrap"><div class="lg" role="table" aria-label="每' + (filter === 'mahjong' ? '把' : '局') + '輸贏" style="--cols: ' + cols + '; min-width: ' + minW + '">' +
+          head + '<div class="lg-body" role="rowgroup">' + rows + '</div>' + foot + '</div></div>' +
+        (editable ? '<p class="hint lg-hint">往左滑一筆可以刪除。刪掉麻將最新的一把，將、圈和莊家也會退回去。</p>' : '') +
         '<div class="ledger-actions">' +
           '<button type="button" class="btn primary" id="copyLedger">複製結算文字</button>' +
-          '<button type="button" class="btn" id="undoLedger"' + dis + '>刪除最後一' + (filter === 'mahjong' ? '把' : '局') + '</button>' +
           '<button type="button" class="btn danger" id="clearLedger"' + dis + '>清空' + (label ? label + '的帳' : '全部') + '</button>' +
         '</div>' +
         '<textarea class="copy-fallback" id="copyFallback" readonly hidden aria-label="結算文字"></textarea>' +
@@ -554,18 +688,34 @@
     return lines.join('\n');
   }
 
+  // 刪掉的包含麻將最新的幾把時，牌局進度退回最早刪掉那把開始前；回傳刪完要做的事
+  function mahjongRollback(entries) {
+    var log = T.state.ledger.filter(function (e) { return e.game === 'mahjong'; });
+    var k = log.length;
+    while (k > 0 && entries.indexOf(log[k - 1]) !== -1) k--;
+    if (k === log.length || !T.games.mahjong || !T.games.mahjong.restore) return null;
+    var first = log[k];
+    var before = log.slice(0, k);
+    return function () { return T.games.mahjong.restore(first, before); };
+  }
+
   function deleteEntries(entries, msg) {
     if (!entries.length) return;
+    var rollback = mahjongRollback(entries);
+    var done = function () {
+      var more = rollback ? rollback() : '';
+      T.toast(more ? msg + '，' + more : msg);
+    };
     if (!db) {
       T.state.ledger = T.state.ledger.filter(function (e) { return entries.indexOf(e) === -1; });
       saveLocal();
       T.render();
-      T.toast(msg);
+      done();
       return;
     }
     entries.reduce(function (chain, e) {
       return chain.then(function () { return e.id ? db.doc('ledger/' + e.id).delete() : null; });
-    }, Promise.resolve()).then(function () { T.toast(msg); }, onWriteError);
+    }, Promise.resolve()).then(done, onWriteError);
   }
 
   /* ---------- 首頁 ---------- */
@@ -800,6 +950,7 @@
       if (T.view.screen === 'play') T.games[T.view.game].commit();
     });
 
+    initSwipe($('#ledgerBody'));
     $('#ledgerBody').addEventListener('click', function (e) {
       var t = e.target;
       var list = ledgerFor(T.view.ledgerFilter);
@@ -818,9 +969,12 @@
         } else {
           fallback();
         }
-      } else if (t.closest('#undoLedger')) {
-        var last = list[list.length - 1];
-        if (last) deleteEntries([last], '已刪除最後一筆');
+      } else if (t.closest('.lg-del')) {
+        var del = t.closest('.lg-del');
+        var entry = entryByKey(del.getAttribute('data-del'));
+        if (entry && T.canEdit()) deleteEntries([entry], '已刪除第 ' + del.getAttribute('data-no') + ' ' + (ROUND_WORD[entry.game] || '局'));
+      } else if (t.closest('.lg-item.open')) {
+        swipeClose();
       } else if (t.closest('#clearLedger')) {
         var btn = t.closest('#clearLedger');
         if (btn.classList.contains('armed')) {
