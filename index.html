@@ -248,6 +248,7 @@ legend { padding: 0; }
 
 .pill { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; line-height: 1.5; padding: 0 8px; border-radius: 999px; white-space: nowrap; }
 .pill-kind, .st-tag.kind { background: var(--accent-soft); color: var(--accent); }
+.pill-kind.pill-zha { background: var(--pay-soft); color: var(--pay); }
 .pill-bao, .st-tag.bao { background: var(--warn-soft); color: var(--warn); }
 .pill-win, .st-tag.win { background: var(--gain-soft); color: var(--gain); }
 .st-tag.first { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); line-height: 14px; }
@@ -487,6 +488,8 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .method { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .method button { height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 700; }
 .method button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); color: var(--accent); }
+#mjMethod { grid-template-columns: repeat(3, 1fr); }
+#mjMethod [data-method="zhaHu"][aria-pressed="true"] { border-color: var(--pay); box-shadow: 0 0 0 1px var(--pay); background: var(--pay-soft); color: var(--pay); }
 .dealer-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
 .stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2); }
 .stepper button { width: 36px; height: 36px; border: 0; background: transparent; font-size: 18px; font-weight: 700; color: var(--ink); }
@@ -642,6 +645,37 @@ button.chip:hover { border-color: var(--pay); color: var(--pay); text-decoration
 .choices input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
 .choices label:has(input:checked) { background: var(--ink); border-color: var(--ink); color: var(--surface); font-weight: 700; }
 .choices label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 妞妞 */
+.nn-bank { display: grid; gap: 6px; padding-top: 4px; }
+.nn-row-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.nn-pick { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.nn-h { height: 38px; padding: 0; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); font-family: var(--font-num); font-weight: 700; font-size: var(--step-0); color: var(--ink); }
+.nn-h.nn, .nn-h.sp { font-family: var(--font-body); font-size: 12.5px; }
+.nn-h.sp { color: var(--warn); }
+.nn-h[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+.nn-h:disabled { opacity: .5; cursor: not-allowed; }
+.nn-calc-btn { min-height: 32px; padding: 0 10px; font-size: var(--step--1); display: inline-flex; align-items: center; gap: 4px; }
+.nn-calc-btn svg { width: 15px; height: 15px; }
+.bj-bet .nn-calc-btn { margin-left: auto; }
+.nn-cur { font-weight: 700; font-size: var(--step--1); color: var(--accent); }
+.nn-player.won { border-color: var(--gain); }
+.nn-player.lost { border-color: var(--pay); }
+.nn-player.need-tie { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
+.nn-tie { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: var(--step--1); color: var(--warn); font-weight: 700; }
+.nn-tie-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1; min-width: 12em; }
+.warn-text { color: var(--warn); font-weight: 700; }
+.nn-mults { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px 14px; margin: 4px 0 12px; }
+.nn-mult { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--step--1); font-weight: 700; }
+#nnCalcTitle small { font-family: var(--font-body); font-size: var(--step--1); color: var(--muted); font-weight: 500; margin-left: 8px; }
+.nn-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 10px; border-radius: 10px; background: var(--felt); }
+.nn-card { aspect-ratio: 5 / 7; border-radius: 6px; border: 0; padding: 0; background: #FDFBF5; color: #1F2430; display: grid; place-items: center; font-family: var(--font-num); font-weight: 700; font-size: var(--step-2); box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+.nn-card.empty { background: transparent; border: 1.5px dashed var(--felt-ink); opacity: .45; box-shadow: none; }
+.nn-keys { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.nn-keys .nn-key { position: relative; height: 46px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-family: var(--font-num); font-weight: 700; font-size: var(--step-1); color: var(--ink); }
+.nn-key:disabled { opacity: .35; cursor: not-allowed; }
+.nn-key .used { position: absolute; top: -5px; right: -4px; min-width: 16px; height: 16px; border-radius: 999px; background: var(--ink); color: var(--surface); font-size: 10px; line-height: 16px; }
+.nn-big { font-size: var(--step-2); color: var(--accent); }
 
 /* 篩選 */
 .filter { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -860,7 +894,29 @@ thead th { font-weight: 700; color: var(--muted); background: var(--surface-2); 
 td.num, tfoot td { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 tfoot td { font-weight: 600; border-bottom: 0; background: var(--surface-2); }
 td .time { display: block; font-size: 11px; color: var(--muted); font-family: var(--font-num); white-space: nowrap; }
-tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); letter-spacing: .1em; }
+/* 累計帳每一筆：一列一個 grid，欄寬一樣，往左滑露出刪除 */
+.lg { font-size: var(--step--1); }
+.lg-row, .lg-cells { display: grid; grid-template-columns: var(--cols); align-items: center; }
+.lg-row > *, .lg-cells > * { min-width: 0; padding: 8px 5px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg-row > :nth-child(-n+2), .lg-cells > :nth-child(-n+2) { text-align: left; }
+.lg-row > :first-child, .lg-cells > :first-child { padding: 8px 3px 8px 9px; }
+.lg-row > :last-child, .lg-cells > :last-child { padding-right: 8px; }
+.lg .num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.lg .time { display: block; font-size: 10.5px; color: var(--muted); font-family: var(--font-num); white-space: nowrap; }
+.lg-head { font-size: 12px; font-weight: 700; color: var(--muted); background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.lg-foot { font-weight: 600; background: var(--surface-2); }
+.lg-foot > * { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.lg-what { white-space: normal !important; text-overflow: clip !important; line-height: 1.55; }
+.lg-item { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
+.lg-cells { position: relative; z-index: 1; background: var(--surface); transition: transform .2s ease; }
+.lg-item.dragging .lg-cells { transition: none; }
+.lg-item:focus-within .lg-cells { transform: translateX(-76px); }
+.lg-delcell { position: absolute; top: 0; right: 0; bottom: 0; width: 76px; display: flex; }
+.lg-del { flex: 1; border: 0; background: var(--pay); color: var(--surface); font: inherit; font-weight: 700; font-size: var(--step-0); cursor: pointer; }
+.lg-del:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
+.lg-jiang > span { display: block; padding: 3px 10px; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); letter-spacing: .1em; border-bottom: 1px solid var(--line); }
+.lg-hint { margin-top: -6px; }
+@media (prefers-reduced-motion: reduce) { .lg-cells { transition: none; } }
 .empty-state { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); padding: 28px 20px; text-align: center; color: var(--muted); display: grid; gap: 6px; justify-items: center; }
 .empty-state strong { color: var(--ink); font-size: var(--step-1); }
 .ledger-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -952,6 +1008,12 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
             <span class="g-desc">莊家對閒家，黑傑克、過五關</span>
             <span class="g-meta" data-meta="blackjack"></span>
           </button>
+          <button type="button" class="game-card" data-game="niuniu">
+            <span class="g-art" aria-hidden="true"><span class="art-card" style="left:2px;top:9px;transform:rotate(-12deg)"><span class="i">10</span><span class="s">♣</span></span><span class="art-card red" style="left:16px;top:4px"><span class="i">J</span><span class="s">♦</span></span><span class="art-card" style="left:30px;top:9px;transform:rotate(12deg)"><span class="i">K</span><span class="s">♠</span></span></span>
+            <span class="g-name">妞妞</span>
+            <span class="g-desc">五張湊妞，妞妞、五花、炸彈</span>
+            <span class="g-meta" data-meta="niuniu"></span>
+          </button>
         </div>
       </section>
 
@@ -962,7 +1024,7 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
           <button type="button" class="btn" id="homeNames">改名字</button>
         </div>
         <div class="roster" id="homeNameChips" role="radiogroup" aria-label="點自己的名字"></div>
-        <p class="hint">4 到 8 人。前四位打排七、麻將，第 5 位起加入 21 點；點自己的名字標成「我」。</p>
+        <p class="hint">4 到 8 人。前四位打排七、麻將，第 5 位起加入 21 點、妞妞；點自己的名字標成「我」。</p>
       </section>
 
       <section class="home-box" aria-labelledby="homeTotals">
@@ -1044,6 +1106,7 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
           <div class="method" id="mjMethod" role="group" aria-label="胡法">
             <button type="button" data-method="ziMo" aria-pressed="false">自摸</button>
             <button type="button" data-method="fangQiang" aria-pressed="false">放槍</button>
+            <button type="button" data-method="zhaHu" aria-pressed="false">炸胡</button>
           </div>
         </div>
         <button type="button" class="wide-toggle hand-only" id="mjDraw" aria-pressed="false">流局（沒人胡，莊家連莊）</button>
@@ -1086,6 +1149,25 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
       <section class="detail" id="bjResult" aria-label="這局結算"></section>
     </section>
 
+    <!-- 妞妞 -->
+    <section id="play-niuniu" class="calc" hidden>
+      <div class="round-bar">
+        <div class="round-title"><b id="nnRound">第 1 局</b></div>
+        <div class="round-actions">
+          <button type="button" class="btn" id="nnClear">清空牌型</button>
+          <button type="button" class="btn" data-setup><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path></svg>名字・規則</button>
+        </div>
+      </div>
+      <button type="button" class="rule-line" id="nnChips" data-setup aria-label="目前規則，點一下調整"></button>
+      <section class="step banker-box" aria-labelledby="nnBankerLabel">
+        <h3 id="nnBankerLabel">莊家</h3>
+        <div class="choices" id="nnBanker" role="radiogroup" aria-labelledby="nnBankerLabel"></div>
+        <div class="nn-bank" id="nnBankHand"></div>
+      </section>
+      <div class="bj-list" id="nnPlayers"></div>
+      <section class="detail" id="nnResult" aria-label="這局結算"></section>
+    </section>
+
     <!-- 累計帳 -->
     <section id="screen-ledger" class="ledger" hidden>
       <div class="section-head">
@@ -1097,6 +1179,7 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
         <button type="button" data-filter="mahjong" aria-pressed="false">麻將</button>
         <button type="button" data-filter="paiqi" aria-pressed="false">排七</button>
         <button type="button" data-filter="blackjack" aria-pressed="false">21點</button>
+        <button type="button" data-filter="niuniu" aria-pressed="false">妞妞</button>
       </div>
       <div id="ledgerBody"></div>
     </section>
@@ -1107,6 +1190,7 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
         <button type="button" data-rules="mahjong" aria-pressed="false">麻將</button>
         <button type="button" data-rules="paiqi" aria-pressed="true">排七</button>
         <button type="button" data-rules="blackjack" aria-pressed="false">21點</button>
+        <button type="button" data-rules="niuniu" aria-pressed="false">妞妞</button>
       </div>
 
       <article id="rules-paiqi" class="rules">
@@ -1193,13 +1277,18 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
           </ul>
         </section>
         <section>
+          <h2>炸胡</h2>
+          <p>亂喊胡（牌其實沒胡）叫炸胡。點那個人，再選「炸胡」：他賠另外三家，每家付炸胡的錢（預設 $20）；莊家炸胡，或賠給莊家的那筆，再加 1 台。不算台型、不限台，莊家台只加這 1 台、不算連莊台。記炸胡後預設莊家連莊（連莊數加 1，跟流局一樣）；要莊家和連莊都不變，在「名字・規則」關掉「炸胡後莊家連莊」。金額和加幾台也在那裡改。</p>
+        </section>
+        <section>
           <h2>將、圈、把</h2>
           <ul>
             <li><b>一把</b>：一手牌，從洗牌到有人胡或流局。</li>
             <li><b>一圈</b>：莊家從起莊輪一輪、回到起莊。連莊和流局會多打幾把，但不算新的一圈，所以一圈至少 4 把。</li>
-            <li><b>一將</b>：四圈，依序是東風圈、南風圈、西風圈、北風圈，至少 16 把。</li>
             <li>標題的「東風南」是東風圈、第二位莊家（起莊算東）。北風北的莊家下莊，這將就打完了，會進下一將並重新抓位。</li>
+            <li><b>一將</b>：四圈，依序是東風圈、南風圈、西風圈、北風圈，至少 16 把；連莊、流局多幾把，例如連莊 4 次就是 20 把。</li>
             <li>一次打幾將各家自己約，例如「一局打四將」。</li>
+            <li>記錯了在累計帳往左滑刪除。刪掉最新的一把，將、圈、莊家都會退回那把開始前，重新輸入就好。</li>
           </ul>
         </section>
         <section>
@@ -1306,6 +1395,48 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
               <tfoot><tr><td>阿明（莊）</td><td></td><td>−$250</td></tr></tfoot>
             </table>
           </div>
+        </section>
+      </article>
+
+      <article id="rules-niuniu" class="rules" hidden>
+        <section>
+          <h2>怎麼玩</h2>
+          <ul>
+            <li>一人當莊家，其他人是閒家，每位閒家先下注。每人發五張牌。</li>
+            <li>10、J、Q、K 都算 10 點，A 算 1 點，其他照牌面。</li>
+            <li>從五張裡挑三張，加起來是 10 的倍數（10、20、30）就「有妞」；剩下兩張加起來的個位數就是妞幾，個位數是 0 叫「妞妞」。</li>
+            <li>怎麼挑都湊不出來，就是「沒妞」。</li>
+            <li>每位閒家各自和莊家比，跟其他閒家無關。</li>
+          </ul>
+        </section>
+        <section>
+          <h2>牌型和倍數</h2>
+          <p>由大到小。牌型大的贏，照<b>贏家牌型</b>的倍數算：下注 × 倍數。例如閒家妞8 贏莊家妞3，莊家賠下注 × 2；莊家妞妞贏閒家妞5，閒家付下注 × 3。</p>
+          <div class="table-wrap">
+            <table id="nnRulesTable">
+              <thead><tr><th>牌型</th><th>怎麼算</th><th>倍數</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p class="note" id="nnRulesNow"></p>
+        </section>
+        <section>
+          <h2>同牌型</h2>
+          <p>莊家和閒家牌型一樣時，比各自最大的一張：K 最大、A 最小，一樣大再比花色（黑桃 &gt; 紅心 &gt; 方塊 &gt; 梅花）。牌型一樣時，畫面會問誰的最大張比較大。也可以在「名字・規則」改成「同牌型莊家贏」，就不用問。</p>
+        </section>
+        <section>
+          <h2>看牌算妞</h2>
+          <p>不會算的時候，按「看牌算妞」點五張牌，會告訴你哪三張湊成 10 的倍數、剩下兩張是妞幾，按一下就填進去。</p>
+        </section>
+        <section>
+          <h2>算一次看看</h2>
+          <p>阿明當莊家拿到妞5，每人下注 $100。小華妞8（×2）、阿珍妞3、大雄妞妞（×3）。</p>
+          <ul>
+            <li>小華妞8 贏，阿明賠 $100 × 2 = $200。</li>
+            <li>阿珍妞3 輸，付阿明 $100 × 1 = $100（照莊家妞5 的倍數）。</li>
+            <li>大雄妞妞贏，阿明賠 $100 × 3 = $300。</li>
+            <li>阿明這局共賠 $200 − $100 + $300 = $400。</li>
+          </ul>
         </section>
       </article>
 
@@ -1459,6 +1590,20 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
           <span class="hint">門清又自摸時，兩個合計幾台</span>
           <span class="ctrl"><span class="field small"><input id="mjMqzmTai" type="number" min="0" step="1" inputmode="numeric"><span>台</span></span></span>
         </div>
+        <div class="rule-row">
+          <label class="name" for="mjZhaHuBase">炸胡賠每家</label>
+          <span class="hint">亂喊胡的人賠另外三家，每家這麼多</span>
+          <span class="ctrl"><span class="field small"><span>$</span><input id="mjZhaHuBase" type="number" min="0" step="10" inputmode="numeric"></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="mjZhaHuDealerTai">炸胡莊家加</label>
+          <span class="hint">莊家炸胡，或賠給莊家的那筆，再加幾台（照每台算）</span>
+          <span class="ctrl"><span class="field small"><input id="mjZhaHuDealerTai" type="number" min="0" step="1" inputmode="numeric"><span>台</span></span></span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="mjZhaHuStreak"><input type="checkbox" class="switch" id="mjZhaHuStreak">炸胡後莊家連莊</label>
+          <span class="hint">打開（預設）：記炸胡後莊家連莊、連莊數加 1，跟流局一樣。關掉：莊家和連莊都不變</span>
+        </div>
       </div>
       <details class="tai-editor" id="mjTaiEditor">
         <summary><span>台數表</span><span class="hint" id="mjTaiEditorHint">修改台數、關掉不用的、新增自己家的台型</span></summary>
@@ -1514,6 +1659,49 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
       </div>
     </fieldset>
 
+    <fieldset class="sec" id="set-niuniu" hidden>
+      <legend class="set-label">妞妞規則</legend>
+      <div class="set-grid">
+        <div class="set-row">
+          <label class="hint" for="nnBet">預設下注</label>
+          <span class="field"><span>$</span><input id="nnBet" type="number" min="0" step="10" inputmode="numeric"></span>
+        </div>
+      </div>
+      <p class="hint">倍數：贏的人照自己牌型的倍數收「下注 × 倍數」。人數在首頁的玩家旁邊加減。</p>
+      <div class="nn-mults">
+          <label class="nn-mult" for="nnMult-none"><span>沒妞</span><span class="field small"><span>×</span><input id="nnMult-none" type="number" min="0" step="1" inputmode="decimal"></span></label>
+          <label class="nn-mult" for="nnMult-low"><span>妞1～妞6</span><span class="field small"><span>×</span><input id="nnMult-low" type="number" min="0" step="1" inputmode="decimal"></span></label>
+          <label class="nn-mult" for="nnMult-n7"><span>妞7</span><span class="field small"><span>×</span><input id="nnMult-n7" type="number" min="0" step="1" inputmode="decimal"></span></label>
+          <label class="nn-mult" for="nnMult-n8"><span>妞8</span><span class="field small"><span>×</span><input id="nnMult-n8" type="number" min="0" step="1" inputmode="decimal"></span></label>
+          <label class="nn-mult" for="nnMult-n9"><span>妞9</span><span class="field small"><span>×</span><input id="nnMult-n9" type="number" min="0" step="1" inputmode="decimal"></span></label>
+          <label class="nn-mult" for="nnMult-nn"><span>妞妞</span><span class="field small"><span>×</span><input id="nnMult-nn" type="number" min="0" step="1" inputmode="decimal"></span></label>
+          <label class="nn-mult" for="nnMult-wuHua"><span>五花</span><span class="field small"><span>×</span><input id="nnMult-wuHua" type="number" min="0" step="1" inputmode="decimal"></span></label>
+          <label class="nn-mult" for="nnMult-zhaDan"><span>炸彈</span><span class="field small"><span>×</span><input id="nnMult-zhaDan" type="number" min="0" step="1" inputmode="decimal"></span></label>
+          <label class="nn-mult" for="nnMult-wuXiao"><span>五小</span><span class="field small"><span>×</span><input id="nnMult-wuXiao" type="number" min="0" step="1" inputmode="decimal"></span></label>
+      </div>
+      <div class="rule-list">
+        <div class="rule-row">
+          <label class="name" for="nnSp-wuXiao"><input type="checkbox" class="switch" id="nnSp-wuXiao">五小</label>
+          <span class="hint">五張都小於 5，加起來不超過 10；最大</span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="nnSp-zhaDan"><input type="checkbox" class="switch" id="nnSp-zhaDan">炸彈</label>
+          <span class="hint">四張一樣的牌；比五花大</span>
+        </div>
+        <div class="rule-row">
+          <label class="name" for="nnSp-wuHua"><input type="checkbox" class="switch" id="nnSp-wuHua">五花</label>
+          <span class="hint">五張都是 J、Q、K；比妞妞大。關掉就算妞妞</span>
+        </div>
+        <div class="rule-row">
+          <span class="name" id="nnTieLabel">同牌型</span>
+          <span class="hint">牌型一樣時誰贏</span>
+          <span class="ctrl"><span class="seg" id="nnTie" role="radiogroup" aria-labelledby="nnTieLabel">
+            <label><input type="radio" name="nnTie" value="card">比最大張</label><label><input type="radio" name="nnTie" value="banker">莊家贏</label>
+          </span></span>
+        </div>
+      </div>
+    </fieldset>
+
     <div class="sheet-foot">
       <p class="hint" id="syncHint"></p>
       <button type="button" class="btn" id="resetSettings">恢復預設規則</button>
@@ -1548,6 +1736,21 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
   </div>
 </dialog>
 
+<dialog class="sheet calc-sheet" id="nnCalc" aria-labelledby="nnCalcTitle">
+  <div class="sheet-head">
+    <h2 id="nnCalcTitle">看牌算妞<small id="nnCalcWho"></small></h2>
+    <div class="mc-head-actions">
+      <button type="button" class="btn" id="nnCalcClear">清除</button>
+      <button type="button" class="btn primary" id="nnCalcClose">關閉</button>
+    </div>
+  </div>
+  <div class="mc-body">
+    <div class="nn-cards" id="nnCalcCards"></div>
+    <div class="mc-result" id="nnCalcResult" aria-live="polite"></div>
+    <div class="nn-keys" id="nnCalcKeys" role="group" aria-label="點牌"></div>
+  </div>
+</dialog>
+
 <dialog class="sheet tool-sheet" id="mjDice" aria-labelledby="diceTitle">
   <div class="sheet-head">
     <h2 id="diceTitle">擲骰子</h2>
@@ -1578,10 +1781,12 @@ tr.jiang-row td { padding: 3px 8px; font-size: 11px; font-weight: 700; color: va
 <script src="mahjong-hand.js"></script>
 <script src="mahjong-wall.js"></script>
 <script src="blackjack.js"></script>
+<script src="niuniu.js"></script>
 <script src="app/core.js"></script>
 <script src="app/paiqi-ui.js"></script>
 <script src="app/mahjong-ui.js"></script>
 <script src="app/blackjack-ui.js"></script>
+<script src="app/niuniu-ui.js"></script>
 <script src="app/mjcalc-ui.js"></script>
 <script src="app/mjtools-ui.js"></script>
 <script>TableApp.start();</script>

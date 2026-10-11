@@ -4,6 +4,8 @@
  * 每位付錢的人付「底 + 台數 × 每台」。
  * 莊家有關的支付（莊家胡，或莊家付錢）另外加莊家台：預設 1 台 + 連莊數 × 2（連 N 拉 N）。
  * 台數、莊家台、限台都可以在設定裡改，也能關掉或新增台型。
+ * 炸胡（亂喊胡）：炸胡的人賠另外三家，每家付炸胡的底；跟莊家有關的那筆（莊家炸胡，或付給莊家）再加幾台。
+ * 炸胡後預設莊家連莊（跟流局一樣），規則裡可以關掉，關掉時莊家和連莊都不變。
  * 瀏覽器載入後是 window.Mahjong，Node 用 require('./mahjong.js')。
  */
 (function (root, factory) {
@@ -79,6 +81,9 @@
     streakTai: 2,           // 每連莊一次加幾台（連 N 拉 N 是 2）
     ziMoTai: 1,             // 自摸
     menQingZiMoTai: 3,      // 門清加自摸合計
+    zhaHuBase: 20,          // 炸胡：賠每家多少
+    zhaHuDealerTai: 1,      // 炸胡：跟莊家有關的那筆再加幾台
+    zhaHuStreak: true,      // 炸胡後莊家連莊（關掉：莊家、連莊都不變）
     menFengBySeat: false,   // 門風照座位（坐東就是東風）；預設跟著莊家（莊家算東）
     reverseDraw: false,     // 逆抓（從牌牆左邊數、往逆時針抓）；預設順抓
     tai: {},                // 改過的台數 { 台型 id: 台數 }
@@ -132,6 +137,9 @@
       streakTai: int(s.streakTai, d.streakTai, 0, 99),
       ziMoTai: int(s.ziMoTai, d.ziMoTai, 0, 99),
       menQingZiMoTai: int(s.menQingZiMoTai, d.menQingZiMoTai, 0, 99),
+      zhaHuBase: num(s.zhaHuBase, d.zhaHuBase, 0),
+      zhaHuDealerTai: int(s.zhaHuDealerTai, d.zhaHuDealerTai, 0, 99),
+      zhaHuStreak: s.zhaHuStreak === undefined ? d.zhaHuStreak : !!s.zhaHuStreak,
       menFengBySeat: !!s.menFengBySeat,
       reverseDraw: !!s.reverseDraw,
       tai: tai,
@@ -280,15 +288,38 @@
     return s.dealerTai + s.streakTai * n;
   }
 
+  // 炸胡：w 賠另外三家，每家付炸胡的底；莊家炸胡或付給莊家的那筆再加炸胡莊家台（不算連莊、不限台）
+  function settleZhaHu(w, dealer, s) {
+    var nets = [0, 0, 0, 0];
+    var transfers = [];
+    for (var i = 0; i < SEATS; i++) {
+      if (i === w) continue;
+      var extra = i === dealer || w === dealer ? s.zhaHuDealerTai : 0;
+      var amount = round2(s.zhaHuBase + extra * s.perTai);
+      nets[w] = round2(nets[w] - amount);
+      nets[i] = round2(nets[i] + amount);
+      transfers.push({
+        from: w, to: i, tai: 0, dealerTai: extra, totalTai: extra, capped: false,
+        base: s.zhaHuBase, perTai: s.perTai, amount: amount
+      });
+    }
+    return {
+      ready: true, settings: s, winner: w, method: 'zhaHu', tai: 0, dealerTai: s.zhaHuDealerTai,
+      capped: false, transfers: transfers, nets: nets
+    };
+  }
+
   /*
-   * hand = { dealer, streak, winner, method: 'ziMo' | 'fangQiang', discarder, tai }
+   * hand = { dealer, streak, winner, method: 'ziMo' | 'fangQiang' | 'zhaHu', discarder, tai }
    * tai 是胡牌者的台數（countTai 的結果），限台在這裡套用。
+   * 炸胡時 winner 是炸胡的人，他付錢給另外三家。
    * 回傳每筆支付與每人淨額；資料不完整時回傳 { ready: false, reason }
    */
   function settle(hand, settings) {
     var s = normalizeSettings(settings);
     var w = hand.winner;
     if (w == null || w < 0 || w >= SEATS) return { ready: false, reason: 'winner' };
+    if (hand.method === 'zhaHu') return settleZhaHu(w, hand.dealer, s);
     if (hand.method !== 'ziMo' && hand.method !== 'fangQiang') return { ready: false, reason: 'method' };
     if (hand.method === 'fangQiang' && (hand.discarder == null || hand.discarder === w || hand.discarder < 0 || hand.discarder >= SEATS)) {
       return { ready: false, reason: 'discarder' };
@@ -398,6 +429,49 @@
     return WIND_NAMES[wind] + '風' + WIND_NAMES[(dealer - startDealer + SEATS) % SEATS];
   }
 
+  // 「東風南」拆回 { wind: 0, offset: 1 }；看不懂就回傳 null
+  function parseRound(name) {
+    var m = /^([東南西北])風([東南西北])$/.exec(String(name || ''));
+    return m ? { wind: WIND_NAMES.indexOf(m[1]), offset: WIND_NAMES.indexOf(m[2]) } : null;
+  }
+
+  // 這把記錄當時牌局進度的快照，刪掉這把時退回去
+  var PROGRESS_KEYS = ['jiang', 'wind', 'startDealer', 'dealer', 'streak', 'hands'];
+  function progressOf(m) {
+    var p = {};
+    PROGRESS_KEYS.forEach(function (k) { p[k] = m[k]; });
+    p.seats = (m.seats || [0, 1, 2, 3]).slice();
+    return p;
+  }
+
+  /*
+   * 刪掉一把之後，牌局要退回這把開始前的樣子。
+   * entry 有 prev（記錄時存的快照）就用它；沒有的舊紀錄用它的第幾將和圈風推算：
+   * 前面連續同一圈同一位莊家的把數是連莊數（炸胡不算），同一將前面幾把是把數。
+   * before 是這把之前的麻將紀錄（舊到新），startDealer 是現在的起莊。
+   * 沒有快照的舊炸胡當時不改進度，回傳 null。
+   */
+  function progressBefore(entry, before, startDealer) {
+    if (!entry) return null;
+    if (entry.prev) return entry.prev;
+    if (entry.kind === 'zhaHu') return null;
+    var r = parseRound(entry.round);
+    if (!r || !entry.jiang) return null;
+    var streak = 0;
+    for (var i = before.length - 1; i >= 0; i--) {
+      var e = before[i];
+      if (e.kind === 'zhaHu') continue;
+      if (e.jiang !== entry.jiang || e.round !== entry.round) break;
+      streak++;
+    }
+    var hands = before.filter(function (e) { return e.jiang === entry.jiang && e.kind !== 'zhaHu'; }).length;
+    var start = Math.max(0, Math.min(SEATS - 1, Math.floor(Number(startDealer) || 0)));
+    return {
+      jiang: entry.jiang, wind: r.wind, startDealer: start, dealer: (start + r.offset) % SEATS,
+      streak: streak, hands: hands, seats: null
+    };
+  }
+
   return {
     PATTERNS: PATTERNS,
     GROUP_NAMES: GROUP_NAMES,
@@ -417,6 +491,9 @@
     settle: settle,
     nextDealer: nextDealer,
     advance: advance,
-    roundName: roundName
+    roundName: roundName,
+    parseRound: parseRound,
+    progressOf: progressOf,
+    progressBefore: progressBefore
   };
 });
