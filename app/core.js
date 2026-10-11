@@ -8,6 +8,7 @@
   var PaiQi = window.PaiQi;
   var MJ = window.Mahjong;
   var BJ = window.Blackjack;
+  var NN = window.Niuniu;
 
   var T = window.TableApp = {};
   var SEAT_CHARS = ['東', '南', '西', '北'];
@@ -16,9 +17,9 @@
   var LOCAL_KEY = 'paitable-v2';
   var OLD_LOCAL_KEY = 'paiqi-calc-v1';
   var VIEW_KEY = 'paitable-view';
-  var GAMES = { mahjong: '麻將', paiqi: '排七', blackjack: '21點' };
-  var ROUND_WORD = { paiqi: '局', mahjong: '把', blackjack: '局' };
-  var ID_PREFIX = { paiqi: 'r', mahjong: 'm', blackjack: 'b' };
+  var GAMES = { mahjong: '麻將', paiqi: '排七', blackjack: '21點', niuniu: '妞妞' };
+  var ROUND_WORD = { paiqi: '局', mahjong: '把', blackjack: '局', niuniu: '局' };
+  var ID_PREFIX = { paiqi: 'r', mahjong: 'm', blackjack: 'b', niuniu: 'n' };
   var MODE_TEXT = {
     connecting: ['連線中…', '正在連到共用的牌桌…'],
     sync: ['已同步', '資料存在共用牌桌。有 Claude 帳號的人登入後打開同一個連結，會看到同一局。'],
@@ -94,6 +95,7 @@
         jiang: 1, wind: 0, startDealer: 0, hands: 0, dealer: 0, streak: 0, hand: emptyHand(), nextRound: 1
       },
       blackjack: { settings: BJ.normalizeSettings(), banker: 0, bets: filled(null), results: filled(null), doubled: filled(false), nextRound: 1 },
+      niuniu: { settings: NN.normalizeSettings(), banker: 0, bets: filled(null), hands: filled(null), ties: filled(null), nextRound: 1 },
       ledger: []
     };
   }
@@ -156,6 +158,20 @@
       nextRound: int(d.nextRound, 1, 1)
     };
   }
+  // 妞妞：莊家、下注、每個人的牌型（莊家也在 hands 裡）、同牌型時誰大
+  function cleanNiuniu(d) {
+    d = d || {};
+    var settings = NN.normalizeSettings(d.settings);
+    var arr = function (a, f) { return filled(function (i) { return f(Array.isArray(a) ? a[i] : undefined); }); };
+    return {
+      settings: settings,
+      banker: int(d.banker, 0, 0, MAX_PLAYERS - 1),
+      bets: arr(d.bets, function (v) { return v == null || v === '' || !isFinite(Number(v)) ? null : Math.max(0, Number(v)); }),
+      hands: arr(d.hands, function (v) { return NN.isHand(v, settings) ? v : null; }),
+      ties: arr(d.ties, function (v) { return v === 'banker' || v === 'player' ? v : null; }),
+      nextRound: int(d.nextRound, 1, 1)
+    };
+  }
   // 麻將：記這把時的牌局進度，刪掉這把時退回去
   function cleanPrev(p) {
     if (!p || typeof p !== 'object') return null;
@@ -207,6 +223,7 @@
         if (Array.isArray(pq.players)) s.paiqi.players = [0, 1, 2, 3].map(function (i) { return cleanPaiqiSeat(pq.players[i]); });
         s.mahjong = cleanMahjong(raw.mahjong);
         s.blackjack = cleanBlackjack(raw.blackjack);
+        s.niuniu = cleanNiuniu(raw.niuniu);
         s.ledger = (Array.isArray(raw.ledger) ? raw.ledger : []).map(function (e) { return cleanEntry(e, e && e.id); }).filter(Boolean);
         return s;
       }
@@ -261,6 +278,7 @@
    * table/roster    第 5～8 位玩家的名字（21 點用）
    * table/mahjong   麻將規則、抓位（誰坐東南西北）、第幾將和圈風、莊家、連莊、這把的輸入
    * table/blackjack 21 點規則、莊家、下注與結果
+   * table/niuniu    妞妞規則、莊家、下注與牌型
    * ledger/{id}     每局結果；id 依遊戲與局號，兩支手機同時記入會寫到同一份，不會重複記帳
    */
 
@@ -279,6 +297,7 @@
     if (path === 'table/roster') return { extra: s.names.slice(4) };
     if (path === 'table/mahjong') return clone(s.mahjong);
     if (path === 'table/blackjack') return clone(s.blackjack);
+    if (path === 'table/niuniu') return clone(s.niuniu);
     throw new Error('unknown path ' + path);
   }
 
@@ -375,6 +394,7 @@
       }
       if (!busyLocally('table/mahjong')) s.mahjong = cleanMahjong(got.mahjong);
       if (!busyLocally('table/blackjack')) s.blackjack = cleanBlackjack(got.blackjack);
+      if (!busyLocally('table/niuniu')) s.niuniu = cleanNiuniu(got.niuniu);
       syncSettingsForms();
       T.render();
     }, onSubError);
@@ -415,7 +435,7 @@
     $('#syncPill').setAttribute('data-mode', mode);
     $('#syncText').textContent = t[0];
     $('#syncHint').textContent = t[1];
-    ['namesFields', 'set-paiqi', 'set-mahjong', 'set-blackjack'].forEach(function (id) { $('#' + id).disabled = !T.canEdit(); });
+    ['namesFields', 'set-paiqi', 'set-mahjong', 'set-blackjack', 'set-niuniu'].forEach(function (id) { $('#' + id).disabled = !T.canEdit(); });
     T.render();
   }
 
@@ -491,6 +511,9 @@
       if (e.kind === 'zhaHu') return esc(T.plainName(e.winner)) + ' <span class="pill pill-kind pill-zha">炸胡</span>';
       var how = e.kind === 'ziMo' ? '自摸' : '胡';
       return esc(T.plainName(e.winner)) + ' <span class="pill pill-kind">' + how + (e.tai != null ? ' ' + e.tai + ' 台' : '') + '</span>';
+    }
+    if (e.game === 'niuniu' && NN.BY_ID[e.kind]) {
+      return '莊 ' + esc(T.plainName(e.winner)) + ' <span class="pill pill-kind">' + NN.BY_ID[e.kind].name + '</span>';
     }
     return '莊 ' + esc(T.plainName(e.winner));
   }
@@ -727,7 +750,7 @@
       meta.textContent = n ? '已記 ' + n + ' ' + ROUND_WORD[g] : (T.view.lastGame === g ? '上次玩這個' : '');
       $('.game-card[data-game="' + g + '"]').classList.toggle('last', T.view.lastGame === g);
     });
-    // 玩家：4 到 8 人，前四位排七・麻將，第 5 位起 21 點；點自己的名字標成「我」
+    // 玩家：4 到 8 人，前四位排七・麻將，第 5 位起 21 點、妞妞；點自己的名字標成「我」
     var shown = T.playerCount();
     var chip = function (i) {
       var mine = T.me() === i;
@@ -738,7 +761,7 @@
     var more = [];
     for (var i = 4; i < shown; i++) more.push(chip(i));
     $('#homeNameChips').innerHTML = '<div class="roster-row"><span class="roster-tag">排七・麻將</span><div class="roster-chips">' + first + '</div></div>' +
-      (more.length ? '<div class="roster-row"><span class="roster-tag">21 點也一起玩</span><div class="roster-chips">' + more.join('') + '</div></div>' : '');
+      (more.length ? '<div class="roster-row"><span class="roster-tag">21 點、妞妞也一起玩</span><div class="roster-chips">' + more.join('') + '</div></div>' : '');
     $('#homeCount').textContent = shown;
     $('#homeCountDown').disabled = !T.canEdit() || shown <= 4;
     $('#homeCountUp').disabled = !T.canEdit() || shown >= MAX_PLAYERS;
@@ -773,7 +796,7 @@
   // 名字只標玩家編號（1、2、3…）
   function renderNameInputs() {
     var scope = T.view.setupScope;
-    var showAll = scope === 'blackjack' || scope === 'names' || T.state.blackjack.settings.count > 4;
+    var showAll = scope === 'blackjack' || scope === 'niuniu' || scope === 'names' || T.state.blackjack.settings.count > 4;
     var shown = scope === 'names' ? Math.max(4, T.state.blackjack.settings.count) : MAX_PLAYERS;
     for (var i = 0; i < MAX_PLAYERS; i++) {
       var input = $('#pname-' + i);
@@ -783,9 +806,9 @@
       $('[data-name-row="' + i + '"]').hidden = (i >= 4 && !showAll) || i >= shown;
     }
     $('#namesHint').textContent = scope === 'names'
-      ? '前四位打排七、麻將（麻將在牌桌上抓位），第 5 位起加入 21 點；人數在首頁的玩家旁邊加減。'
+      ? '前四位打排七、麻將（麻將在牌桌上抓位），第 5 位起加入 21 點和妞妞；人數在首頁的玩家旁邊加減。'
       : scope === 'paiqi' ? '排七用前四位，照編號順序輪流出牌。'
-      : scope === 'mahjong' ? '誰坐東南西北，在麻將頁的牌桌上抓位。' : '21 點超過四人時再填 5 到 8。';
+      : scope === 'mahjong' ? '誰坐東南西北，在麻將頁的牌桌上抓位。' : '超過四人時再填 5 到 8；人數在首頁的玩家旁邊加減。';
   }
 
   function syncSettingsForms() {
